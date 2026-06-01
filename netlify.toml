@@ -1,0 +1,95 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+# Run cleanup daily at 3 AM UTC — deletes photos for weddings > 90 days past their date
+[functions."cleanup"]
+  schedule = "0 3 * * *"
+
+[dev]
+  command = "npm run dev"
+  port = 8888
+  targetPort = 5173
+
+# API routing — must come before the SPA catch-all
+[[redirects]]
+  from = "/api/weddings/:id"
+  to   = "/.netlify/functions/wedding"
+  status = 200
+
+[[redirects]]
+  from = "/api/sessions"
+  to   = "/.netlify/functions/sessions"
+  status = 200
+
+[[redirects]]
+  from = "/api/couple/gallery"
+  to   = "/.netlify/functions/couple-gallery"
+  status = 200
+
+[[redirects]]
+  from = "/api/couple/session"
+  to   = "/.netlify/functions/couple-session"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/weddings"
+  to   = "/.netlify/functions/admin-weddings"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/wedding"
+  to   = "/.netlify/functions/admin-wedding"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/invite"
+  to   = "/.netlify/functions/admin-invite"
+  status = 200
+
+[[redirects]]
+  from = "/api/couple/wedding"
+  to   = "/.netlify/functions/couple-wedding"
+  status = 200
+
+[[redirects]]
+  from = "/api/couple/setup"
+  to   = "/.netlify/functions/couple-setup"
+  status = 200
+
+[[redirects]]
+  from = "/api/couple/check"
+  to   = "/.netlify/functions/couple-check"
+  status = 200
+
+[[redirects]]
+  from = "/api/slug"
+  to   = "/.netlify/functions/slug-resolve"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/session"
+  to   = "/.netlify/functions/admin-session"
+  status = 200
+
+[[redirects]]
+  from = "/api/slideshow"
+  to   = "/.netlify/functions/slideshow"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/gallery"
+  to   = "/.netlify/functions/admin-gallery"
+  status = 200
+
+[[redirects]]
+  from = "/api/couple/qr"
+  to   = "/.netlify/functions/couple-qr"
+  status = 200
+
+# SPA catch-all — handles all React Router routes
+[[redirects]]
+  from = "/*"
+  to   = "/index.html"
+  status = 200

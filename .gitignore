@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# Environment files — never commit secrets
+.env
+.env.*
+netlify.env
+
+# TypeScript build cache
+node_modules/.tmp/
+
+# Editor & OS
+.DS_Store
+Thumbs.db
+.vscode/settings.json
+
+# Logs
+*.log
+npm-debug.log*
+
+# Claude Code local config — not part of the project
+.claude/
+
+# Scratch files
+*.docx
+Images/
