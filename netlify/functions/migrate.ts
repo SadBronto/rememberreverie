@@ -72,7 +72,7 @@ export const handler: Handler = async (event) => {
         await run(stmt, token)
       }
 
-      await run(`INSERT INTO _migrations (id) VALUES ('${migration.id}')`, token)
+      await run(`INSERT INTO _migrations (id) VALUES ('${migration.id}') ON CONFLICT DO NOTHING`, token)
       results.push(`applied: ${migration.id}`)
       console.log(`migrate: applied ${migration.id}`)
     }
