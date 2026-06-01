@@ -21,7 +21,7 @@ export const handler: Handler = async (event) => {
 
   const { data: wedding, error: wErr } = await admin
     .from('weddings')
-    .select('id, couple_names, wedding_date, status, couple_email, allowed_modes, annotation_mode, timestamp_enabled, timestamp_style, photo_cap, welcome_message, slug')
+    .select('id, couple_names, wedding_date, status, couple_email, allowed_modes, annotation_mode, timestamp_enabled, timestamp_style, photo_cap, welcome_message, slug, qr_settings, is_event, event_end_date')
     .eq('couple_email', user.email)
     .order('created_at', { ascending: false })
     .limit(1)
