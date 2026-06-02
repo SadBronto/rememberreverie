@@ -48,13 +48,14 @@ export const handler: Handler = async (event) => {
   if (!token) return { statusCode: 500, body: 'SUPABASE_ACCESS_TOKEN not set' }
 
   try {
-    // Ensure migrations tracking table exists
+    // Ensure migrations tracking table exists with RLS enabled
     await run(`
       CREATE TABLE IF NOT EXISTS _migrations (
         id         TEXT PRIMARY KEY,
         applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `, token)
+    await run(`ALTER TABLE _migrations ENABLE ROW LEVEL SECURITY`, token)
 
     // Find already-applied migrations
     const rows = await run(`SELECT id FROM _migrations`, token) as Array<{ id: string }>
