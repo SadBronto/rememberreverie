@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
+import { getStroke } from 'perfect-freehand'
 import { useSessionStore } from '@/store/sessionStore'
 import type { Annotation } from '@/types/session'
 import ColorWheelPicker from '@/components/ColorWheelPicker'
+
+type Mode = 'quadratic' | 'pressure'
 
 // Rainbow hue cycles through the full spectrum as you draw
 let rainbowHue = 0
@@ -33,7 +36,8 @@ export default function AnnotatePage() {
   const strokePointsRef  = useRef<{ x: number; y: number }[]>([])
   const isPointerDownRef = useRef(false)
   const activeColorRef   = useRef<string>('#1a1612')
-
+  const modeRef          = useRef<Mode>('quadratic')
+  const strokePointsHistoryRef = useRef<Array<{ points: Array<[number, number]>; color: string; weight: number }>>([])
   const [photoUrl,            setPhotoUrl]            = useState<string | null>(null)
   const [hasDrawn,            setHasDrawn]            = useState(false)
   const [isSubmitting,        setIsSubmitting]        = useState(false)
@@ -41,6 +45,8 @@ export default function AnnotatePage() {
   const [isRainbow,           setIsRainbow]           = useState(false)
   const [showColorPicker,     setShowColorPicker]     = useState(false)
   const [selectedWeightIndex, setSelectedWeightIndex] = useState(1) // Medium
+  const [mode,                setMode]                = useState<Mode>('quadratic')
+  const [isIOS,               setIsIOS]               = useState(false)
 
   // Redirect if no active session with output image
   useEffect(() => {
@@ -57,6 +63,17 @@ export default function AnnotatePage() {
   useEffect(() => {
     activeColorRef.current = isRainbow ? 'rainbow' : colorHex
   }, [colorHex, isRainbow])
+
+  // Detect iOS and disable pressure mode (simulatePressure doesn't work on touch)
+  useEffect(() => {
+    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    setIsIOS(iOS)
+  }, [])
+
+  // Keep modeRef in sync
+  useEffect(() => {
+    modeRef.current = mode
+  }, [mode])
 
   // Sync canvas pixel dimensions to its CSS size whenever the container resizes
   useEffect(() => {
@@ -115,23 +132,65 @@ export default function AnnotatePage() {
       : activeColorRef.current
 
     const weight = WEIGHTS[selectedWeightIndex]?.px ?? 2.8
-    ctx.lineWidth   = weight
-    ctx.lineCap     = 'round'
-    ctx.lineJoin    = 'round'
-    ctx.strokeStyle = color
 
-    // Smoothing: draw a quadratic curve from the previous midpoint to the new
-    // midpoint, using the real sample as the control point. This rounds off the
-    // jagged segments you get from raw finger samples.
-    const n  = pts.length
-    const p0 = pts[n - 3]!, p1 = pts[n - 2]!, p2 = pts[n - 1]!
-    const m1 = { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 }
-    const m2 = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
+    if (modeRef.current === 'pressure') {
+      // Perfect-freehand: simulatePressure derives width from drawing speed
+      const outline = getStroke(pts.map(p => [p.x, p.y] as [number, number]), {
+        size: weight * 2.4,
+        thinning: 0.62,
+        smoothing: 0.75,
+        streamline: 0.5,
+        simulatePressure: true,
+      })
+      if (outline.length) {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+        // Redraw all previous strokes
+        for (const prevStroke of strokePointsHistoryRef.current) {
+          const prevOutline = getStroke(prevStroke.points, {
+            size: prevStroke.weight * 2.4,
+            thinning: 0.62,
+            smoothing: 0.75,
+            streamline: 0.5,
+            simulatePressure: true,
+          })
+          if (prevOutline.length) {
+            ctx.fillStyle = prevStroke.color
+            ctx.beginPath()
+            ctx.moveTo(prevOutline[0]![0], prevOutline[0]![1])
+            for (let i = 1; i < prevOutline.length; i++) {
+              ctx.lineTo(prevOutline[i]![0], prevOutline[i]![1])
+            }
+            ctx.closePath()
+            ctx.fill()
+          }
+        }
+        // Draw current stroke
+        ctx.fillStyle = color
+        ctx.beginPath()
+        ctx.moveTo(outline[0]![0], outline[0]![1])
+        for (let i = 1; i < outline.length; i++) {
+          ctx.lineTo(outline[i]![0], outline[i]![1])
+        }
+        ctx.closePath()
+        ctx.fill()
+      }
+    } else {
+      // Quadratic midpoint smoothing, constant width
+      ctx.lineWidth   = weight
+      ctx.lineCap     = 'round'
+      ctx.lineJoin    = 'round'
+      ctx.strokeStyle = color
 
-    ctx.beginPath()
-    ctx.moveTo(m1.x, m1.y)
-    ctx.quadraticCurveTo(p1.x, p1.y, m2.x, m2.y)
-    ctx.stroke()
+      const n  = pts.length
+      const p0 = pts[n - 3]!, p1 = pts[n - 2]!, p2 = pts[n - 1]!
+      const m1 = { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 }
+      const m2 = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
+
+      ctx.beginPath()
+      ctx.moveTo(m1.x, m1.y)
+      ctx.quadraticCurveTo(p1.x, p1.y, m2.x, m2.y)
+      ctx.stroke()
+    }
   }, [selectedWeightIndex])
 
   const onPointerUp = useCallback(() => {
@@ -143,26 +202,45 @@ export default function AnnotatePage() {
     if (ctx && pts.length > 0) {
       const color  = activeColorRef.current === 'rainbow' ? getRainbowColor() : activeColorRef.current
       const weight = WEIGHTS[selectedWeightIndex]?.px ?? 2.8
-      ctx.lineCap     = 'round'
-      ctx.lineJoin    = 'round'
-      ctx.strokeStyle = color
-      ctx.fillStyle   = color
-      ctx.lineWidth   = weight
 
-      if (pts.length === 1) {
-        // A tap with no movement — leave a dot
-        ctx.beginPath()
-        ctx.arc(pts[0]!.x, pts[0]!.y, weight / 2, 0, Math.PI * 2)
-        ctx.fill()
+      if (modeRef.current === 'pressure') {
+        // Store for redo on canvas clear
+        strokePointsHistoryRef.current.push({
+          points: pts.map(p => [p.x, p.y] as [number, number]),
+          color,
+          weight,
+        })
+        if (pts.length === 1) {
+          // Tap: draw a dot
+          ctx.fillStyle = color
+          ctx.beginPath()
+          ctx.arc(pts[0]!.x, pts[0]!.y, (weight * 2.4) / 4, 0, Math.PI * 2)
+          ctx.fill()
+        }
+        // For pressure mode, the stroke is already drawn in onPointerMove
       } else {
-        // Finish the stroke from the last midpoint to the final fingertip point
-        const n  = pts.length
-        const p1 = pts[n - 2]!, p2 = pts[n - 1]!
-        const m1 = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
-        ctx.beginPath()
-        ctx.moveTo(m1.x, m1.y)
-        ctx.lineTo(p2.x, p2.y)
-        ctx.stroke()
+        // Quadratic mode
+        ctx.lineCap     = 'round'
+        ctx.lineJoin    = 'round'
+        ctx.strokeStyle = color
+        ctx.fillStyle   = color
+        ctx.lineWidth   = weight
+
+        if (pts.length === 1) {
+          // A tap with no movement — leave a dot
+          ctx.beginPath()
+          ctx.arc(pts[0]!.x, pts[0]!.y, weight / 2, 0, Math.PI * 2)
+          ctx.fill()
+        } else {
+          // Finish the stroke from the last midpoint to the final fingertip point
+          const n  = pts.length
+          const p1 = pts[n - 2]!, p2 = pts[n - 1]!
+          const m1 = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
+          ctx.beginPath()
+          ctx.moveTo(m1.x, m1.y)
+          ctx.lineTo(p2.x, p2.y)
+          ctx.stroke()
+        }
       }
     }
     strokePointsRef.current = []
@@ -171,18 +249,51 @@ export default function AnnotatePage() {
   function handleUndo() {
     const canvas = canvasRef.current
     const ctx    = canvas?.getContext('2d')
-    if (!ctx || !canvas || strokeHistoryRef.current.length === 0) return
+    if (!ctx || !canvas) return
 
-    const prev = strokeHistoryRef.current.pop()!
-    ctx.putImageData(prev, 0, 0)
-    if (strokeHistoryRef.current.length === 0) setHasDrawn(false)
+    if (modeRef.current === 'pressure') {
+      if (strokePointsHistoryRef.current.length === 0) return
+      strokePointsHistoryRef.current.pop()
+      // Redraw everything
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      for (const stroke of strokePointsHistoryRef.current) {
+        const outline = getStroke(stroke.points, {
+          size: stroke.weight * 2.4,
+          thinning: 0.62,
+          smoothing: 0.75,
+          streamline: 0.5,
+          simulatePressure: true,
+        })
+        if (outline.length) {
+          ctx.fillStyle = stroke.color
+          ctx.beginPath()
+          ctx.moveTo(outline[0]![0], outline[0]![1])
+          for (let i = 1; i < outline.length; i++) {
+            ctx.lineTo(outline[i]![0], outline[i]![1])
+          }
+          ctx.closePath()
+          ctx.fill()
+        }
+      }
+      if (strokePointsHistoryRef.current.length === 0) setHasDrawn(false)
+    } else {
+      if (strokeHistoryRef.current.length === 0) return
+      const prev = strokeHistoryRef.current.pop()!
+      ctx.putImageData(prev, 0, 0)
+      if (strokeHistoryRef.current.length === 0) setHasDrawn(false)
+    }
   }
 
   function handleClear() {
     const canvas = canvasRef.current
     const ctx    = canvas?.getContext('2d')
     if (!ctx || !canvas) return
-    strokeHistoryRef.current.push(ctx.getImageData(0, 0, canvas.width, canvas.height))
+
+    if (modeRef.current === 'pressure') {
+      strokePointsHistoryRef.current = []
+    } else {
+      strokeHistoryRef.current.push(ctx.getImageData(0, 0, canvas.width, canvas.height))
+    }
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     setHasDrawn(false)
   }
@@ -319,6 +430,23 @@ export default function AnnotatePage() {
 
       {/* ── Pen controls ────────────────────────────────────────────────────── */}
       <div className="relative z-10 px-5 pb-3 flex flex-col gap-3">
+
+        {/* Mode toggle — only show on desktop */}
+        {!isIOS && (
+          <div className="flex gap-2 justify-center">
+            {(['quadratic', 'pressure'] as const).map(m => (
+              <button
+                key={m}
+                onClick={() => setMode(m)}
+                className={`px-3 py-1.5 rounded-full text-sans text-xs tracking-widest uppercase transition-colors touch-manipulation ${
+                  mode === m ? 'bg-cream text-ink' : 'border border-cream/15 text-cream/50'
+                }`}
+              >
+                {m === 'quadratic' ? 'Smooth' : 'Pressure'}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Color row — colour wheel picker + rainbow */}
         <div className="flex items-center gap-4 justify-center">
