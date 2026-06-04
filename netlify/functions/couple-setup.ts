@@ -43,8 +43,8 @@ export const handler: Handler = async (event) => {
   const { coupleNames, weddingDate, welcomeMessage, allowedModes, annotationMode,
           timestampEnabled, timestampStyle, photoCap, slug } = body as Record<string, any>
 
-  if (!coupleNames || !weddingDate) {
-    return { statusCode: 400, body: 'coupleNames and weddingDate are required' }
+  if (!coupleNames) {
+    return { statusCode: 400, body: 'coupleNames is required' }
   }
   if (!Array.isArray(allowedModes) || allowedModes.length === 0) {
     return { statusCode: 400, body: 'At least one memory style is required' }
@@ -52,7 +52,7 @@ export const handler: Handler = async (event) => {
 
   const update: Record<string, unknown> = {
     couple_names:      String(coupleNames).trim(),
-    wedding_date:      weddingDate,
+    wedding_date:      weddingDate ? weddingDate : null,
     welcome_message:   welcomeMessage ? String(welcomeMessage).trim() : 'Leave us a memory.',
     allowed_modes:     allowedModes,
     annotation_mode:   annotationMode ?? 'signature',

@@ -42,6 +42,7 @@ export default function CoupleSetupPage() {
 
   const [coupleNames, setCoupleNames]         = useState('')
   const [weddingDate, setWeddingDate]         = useState('')
+  const [noDate, setNoDate]                   = useState(false)
   const [selectedModes, setSelectedModes]     = useState<CameraModeName[]>(['disposable'])
   const [previewMode, setPreviewMode]         = useState<CameraModeName>('disposable')
   const [annotationMode, setAnnotationMode]   = useState<'signature' | 'doodle' | 'disabled'>('signature')
@@ -85,6 +86,7 @@ export default function CoupleSetupPage() {
       // Pre-fill any existing values the admin may have set
       if (data.couple_names && data.couple_names !== 'TBD') setCoupleNames(data.couple_names)
       if (data.wedding_date) setWeddingDate(data.wedding_date)
+      else if (data.is_event) setNoDate(true)
 
       setStep('names')
     }
@@ -131,7 +133,7 @@ export default function CoupleSetupPage() {
       },
       body: JSON.stringify({
         coupleNames: coupleNames.trim(),
-        weddingDate,
+        weddingDate: noDate ? null : weddingDate,
         welcomeMessage: welcomeMessage.trim() || 'Leave us a memory.',
         allowedModes: selectedModes,
         annotationMode,
@@ -153,7 +155,7 @@ export default function CoupleSetupPage() {
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
   const canContinueNames  = coupleNames.trim().length > 0
-  const canContinueDate   = weddingDate.length > 0
+  const canContinueDate   = noDate || weddingDate.length > 0
   const canContinueStyle  = selectedModes.length > 0
   const stepIndex         = STEPS_ORDERED.indexOf(step as Step)
 
@@ -257,13 +259,26 @@ export default function CoupleSetupPage() {
           <StepWrapper visible={visible}>
             <StepLabel>Beautiful.</StepLabel>
             <StepQuestion>When's the big day?</StepQuestion>
-            <input
-              ref={el => { inputRef.current = el }}
-              type="date"
-              value={weddingDate}
-              onChange={e => setWeddingDate(e.target.value)}
-              className="mt-8 w-full bg-transparent border-b border-cream/20 focus:border-cream/60 outline-none text-cream text-sans text-xl pb-3 transition-colors duration-200 [color-scheme:dark]"
-            />
+            {!noDate && (
+              <input
+                ref={el => { inputRef.current = el }}
+                type="date"
+                value={weddingDate}
+                onChange={e => setWeddingDate(e.target.value)}
+                className="mt-8 w-full bg-transparent border-b border-cream/20 focus:border-cream/60 outline-none text-cream text-sans text-xl pb-3 transition-colors duration-200 [color-scheme:dark]"
+              />
+            )}
+            <button
+              onClick={() => setNoDate(v => !v)}
+              className="mt-6 flex items-center gap-3 touch-manipulation"
+            >
+              <span className={`relative w-12 h-6 rounded-full transition-colors shrink-0 ${noDate ? 'bg-cream' : 'bg-cream/15'}`}>
+                <span className={`absolute top-1 w-4 h-4 rounded-full transition-all ${noDate ? 'left-7 bg-ink' : 'left-1 bg-cream/40'}`} />
+              </span>
+              <span className={`text-sans text-sm transition-colors ${noDate ? 'text-cream/80' : 'text-cream/40'}`}>
+                No set date / ongoing event
+              </span>
+            </button>
             <ContinueButton onClick={() => goNext('style')} disabled={!canContinueDate} />
           </StepWrapper>
         )}

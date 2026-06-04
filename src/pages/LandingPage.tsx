@@ -23,6 +23,7 @@ export default function LandingPage() {
   const navigate = useNavigate()
   const { setWeddingConfig, weddingConfig } = useSessionStore()
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<'notfound' | 'network' | null>(null)
 
   useEffect(() => {
     const id = weddingId ?? 'demo'
@@ -34,17 +35,38 @@ export default function LandingPage() {
       return
     }
 
+    // In local dev there may be no backend — fall back to a sample config so the
+    // page still renders. In production we NEVER show a fake couple to a guest;
+    // we show a proper error screen instead.
+    const isLocalDev =
+      window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+
+    let cancelled = false
+    setLoading(true)
+    setLoadError(null)
+
     fetch(`/api/weddings/${id}`)
-      .then((res) => {
-        if (!res.ok) throw new Error('not found')
-        return res.json() as Promise<WeddingConfig>
+      .then(async (res) => {
+        if (cancelled) return
+        if (res.ok) {
+          setWeddingConfig((await res.json()) as WeddingConfig)
+          setLoading(false)
+          return
+        }
+        // Wedding not found / not active (paused, expired, still pending setup)
+        if (isLocalDev) { setWeddingConfig({ ...DEV_FALLBACK, id }); setLoading(false); return }
+        setLoadError('notfound')
+        setLoading(false)
       })
-      .then((config) => setWeddingConfig(config))
       .catch(() => {
-        // Fall back to dev config if API isn't wired up yet
-        setWeddingConfig({ ...DEV_FALLBACK, id })
+        if (cancelled) return
+        // Server unreachable / network blip
+        if (isLocalDev) { setWeddingConfig({ ...DEV_FALLBACK, id }); setLoading(false); return }
+        setLoadError('network')
+        setLoading(false)
       })
-      .finally(() => setLoading(false))
+
+    return () => { cancelled = true }
   }, [weddingId, weddingConfig, setWeddingConfig])
 
   const handleOpen = () => {
@@ -52,7 +74,8 @@ export default function LandingPage() {
     navigate(`/w/${id}/camera`)
   }
 
-  if (loading || !weddingConfig) return null
+  if (loadError) return <LandingMessage variant={loadError} />
+  if (loading || !weddingConfig) return <LandingLoading />
 
   const formattedDate = weddingConfig.weddingDate ? formatDate(weddingConfig.weddingDate) : null
 
@@ -127,4 +150,45 @@ function formatDate(iso: string): string {
   } catch {
     return iso
   }
+}
+
+function LandingLoading() {
+  return (
+    <div className="min-h-dvh bg-ink flex flex-col items-center justify-center gap-4">
+      <div className="w-8 h-8 rounded-full border-2 border-cream/20 border-t-cream/70 animate-spin" />
+    </div>
+  )
+}
+
+function LandingMessage({ variant }: { variant: 'notfound' | 'network' }) {
+  const isNetwork = variant === 'network'
+  return (
+    <div className="relative flex flex-col min-h-dvh bg-ink overflow-hidden safe-top safe-bottom px-8">
+      <FilmGrain opacity={0.038} />
+      <header className="relative z-10 flex flex-col items-center pt-12">
+        <p className="text-mono text-[10px] tracking-[0.3em] text-cream/30 uppercase">a memory from</p>
+        <h1 className="text-serif text-cream text-3xl font-normal tracking-wide mt-1">Reverie</h1>
+      </header>
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-5 text-center pb-[12vh]">
+        <div className="w-10 h-px bg-cream/20" />
+        <h2 className="text-serif text-cream text-2xl font-normal">
+          {isNetwork ? "We couldn't load this page" : "This gallery isn't available"}
+        </h2>
+        <p className="text-sans text-cream/55 text-sm leading-relaxed max-w-[260px] font-light">
+          {isNetwork
+            ? 'Check your connection and try again.'
+            : 'Double-check the link, or ask your host for a fresh one.'}
+        </p>
+        {isNetwork && (
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-2 px-8 py-3.5 rounded-full bg-cream text-ink text-sans text-sm font-medium tracking-widest uppercase active:scale-[0.97] transition-transform duration-100 touch-manipulation"
+          >
+            Try Again
+          </button>
+        )}
+        <div className="w-10 h-px bg-cream/20" />
+      </div>
+    </div>
+  )
 }

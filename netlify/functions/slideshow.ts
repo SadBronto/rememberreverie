@@ -6,6 +6,19 @@ const admin = createClient(
   process.env.SUPABASE_SERVICE_KEY!
 )
 
+// Batch-sign storage paths in ONE request. Returns a path → signed-URL map.
+// Far cheaper than calling createSignedUrl once per photo, which matters because
+// the slideshow re-signs every photo on each 30s poll.
+async function signPaths(paths: string[], expiry: number): Promise<Map<string, string>> {
+  const map = new Map<string, string>()
+  if (paths.length === 0) return map
+  const { data } = await admin.storage.from('photos').createSignedUrls(paths, expiry)
+  for (const item of data ?? []) {
+    if (item.signedUrl && !item.error && item.path) map.set(item.path, item.signedUrl)
+  }
+  return map
+}
+
 // GET /api/slideshow?weddingId=xxx
 // No auth required — the weddingId (UUID) acts as the access key,
 // consistent with the guest camera URL (/w/:weddingId).
@@ -28,7 +41,7 @@ export const handler: Handler = async (event) => {
 
   const { data: sessions, error } = await admin
     .from('sessions')
-    .select('id, mode, memory_number, captured_at, output_path')
+    .select('id, mode, memory_number, captured_at, output_path, annotation_path')
     .eq('wedding_id', weddingId)
     .eq('status', 'active')
     .not('output_path', 'is', null)
@@ -36,22 +49,22 @@ export const handler: Handler = async (event) => {
 
   if (error) return { statusCode: 500, body: 'Failed to fetch sessions' }
 
-  // 2-hour signed URLs — slideshow polls every 30s so they never actually expire
+  // 2-hour signed URLs — slideshow polls every 30s so they never actually expire.
+  // Sign every photo + annotation in a SINGLE batch request (not one call each).
   const EXPIRY = 7200
-  const photos = await Promise.all(
-    (sessions ?? []).map(async (s) => {
-      const { data } = await admin.storage
-        .from('photos')
-        .createSignedUrl(s.output_path!, EXPIRY)
-      return {
-        id:           s.id,
-        mode:         s.mode,
-        memoryNumber: s.memory_number,
-        capturedAt:   s.captured_at,
-        photoUrl:     data?.signedUrl ?? null,
-      }
-    })
+  const urlMap = await signPaths(
+    (sessions ?? []).flatMap(s => [s.output_path, s.annotation_path].filter(Boolean) as string[]),
+    EXPIRY,
   )
+
+  const photos = (sessions ?? []).map(s => ({
+    id:            s.id,
+    mode:          s.mode,
+    memoryNumber:  s.memory_number,
+    capturedAt:    s.captured_at,
+    photoUrl:      s.output_path     ? urlMap.get(s.output_path)     ?? null : null,
+    annotationUrl: s.annotation_path ? urlMap.get(s.annotation_path) ?? null : null,
+  }))
 
   return {
     statusCode: 200,

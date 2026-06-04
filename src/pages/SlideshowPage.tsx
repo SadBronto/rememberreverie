@@ -7,6 +7,7 @@ interface SlideshowPhoto {
   memoryNumber: number | null
   capturedAt: string | null
   photoUrl: string
+  annotationUrl: string | null
 }
 
 interface SlideshowData {
@@ -193,19 +194,32 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       className="relative min-h-dvh bg-black flex items-center justify-center overflow-hidden select-none cursor-pointer"
       onClick={() => advance(1)}
     >
-      {/* Photo */}
+      {/* Photo (+ signature overlay) */}
       {currentPhoto && (
-        <img
+        <div
           key={currentPhoto.id}
-          src={currentPhoto.photoUrl}
-          alt=""
-          draggable={false}
-          className="max-w-full max-h-dvh object-contain"
+          className="relative"
           style={{
             opacity:    visible ? 1 : 0,
             transition: `opacity ${TRANSITION_MS}ms ease-in-out`,
           }}
-        />
+        >
+          <img
+            src={currentPhoto.photoUrl}
+            alt=""
+            draggable={false}
+            className="max-w-full max-h-dvh object-contain"
+          />
+          {currentPhoto.annotationUrl && (
+            <img
+              src={currentPhoto.annotationUrl}
+              alt=""
+              draggable={false}
+              className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+              style={{ mixBlendMode: 'multiply' }}
+            />
+          )}
+        </div>
       )}
 
       {/* Bottom gradient scrim */}

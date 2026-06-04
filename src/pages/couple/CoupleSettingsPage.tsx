@@ -25,6 +25,7 @@ export default function CoupleSettingsPage() {
   const tokenRef       = useRef<string | null>(null)
 
   const [form, setForm]       = useState<WeddingSettings | null>(null)
+  const [noDate, setNoDate]   = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving]   = useState(false)
   const [saveMsg, setSaveMsg] = useState<'saved' | 'error' | string | null>(null)
@@ -51,6 +52,7 @@ export default function CoupleSettingsPage() {
         timestamp_style:   data.timestamp_style    ?? 'classic',
         slug:              data.slug               ?? null,
       })
+      setNoDate(!data.wedding_date)
       setLoading(false)
     }
     load()
@@ -72,8 +74,8 @@ export default function CoupleSettingsPage() {
 
   async function save() {
     if (!form || !tokenRef.current) return
-    if (!form.couple_names.trim() || !form.wedding_date) {
-      setSaveMsg('Names and date are required.')
+    if (!form.couple_names.trim()) {
+      setSaveMsg('Names are required.')
       return
     }
     if (form.allowed_modes.length === 0) {
@@ -92,7 +94,7 @@ export default function CoupleSettingsPage() {
       },
       body: JSON.stringify({
         coupleNames:      form.couple_names,
-        weddingDate:      form.wedding_date,
+        weddingDate:      noDate ? null : form.wedding_date,
         welcomeMessage:   form.welcome_message,
         allowedModes:     form.allowed_modes,
         annotationMode:   form.annotation_mode,
@@ -167,11 +169,17 @@ export default function CoupleSettingsPage() {
             />
           </Field>
           <Field label="Date">
-            <Input
-              type="date"
-              value={form.wedding_date}
-              onChange={v => setField('wedding_date', v)}
-            />
+            {!noDate && (
+              <Input
+                type="date"
+                value={form.wedding_date}
+                onChange={v => setField('wedding_date', v)}
+              />
+            )}
+            <label className="flex items-center gap-3 cursor-pointer touch-manipulation mt-1">
+              <Toggle value={noDate} onChange={v => { setNoDate(v); if (v) setField('wedding_date', '') }} />
+              <span className="text-sans text-cream/50 text-sm">No set date / ongoing event</span>
+            </label>
           </Field>
           <Field label="Welcome message">
             <Input

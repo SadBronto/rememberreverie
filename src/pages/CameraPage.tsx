@@ -6,6 +6,7 @@ import { useDemoStore, DEMO_PROMPTS } from '@/store/demoStore'
 import { CAMERA_MODES } from '@/config/modes'
 import { processSession } from '@/lib/imageProcessor'
 import { playShutterSound } from '@/lib/sound'
+import { flushPendingUploads } from '@/lib/recovery'
 import type { CameraModeName } from '@/types/session'
 import ModeSelector from '@/components/ModeSelector'
 import ShutterButton from '@/components/ShutterButton'
@@ -39,6 +40,12 @@ export default function CameraPage() {
     return () => stopCamera()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMode])
+
+  // Retry any photos that didn't finish uploading on a previous visit
+  // (best-effort, runs in the background and won't block the camera).
+  useEffect(() => {
+    void flushPendingUploads()
+  }, [])
 
   async function startCamera() {
     stopCamera()

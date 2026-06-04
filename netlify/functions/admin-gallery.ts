@@ -15,6 +15,17 @@ async function verifyAdmin(authHeader: string | undefined) {
   return adminEmails.includes(user.email.toLowerCase()) ? user : null
 }
 
+// Batch-sign storage paths in ONE request. Returns a path → signed-URL map.
+async function signPaths(paths: string[], expiry: number): Promise<Map<string, string>> {
+  const map = new Map<string, string>()
+  if (paths.length === 0) return map
+  const { data } = await admin.storage.from('photos').createSignedUrls(paths, expiry)
+  for (const item of data ?? []) {
+    if (item.signedUrl && !item.error && item.path) map.set(item.path, item.signedUrl)
+  }
+  return map
+}
+
 // GET /api/admin/gallery?weddingId=xxx&page=0&pageSize=48
 // Returns a paginated list of all non-deleted sessions for a wedding
 // with signed photo URLs. Admin-gated.
@@ -36,7 +47,7 @@ export const handler: Handler = async (event) => {
 
   const { data: sessions, error, count } = await admin
     .from('sessions')
-    .select('id, mode, memory_number, captured_at, uploaded_at, status, output_path', { count: 'exact' })
+    .select('id, mode, memory_number, captured_at, uploaded_at, status, output_path, annotation_path', { count: 'exact' })
     .eq('wedding_id', weddingId)
     .neq('status', 'deleted')
     .order('uploaded_at', { ascending: false })
@@ -44,27 +55,22 @@ export const handler: Handler = async (event) => {
 
   if (error) return { statusCode: 500, body: 'Failed to fetch sessions' }
 
+  // Batch-sign every photo + annotation in ONE request.
   const EXPIRY = 3600
-  const photos = await Promise.all(
-    (sessions ?? []).map(async (s) => {
-      let photoUrl: string | null = null
-      if (s.output_path) {
-        const { data } = await admin.storage
-          .from('photos')
-          .createSignedUrl(s.output_path, EXPIRY)
-        photoUrl = data?.signedUrl ?? null
-      }
-      return {
-        id:           s.id,
-        mode:         s.mode,
-        memoryNumber: s.memory_number,
-        capturedAt:   s.captured_at,
-        uploadedAt:   s.uploaded_at,
-        status:       s.status,
-        photoUrl,
-      }
-    })
+  const urlMap = await signPaths(
+    (sessions ?? []).flatMap(s => [s.output_path, s.annotation_path].filter(Boolean) as string[]),
+    EXPIRY,
   )
+  const photos = (sessions ?? []).map(s => ({
+    id:            s.id,
+    mode:          s.mode,
+    memoryNumber:  s.memory_number,
+    capturedAt:    s.captured_at,
+    uploadedAt:    s.uploaded_at,
+    status:        s.status,
+    photoUrl:      s.output_path     ? urlMap.get(s.output_path)     ?? null : null,
+    annotationUrl: s.annotation_path ? urlMap.get(s.annotation_path) ?? null : null,
+  }))
 
   return {
     statusCode: 200,

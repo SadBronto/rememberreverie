@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { CaptureSession, WeddingConfig, CameraModeName } from '@/types/session'
 import { uploadSession } from '@/lib/upload'
+import { saveRecovery, removeRecovery } from '@/lib/recovery'
 
 interface SessionState {
   weddingConfig: WeddingConfig | null
@@ -67,18 +68,8 @@ export const useSessionStore = create<SessionState>((set) => ({
   },
 
   finalizeSession: async (session) => {
-    // Save local recovery copy immediately — no retakes means we cannot lose this
-    const recoveryKey = `reverie-recovery-${session.id}`
-    if (session.outputImage) {
-      const reader = new FileReader()
-      reader.onload = () => {
-        try { localStorage.setItem(recoveryKey, reader.result as string) } catch { /* storage full */ }
-      }
-      reader.readAsDataURL(session.outputImage)
-    }
-
-    // Demo sessions (weddingId starts with 'demo-') skip the network upload entirely.
-    // The gallery reads directly from completedSessions in the store.
+    // Demo sessions (weddingId starts with 'demo-') skip the network upload
+    // entirely — the gallery reads directly from completedSessions in the store.
     const isDemo = session.weddingId.startsWith('demo-')
     if (isDemo) {
       set((state) => ({
@@ -88,6 +79,23 @@ export const useSessionStore = create<SessionState>((set) => ({
         completedSessions: [...state.completedSessions, { ...session, uploadStatus: 'success' }],
       }))
       return
+    }
+
+    // Save a full recovery copy to IndexedDB BEFORE uploading. If the upload
+    // fails (or the tab closes mid-upload), flushPendingUploads() re-sends it on
+    // the next camera visit. Removed once the upload is confirmed.
+    if (session.outputImage) {
+      void saveRecovery({
+        id:          session.id,
+        weddingId:   session.weddingId,
+        mode:        session.mode,
+        capturedAt:  session.capturedAt.toISOString(),
+        outputImage: session.outputImage,
+        annotation:  session.annotation
+          ? { type: session.annotation.type, dataUrl: session.annotation.dataUrl, appliedAt: session.annotation.appliedAt.toISOString() }
+          : null,
+        savedAt:     Date.now(),
+      })
     }
 
     set((state) => ({
@@ -104,10 +112,9 @@ export const useSessionStore = create<SessionState>((set) => ({
       retryCount: result.retryCount,
     }
 
-    // Remove recovery copy on confirmed success
-    if (result.success) {
-      try { localStorage.removeItem(recoveryKey) } catch { /* ignore */ }
-    }
+    // Remove the recovery copy only on confirmed success; otherwise it stays
+    // queued for a later retry.
+    if (result.success) void removeRecovery(session.id)
 
     set((state) => ({
       // Same race-condition guard as the demo path above

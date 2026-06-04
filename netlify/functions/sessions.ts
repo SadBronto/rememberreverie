@@ -34,7 +34,10 @@ export const handler: Handler = async (event) => {
     return { statusCode: 400, body: 'Missing required fields' }
   }
 
-  // Insert session — memory_number assigned by DB trigger
+  // Insert session — memory_number assigned by DB trigger.
+  // A recovered/retried upload re-sends the same sessionId; treat a duplicate as
+  // success and re-issue the upload URLs so the photo can still finish uploading.
+  let memoryNumber: number | null = null
   const { data: session, error: dbError } = await supabase
     .from('sessions')
     .insert({
@@ -49,8 +52,20 @@ export const handler: Handler = async (event) => {
     .single()
 
   if (dbError) {
-    console.error('DB insert error:', dbError)
-    return { statusCode: 500, body: JSON.stringify({ error: 'Failed to create session' }) }
+    if (dbError.code === '23505') {
+      // Already registered on a previous attempt — fetch its existing number.
+      const { data: existing } = await supabase
+        .from('sessions')
+        .select('memory_number')
+        .eq('id', sessionId)
+        .single()
+      memoryNumber = existing?.memory_number ?? null
+    } else {
+      console.error('DB insert error:', dbError)
+      return { statusCode: 500, body: JSON.stringify({ error: 'Failed to create session' }) }
+    }
+  } else {
+    memoryNumber = session.memory_number
   }
 
   // Rolling deletion: if this wedding has a photo_cap, check whether we're over it
@@ -114,7 +129,7 @@ export const handler: Handler = async (event) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       sessionId,
-      memoryNumber:        session.memory_number,
+      memoryNumber,
       uploadUrl:           signedData.signedUrl,
       annotationUploadUrl: annotationUploadUrl ?? null,
     }),

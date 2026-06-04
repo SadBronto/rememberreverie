@@ -17,6 +17,7 @@ export default function ConfirmationPage() {
   const lastSession = completedSessions[completedSessions.length - 1]
   const annotation = lastSession?.annotation ?? null
   const isUploading = lastSession?.uploadStatus === 'uploading'
+  const didFail = lastSession?.uploadStatus === 'failed'
   const memoryNum = lastSession?.memoryNumber
 
   // Build object URL for processed photo
@@ -123,14 +124,20 @@ export default function ConfirmationPage() {
               Developing…
             </p>
           </div>
+        ) : didFail ? (
+          <p className="text-mono text-amber-film/70 text-[10px] tracking-[0.3em] uppercase">
+            Saved to your phone
+          </p>
         ) : null}
 
         <p className="text-serif text-cream text-xl font-normal text-center">
           You captured a moment.
         </p>
 
-        <p className="text-sans text-cream/35 text-xs font-light text-center max-w-[200px] leading-relaxed">
-          Thank you for sharing this with us.
+        <p className="text-sans text-cream/35 text-xs font-light text-center max-w-[220px] leading-relaxed">
+          {didFail
+            ? "We'll finish uploading as soon as the connection's back."
+            : 'Thank you for sharing this with us.'}
         </p>
 
         <button

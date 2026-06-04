@@ -6,6 +6,17 @@ const admin = createClient(
   process.env.SUPABASE_SERVICE_KEY!
 )
 
+// Batch-sign storage paths in ONE request. Returns a path → signed-URL map.
+async function signPaths(paths: string[], expiry: number): Promise<Map<string, string>> {
+  const map = new Map<string, string>()
+  if (paths.length === 0) return map
+  const { data } = await admin.storage.from('photos').createSignedUrls(paths, expiry)
+  for (const item of data ?? []) {
+    if (item.signedUrl && !item.error && item.path) map.set(item.path, item.signedUrl)
+  }
+  return map
+}
+
 // GET /api/couple/gallery?weddingId=xxx
 // Requires: Authorization: Bearer <supabase-access-token>
 // Returns all sessions for the wedding with 1-hour signed photo URLs.
@@ -52,39 +63,23 @@ export const handler: Handler = async (event) => {
     return { statusCode: 500, body: 'Failed to fetch sessions' }
   }
 
-  // Generate signed read URLs (1 hour) for each photo
+  // Batch-sign every photo + annotation in ONE request (1-hour URLs).
   const EXPIRY = 3600
-  const enriched = await Promise.all(
-    (sessions ?? []).map(async (s) => {
-      let photoUrl: string | null = null
-      let annotationUrl: string | null = null
-
-      if (s.output_path) {
-        const { data } = await admin.storage
-          .from('photos')
-          .createSignedUrl(s.output_path, EXPIRY)
-        photoUrl = data?.signedUrl ?? null
-      }
-
-      if (s.annotation_path) {
-        const { data } = await admin.storage
-          .from('photos')
-          .createSignedUrl(s.annotation_path, EXPIRY)
-        annotationUrl = data?.signedUrl ?? null
-      }
-
-      return {
-        id:           s.id,
-        mode:         s.mode,
-        memoryNumber: s.memory_number,
-        capturedAt:   s.captured_at,
-        uploadedAt:   s.uploaded_at,
-        status:       s.status,
-        photoUrl,
-        annotationUrl,
-      }
-    })
+  const urlMap = await signPaths(
+    (sessions ?? []).flatMap(s => [s.output_path, s.annotation_path].filter(Boolean) as string[]),
+    EXPIRY,
   )
+
+  const enriched = (sessions ?? []).map(s => ({
+    id:            s.id,
+    mode:          s.mode,
+    memoryNumber:  s.memory_number,
+    capturedAt:    s.captured_at,
+    uploadedAt:    s.uploaded_at,
+    status:        s.status,
+    photoUrl:      s.output_path     ? urlMap.get(s.output_path)     ?? null : null,
+    annotationUrl: s.annotation_path ? urlMap.get(s.annotation_path) ?? null : null,
+  }))
 
   return {
     statusCode: 200,

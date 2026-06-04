@@ -10,6 +10,7 @@ interface GalleryPhoto {
   uploadedAt: string
   status: 'active' | 'hidden'
   photoUrl: string | null
+  annotationUrl: string | null
 }
 
 const PAGE_SIZE = 48
@@ -174,13 +175,23 @@ export default function AdminGalleryPage() {
           className="fixed inset-0 z-50 bg-ink/96 backdrop-blur-sm flex flex-col items-center justify-center p-6 gap-4"
           onClick={() => { setLightbox(null); setConfirmDelete(false) }}
         >
-          <img
-            src={lightbox.photoUrl!}
-            alt=""
-            draggable={false}
-            className="max-w-full max-h-[72dvh] object-contain rounded-xl shadow-2xl"
-            onClick={e => e.stopPropagation()}
-          />
+          <div className="relative" onClick={e => e.stopPropagation()}>
+            <img
+              src={lightbox.photoUrl!}
+              alt=""
+              draggable={false}
+              className="max-w-full max-h-[72dvh] object-contain rounded-xl shadow-2xl"
+            />
+            {lightbox.annotationUrl && (
+              <img
+                src={lightbox.annotationUrl}
+                alt=""
+                draggable={false}
+                className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+                style={{ mixBlendMode: 'multiply' }}
+              />
+            )}
+          </div>
 
           {/* Metadata */}
           <div className="flex items-center gap-4" onClick={e => e.stopPropagation()}>
@@ -279,6 +290,15 @@ function GalleryTile({ photo, onClick }: { photo: GalleryPhoto; onClick: () => v
             className="w-full h-auto block transition-opacity duration-300"
             style={{ opacity: loaded ? 1 : 0 }}
           />
+          {photo.annotationUrl && loaded && (
+            <img
+              src={photo.annotationUrl}
+              alt=""
+              draggable={false}
+              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+              style={{ mixBlendMode: 'multiply' }}
+            />
+          )}
           <div className="absolute inset-0 bg-ink/0 group-hover:bg-ink/25 transition-colors duration-150" />
           {photo.memoryNumber != null && (
             <div className="absolute top-1 left-1 bg-ink/70 rounded px-1 py-px">

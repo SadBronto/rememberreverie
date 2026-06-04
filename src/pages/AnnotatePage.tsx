@@ -30,6 +30,7 @@ export default function AnnotatePage() {
   const containerRef     = useRef<HTMLDivElement>(null)
   const canvasRef        = useRef<HTMLCanvasElement>(null)
   const strokeHistoryRef = useRef<ImageData[]>([])
+  const strokePointsRef  = useRef<{ x: number; y: number }[]>([])
   const isPointerDownRef = useRef(false)
   const activeColorRef   = useRef<string>('#1a1612')
 
@@ -94,8 +95,7 @@ export default function AnnotatePage() {
     strokeHistoryRef.current.push(ctx.getImageData(0, 0, canvas.width, canvas.height))
 
     const [x, y] = getCanvasPos(e)
-    ctx.beginPath()
-    ctx.moveTo(x, y)
+    strokePointsRef.current = [{ x, y }]
     isPointerDownRef.current = true
     setHasDrawn(true)
   }, [])
@@ -104,6 +104,11 @@ export default function AnnotatePage() {
     if (!isPointerDownRef.current) return
     const ctx = canvasRef.current?.getContext('2d')
     if (!ctx) return
+
+    const pts = strokePointsRef.current
+    const [x, y] = getCanvasPos(e)
+    pts.push({ x, y })
+    if (pts.length < 3) return
 
     const color = activeColorRef.current === 'rainbow'
       ? getRainbowColor()
@@ -115,17 +120,53 @@ export default function AnnotatePage() {
     ctx.lineJoin    = 'round'
     ctx.strokeStyle = color
 
-    const [x, y] = getCanvasPos(e)
-    ctx.lineTo(x, y)
-    ctx.stroke()
+    // Smoothing: draw a quadratic curve from the previous midpoint to the new
+    // midpoint, using the real sample as the control point. This rounds off the
+    // jagged segments you get from raw finger samples.
+    const n  = pts.length
+    const p0 = pts[n - 3]!, p1 = pts[n - 2]!, p2 = pts[n - 1]!
+    const m1 = { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 }
+    const m2 = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
+
     ctx.beginPath()
-    ctx.moveTo(x, y)
+    ctx.moveTo(m1.x, m1.y)
+    ctx.quadraticCurveTo(p1.x, p1.y, m2.x, m2.y)
+    ctx.stroke()
   }, [selectedWeightIndex])
 
   const onPointerUp = useCallback(() => {
+    if (!isPointerDownRef.current) return
     isPointerDownRef.current = false
-    canvasRef.current?.getContext('2d')?.beginPath()
-  }, [])
+
+    const ctx = canvasRef.current?.getContext('2d')
+    const pts = strokePointsRef.current
+    if (ctx && pts.length > 0) {
+      const color  = activeColorRef.current === 'rainbow' ? getRainbowColor() : activeColorRef.current
+      const weight = WEIGHTS[selectedWeightIndex]?.px ?? 2.8
+      ctx.lineCap     = 'round'
+      ctx.lineJoin    = 'round'
+      ctx.strokeStyle = color
+      ctx.fillStyle   = color
+      ctx.lineWidth   = weight
+
+      if (pts.length === 1) {
+        // A tap with no movement — leave a dot
+        ctx.beginPath()
+        ctx.arc(pts[0]!.x, pts[0]!.y, weight / 2, 0, Math.PI * 2)
+        ctx.fill()
+      } else {
+        // Finish the stroke from the last midpoint to the final fingertip point
+        const n  = pts.length
+        const p1 = pts[n - 2]!, p2 = pts[n - 1]!
+        const m1 = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
+        ctx.beginPath()
+        ctx.moveTo(m1.x, m1.y)
+        ctx.lineTo(p2.x, p2.y)
+        ctx.stroke()
+      }
+    }
+    strokePointsRef.current = []
+  }, [selectedWeightIndex])
 
   function handleUndo() {
     const canvas = canvasRef.current

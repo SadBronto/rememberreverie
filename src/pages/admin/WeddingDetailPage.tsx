@@ -22,7 +22,7 @@ interface WeddingDetail {
 }
 
 interface Counts { disposable: number; polaroid: number; super8: number; total: number }
-interface RecentPhoto { id: string; mode: string; memoryNumber: number | null; photoUrl: string | null; capturedAt: string | null }
+interface RecentPhoto { id: string; mode: string; memoryNumber: number | null; photoUrl: string | null; annotationUrl: string | null; capturedAt: string | null }
 
 const STATUS_OPTIONS = ['pending_setup', 'draft', 'active', 'paused', 'reception_live', 'archived', 'expired']
 const STATUS_LABEL: Record<string, string> = {
@@ -430,6 +430,9 @@ export default function WeddingDetailPage() {
                   {photo.photoUrl ? (
                     <>
                       <img src={photo.photoUrl} alt="" draggable={false} className="w-full h-full object-cover" />
+                      {photo.annotationUrl && (
+                        <img src={photo.annotationUrl} alt="" draggable={false} className="absolute inset-0 w-full h-full object-cover pointer-events-none" style={{ mixBlendMode: 'multiply' }} />
+                      )}
                       <div className="absolute inset-0 bg-ink/0 group-hover:bg-ink/20 transition-colors duration-150 flex items-center justify-center">
                         <svg className="opacity-0 group-hover:opacity-80 transition-opacity duration-150" width="20" height="20" viewBox="0 0 20 20" fill="none">
                           <path d="M8 3H3v5M17 3h-5M3 12v5h5M12 17h5v-5" stroke="#f5f0e8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -453,13 +456,23 @@ export default function WeddingDetailPage() {
             className="fixed inset-0 z-50 bg-ink/96 backdrop-blur-sm flex flex-col items-center justify-center p-6 gap-4"
             onClick={() => { setLightboxPhoto(null); setLightboxConfirmDelete(false) }}
           >
-            <img
-              src={lightboxPhoto.photoUrl!}
-              alt=""
-              draggable={false}
-              className="max-w-full max-h-[75dvh] object-contain rounded-xl shadow-2xl"
-              onClick={e => e.stopPropagation()}
-            />
+            <div className="relative" onClick={e => e.stopPropagation()}>
+              <img
+                src={lightboxPhoto.photoUrl!}
+                alt=""
+                draggable={false}
+                className="max-w-full max-h-[75dvh] object-contain rounded-xl shadow-2xl"
+              />
+              {lightboxPhoto.annotationUrl && (
+                <img
+                  src={lightboxPhoto.annotationUrl}
+                  alt=""
+                  draggable={false}
+                  className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+                  style={{ mixBlendMode: 'multiply' }}
+                />
+              )}
+            </div>
             {/* Metadata */}
             <div className="flex items-center gap-4" onClick={e => e.stopPropagation()}>
               {lightboxPhoto.memoryNumber != null && (
@@ -602,8 +615,11 @@ export default function WeddingDetailPage() {
             </div>
           </FormField>
 
-          <FormField label="Photo cap">
+          <FormField label="Gallery size limit">
             <AdminInput type="number" value={form.photo_cap != null ? String(form.photo_cap) : ''} onChange={v => setField('photo_cap', v ? Number(v) : null)} placeholder="unlimited" min="1" />
+            <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
+              Max photos kept in this gallery. When it fills up, the oldest photos roll off so new ones always save. Leave blank for unlimited.
+            </p>
           </FormField>
 
           <div className="flex items-center gap-3 pt-1">

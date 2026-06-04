@@ -15,6 +15,17 @@ async function verifyAdmin(authHeader: string | undefined) {
   return adminEmails.includes(user.email.toLowerCase()) ? user : null
 }
 
+// Batch-sign storage paths in ONE request. Returns a path → signed-URL map.
+async function signPaths(paths: string[], expiry: number): Promise<Map<string, string>> {
+  const map = new Map<string, string>()
+  if (paths.length === 0) return map
+  const { data } = await admin.storage.from('photos').createSignedUrls(paths, expiry)
+  for (const item of data ?? []) {
+    if (item.signedUrl && !item.error && item.path) map.set(item.path, item.signedUrl)
+  }
+  return map
+}
+
 // GET  /api/admin/wedding?id=xxx  — wedding detail + recent sessions with signed photo URLs
 // PATCH /api/admin/wedding?id=xxx — update wedding fields
 // DELETE /api/admin/wedding?id=xxx — archive wedding
@@ -38,24 +49,23 @@ export const handler: Handler = async (event) => {
     // Session counts by mode
     const { data: sessions } = await admin
       .from('sessions')
-      .select('id, mode, status, captured_at, uploaded_at, output_path, memory_number')
+      .select('id, mode, status, captured_at, uploaded_at, output_path, annotation_path, memory_number')
       .eq('wedding_id', id)
       .neq('status', 'deleted')
       .order('uploaded_at', { ascending: false })
 
-    // Generate signed URLs for the 12 most recent active photos
+    // Generate signed URLs for the 12 most recent active photos (one batch request)
     const recent = (sessions ?? []).filter(s => s.status === 'active').slice(0, 12)
-    const recentWithUrls = await Promise.all(
-      recent.map(async (s) => {
-        let photoUrl: string | null = null
-        if (s.output_path) {
-          const { data } = await admin.storage.from('photos').createSignedUrl(s.output_path, 3600)
-          photoUrl = data?.signedUrl ?? null
-        }
-        return { id: s.id, mode: s.mode, status: s.status, capturedAt: s.captured_at,
-                 memoryNumber: s.memory_number, photoUrl }
-      })
+    const urlMap = await signPaths(
+      recent.flatMap(s => [s.output_path, s.annotation_path].filter(Boolean) as string[]),
+      3600,
     )
+    const recentWithUrls = recent.map(s => ({
+      id: s.id, mode: s.mode, status: s.status, capturedAt: s.captured_at,
+      memoryNumber: s.memory_number,
+      photoUrl:      s.output_path     ? urlMap.get(s.output_path)     ?? null : null,
+      annotationUrl: s.annotation_path ? urlMap.get(s.annotation_path) ?? null : null,
+    }))
 
     const countByMode = { disposable: 0, polaroid: 0, super8: 0, total: 0 }
     for (const s of sessions ?? []) {

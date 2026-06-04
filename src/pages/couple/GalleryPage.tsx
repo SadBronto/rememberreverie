@@ -136,9 +136,8 @@ export default function CoupleGalleryPage() {
     }
   }
 
-  async function downloadPhoto(url: string, memoryNumber: number | null) {
-    const res = await fetch(url)
-    const blob = await res.blob()
+  async function downloadPhoto(photoUrl: string, annotationUrl: string | null, memoryNumber: number | null) {
+    const blob = await flattenPhoto(photoUrl, annotationUrl)
     const objectUrl = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = objectUrl
@@ -164,8 +163,7 @@ export default function CoupleGalleryPage() {
 
       for (let i = 0; i < photos.length; i++) {
         const s = photos[i]!
-        const res = await fetch(s.photoUrl!)
-        const blob = await res.blob()
+        const blob = await flattenPhoto(s.photoUrl!, s.annotationUrl)
         const num = String(s.memoryNumber ?? i + 1).padStart(3, '0')
         zip.file(`memory-${num}.jpg`, blob)
         setZipProgress({ current: i + 1, total: photos.length })
@@ -473,6 +471,41 @@ export default function CoupleGalleryPage() {
   )
 }
 
+// ── Download helpers ────────────────────────────────────────────
+
+function loadCorsImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = url
+  })
+}
+
+// JPEG blob of the photo with the signature composited on top (matching the
+// on-screen multiply blend). Falls back to the raw photo if compositing fails
+// (e.g. a cross-origin taint), so a download always works.
+async function flattenPhoto(photoUrl: string, annotationUrl: string | null): Promise<Blob> {
+  if (!annotationUrl) return (await fetch(photoUrl)).blob()
+  try {
+    const [photo, annot] = await Promise.all([loadCorsImage(photoUrl), loadCorsImage(annotationUrl)])
+    const canvas = document.createElement('canvas')
+    canvas.width  = photo.naturalWidth
+    canvas.height = photo.naturalHeight
+    const ctx = canvas.getContext('2d')!
+    ctx.drawImage(photo, 0, 0)
+    ctx.globalCompositeOperation = 'multiply'
+    ctx.drawImage(annot, 0, 0, canvas.width, canvas.height)
+    ctx.globalCompositeOperation = 'source-over'
+    return await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/jpeg', 0.95)
+    )
+  } catch {
+    return (await fetch(photoUrl)).blob()
+  }
+}
+
 // ── Sub-components ──────────────────────────────────────────────
 
 function Stat({ value, label }: { value: string; label: string }) {
@@ -492,7 +525,7 @@ function PhotoTile({
 }: {
   session: SessionRecord
   onToggleVisibility: (id: string, status: 'active' | 'hidden') => void
-  onDownload: (url: string, memoryNumber: number | null) => void
+  onDownload: (photoUrl: string, annotationUrl: string | null, memoryNumber: number | null) => void
   onDelete: (id: string) => void
 }) {
   const [imgVisible, setImgVisible] = useState(false)
@@ -561,7 +594,7 @@ function PhotoTile({
               {session.photoUrl && (
                 <ActionButton
                   title="Download"
-                  onClick={() => onDownload(session.photoUrl!, session.memoryNumber)}
+                  onClick={() => onDownload(session.photoUrl!, session.annotationUrl, session.memoryNumber)}
                 >
                   <DownloadIcon />
                 </ActionButton>
