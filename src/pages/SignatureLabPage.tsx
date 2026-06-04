@@ -16,10 +16,10 @@ export default function SignatureLabPage() {
   const currentRef  = useRef<Pt[]>([])
   const drawingRef  = useRef(false)
   const modeRef     = useRef<Mode>('quadratic')
-  const sizeRef     = useRef(7)
+  const sizeRef     = useRef(2)
 
   const [mode, setMode] = useState<Mode>('quadratic')
-  const [size, setSize] = useState(7)
+  const [size, setSize] = useState(2)
 
   useEffect(() => { modeRef.current = mode }, [mode])
   useEffect(() => { sizeRef.current = size }, [size])
@@ -41,7 +41,7 @@ export default function SignatureLabPage() {
         const outline = getStroke(stroke.map(p => [p.x, p.y]), {
           size: sizeRef.current * 2.4,
           thinning: 0.62,
-          smoothing: 0.55,
+          smoothing: 0.75,
           streamline: 0.5,
           simulatePressure: true,
         })
