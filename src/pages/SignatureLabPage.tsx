@@ -20,9 +20,16 @@ export default function SignatureLabPage() {
 
   const [mode, setMode] = useState<Mode>('quadratic')
   const [size, setSize] = useState(2)
+  const [isIOS, setIsIOS] = useState(false)
 
   useEffect(() => { modeRef.current = mode }, [mode])
   useEffect(() => { sizeRef.current = size }, [size])
+
+  // Detect iOS and disable pressure mode (simulatePressure doesn't work on touch)
+  useEffect(() => {
+    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    setIsIOS(iOS)
+  }, [])
 
   const redraw = useCallback(() => {
     const canvas = canvasRef.current
@@ -134,25 +141,32 @@ export default function SignatureLabPage() {
         <p className="text-mono text-cream/30 text-[10px] tracking-[0.3em] uppercase">Signature lab — private</p>
         <h1 className="text-serif text-cream text-2xl font-normal mt-1">Pen feel comparison</h1>
         <p className="text-sans text-cream/40 text-sm mt-2 max-w-md leading-relaxed">
-          Sign below, then flip between the two. <span className="text-cream/70">Quadratic</span> is what
-          guests use now (smooth, even line). <span className="text-cream/70">Pressure</span> tapers with
-          speed for an ink-pen look.
+          {isIOS ? (
+            <>Quadratic smoothing: what guests use now (smooth, even line).</>
+          ) : (
+            <>Sign below, then flip between the two. <span className="text-cream/70">Quadratic</span> is what
+            guests use now (smooth, even line). <span className="text-cream/70">Pressure</span> tapers with
+            speed for an ink-pen look.</>
+          )}
         </p>
       </header>
 
       {/* Mode toggle */}
       <div className="flex gap-2 mb-3">
-        {(['quadratic', 'pressure'] as const).map(m => (
-          <button
-            key={m}
-            onClick={() => setMode(m)}
-            className={`px-4 py-2 rounded-full text-sans text-xs tracking-widest uppercase transition-colors touch-manipulation ${
-              mode === m ? 'bg-cream text-ink' : 'border border-cream/15 text-cream/50'
-            }`}
-          >
-            {m === 'quadratic' ? 'Quadratic' : 'Pressure'}
-          </button>
-        ))}
+        {(['quadratic', 'pressure'] as const).map(m => {
+          if (m === 'pressure' && isIOS) return null
+          return (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              className={`px-4 py-2 rounded-full text-sans text-xs tracking-widest uppercase transition-colors touch-manipulation ${
+                mode === m ? 'bg-cream text-ink' : 'border border-cream/15 text-cream/50'
+              }`}
+            >
+              {m === 'quadratic' ? 'Quadratic' : 'Pressure'}
+            </button>
+          )
+        })}
       </div>
 
       {/* Signing card */}
