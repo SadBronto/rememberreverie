@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { supabase } from '@/lib/supabase'
 import { getStroke } from 'perfect-freehand'
 
 // Private sandbox (route: /admin/signature-lab) to compare two pen feels before
@@ -13,16 +11,6 @@ type Mode = 'quadratic' | 'pressure'
 type Pt = { x: number; y: number }
 
 export default function SignatureLabPage() {
-  const navigate = useNavigate()
-
-  useEffect(() => {
-    async function checkAuth() {
-      if (!supabase) { navigate('/admin/login', { replace: true }); return }
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) { navigate('/admin/login', { replace: true }); return }
-    }
-    checkAuth()
-  }, [navigate])
   const canvasRef   = useRef<HTMLCanvasElement>(null)
   const strokesRef  = useRef<Pt[][]>([])
   const currentRef  = useRef<Pt[]>([])
