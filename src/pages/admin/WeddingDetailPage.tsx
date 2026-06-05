@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { QRCodeSVG } from 'qrcode.react'
 import { supabase } from '@/lib/supabase'
 import QRCreator, { type QRSettings } from '@/components/QRCreator'
+import StyledQR from '@/components/StyledQR'
 
 interface WeddingDetail {
   id: string
@@ -172,7 +172,7 @@ export default function WeddingDetailPage() {
   }
 
   function downloadQR() {
-    const svg = document.getElementById('wedding-qr')
+    const svg = document.querySelector('#wedding-qr-wrap svg')
     if (!svg) return
     const svgData = new XMLSerializer().serializeToString(svg)
     const canvas = document.createElement('canvas')
@@ -406,15 +406,8 @@ export default function WeddingDetailPage() {
           <div className="flex flex-col gap-3">
             <SectionLabel>Guest QR Code</SectionLabel>
 
-            <div className="bg-cream rounded-2xl p-5 flex flex-col items-center gap-4 self-start">
-              <QRCodeSVG
-                id="wedding-qr"
-                value={guestUrl}
-                size={200}
-                bgColor="#f5f0e8"
-                fgColor="#1a1612"
-                level="M"
-              />
+            <div id="wedding-qr-wrap" className="bg-cream rounded-2xl p-5 flex flex-col items-center gap-4 self-start">
+              <StyledQR url={guestUrl} settings={wedding.qr_settings} size={200} />
             </div>
 
             <div className="bg-ink-light rounded-xl px-4 py-3 flex items-center justify-between gap-3">

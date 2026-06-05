@@ -217,7 +217,7 @@ function getBallPath(type: BallStyle, fx: number, fy: number, S: number): string
 
 // ── Matrix builder ────────────────────────────────────────────────────────────
 
-function buildMatrix(content: string, ec: ECLevel): boolean[][] {
+export function buildMatrix(content: string, ec: ECLevel): boolean[][] {
   const qr = qrcode(0, ec)
   qr.addData(content)
   qr.make()
@@ -232,7 +232,7 @@ function buildMatrix(content: string, ec: ECLevel): boolean[][] {
 
 // ── SVG builder ───────────────────────────────────────────────────────────────
 
-interface SVGParams {
+export interface SVGParams {
   matrix: boolean[][]
   displaySize: number
   dotStyle: DotStyle
@@ -250,7 +250,7 @@ interface SVGParams {
   logoSize: number    // 1–100 percent of data area
 }
 
-function buildSVG(p: SVGParams): string {
+export function buildSVG(p: SVGParams): string {
   const { matrix, displaySize, dotStyle, frameStyle, ballStyle,
           fgColor, bgColor, outerCol, innerCol, transparent,
           gradDir, gradColor2, quietZone, centerDataUrl, logoSize } = p
@@ -380,7 +380,7 @@ ${logoEl}
 
 // ── Monogram renderer ─────────────────────────────────────────────────────────
 
-async function renderMonogram(text: string, color: string, size = 400): Promise<string> {
+export async function renderMonogram(text: string, color: string, size = 400): Promise<string> {
   const canvas = document.createElement('canvas')
   canvas.width = canvas.height = size
   const ctx = canvas.getContext('2d')!

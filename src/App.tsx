@@ -14,6 +14,7 @@ import AuthCallbackPage from '@/pages/couple/AuthCallbackPage'
 import CoupleSetupPage from '@/pages/couple/CoupleSetupPage'
 import CoupleGalleryPage from '@/pages/couple/GalleryPage'
 import CoupleSettingsPage from '@/pages/couple/CoupleSettingsPage'
+import CouplePrintPage from '@/pages/couple/CouplePrintPage'
 import NoWeddingPage from '@/pages/couple/NoWeddingPage'
 import AdminLoginPage from '@/pages/admin/AdminLoginPage'
 import WeddingsPage from '@/pages/admin/WeddingsPage'
@@ -77,6 +78,7 @@ export default function App() {
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/couple/:weddingId" element={<CoupleGalleryPage />} />
       <Route path="/couple/:weddingId/settings" element={<CoupleSettingsPage />} />
+      <Route path="/couple/:weddingId/print" element={<CouplePrintPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/admin/weddings" element={<WeddingsPage />} />
       <Route path="/admin/weddings/new" element={<NewWeddingPage />} />

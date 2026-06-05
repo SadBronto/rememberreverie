@@ -300,6 +300,12 @@ export default function CoupleGalleryPage() {
             QR Code
           </button>
           <button
+            onClick={() => navigate(`/couple/${weddingId}/print`)}
+            className="px-3 py-1.5 rounded-full border border-cream/15 text-cream/50 text-sans text-[11px] tracking-widest uppercase touch-manipulation active:bg-cream/5 transition-colors"
+          >
+            Print
+          </button>
+          <button
             onClick={() => navigate(`/couple/${weddingId}/settings`)}
             title="Settings"
             className="w-8 h-8 flex items-center justify-center rounded-full border border-cream/10 text-cream/30 touch-manipulation active:bg-cream/5 transition-colors"

@@ -11,29 +11,27 @@ interface Wedding {
   qr_settings: QRSettings | null
 }
 
-// Admin print sign route — fetches the event and renders the shared sheet.
-export default function PrintSignPage() {
-  const { id } = useParams<{ id: string }>()
+// Couple-facing print sign route — same sheet as the admin, fetched via the
+// couple endpoint (returns the signed-in couple's own event).
+export default function CouplePrintPage() {
+  const { weddingId } = useParams<{ weddingId: string }>()
   const navigate = useNavigate()
   const [wedding, setWedding] = useState<Wedding | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
-      if (!supabase || !id) { navigate('/admin/login', { replace: true }); return }
+      if (!supabase) { navigate('/couple/login', { replace: true }); return }
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) { navigate('/admin/login', { replace: true }); return }
-      const res = await fetch(`/api/admin/wedding?id=${id}`, {
+      if (!session) { navigate('/couple/login', { replace: true }); return }
+      const res = await fetch('/api/couple/wedding', {
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
-      if (res.ok) {
-        const data = await res.json()
-        setWedding(data.wedding)
-      }
+      if (res.ok) setWedding(await res.json())
       setLoading(false)
     }
     load()
-  }, [id, navigate])
+  }, [navigate])
 
   if (loading) {
     return (
@@ -45,7 +43,7 @@ export default function PrintSignPage() {
   if (!wedding) {
     return (
       <div className="min-h-dvh bg-ink flex flex-col items-center justify-center gap-3">
-        <p className="text-sans text-cream/40 text-sm">Event not found.</p>
+        <p className="text-sans text-cream/40 text-sm">Gallery not found.</p>
         <button onClick={() => navigate(-1)} className="text-cream/30 text-sans text-xs tracking-widest uppercase">← Back</button>
       </div>
     )
@@ -53,7 +51,7 @@ export default function PrintSignPage() {
 
   const guestUrl = wedding.slug
     ? `https://rememberreverie.com/${wedding.slug}`
-    : `https://rememberreverie.com/w/${id}`
+    : `https://rememberreverie.com/w/${weddingId}`
   const dateStr = wedding.wedding_date
     ? new Date(wedding.wedding_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     : ''
@@ -64,7 +62,7 @@ export default function PrintSignPage() {
       dateStr={dateStr}
       guestUrl={guestUrl}
       qrSettings={wedding.qr_settings}
-      onBack={() => navigate(`/admin/weddings/${id}`)}
+      onBack={() => navigate(`/couple/${weddingId}`)}
     />
   )
 }
