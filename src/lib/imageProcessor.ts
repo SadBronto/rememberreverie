@@ -198,7 +198,7 @@ async function applyFrame(
 
     // Texture + aging are drawn BEFORE the photo, so the photo (painted next)
     // covers the centre and they only ever show on the border.
-    drawPaperGrain(ctx, totalW, totalH, 0.11)
+    drawPaperGrain(ctx, totalW, totalH, 0.15)
     drawAgedCorners(ctx, totalW, totalH, 0.05)
 
     ctx.drawImage(source, bL, bT)
