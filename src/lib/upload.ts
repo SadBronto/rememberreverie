@@ -77,6 +77,18 @@ export async function uploadSession(session: CaptureSession): Promise<UploadResu
         }
       }
 
+      // Step 4: trigger content moderation. Fire-and-forget — `keepalive` lets the
+      // request finish server-side even if the guest immediately navigates away.
+      // No-ops on the server if no Vision key is configured; never blocks the upload.
+      try {
+        void fetch('/api/moderate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: session.id }),
+          keepalive: true,
+        }).catch(() => {})
+      } catch { /* moderation must never break a successful upload */ }
+
       return { success: true, memoryNumber: memoryNumber ?? null, retryCount }
     } catch (err) {
       if (attempt === MAX_RETRIES) {

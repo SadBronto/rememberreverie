@@ -88,6 +88,11 @@
   to   = "/.netlify/functions/couple-qr"
   status = 200
 
+[[redirects]]
+  from = "/api/moderate"
+  to   = "/.netlify/functions/moderate"
+  status = 200
+
 # SPA catch-all — handles all React Router routes
 [[redirects]]
   from = "/*"

@@ -15,26 +15,40 @@ async function verifyAdmin(authHeader: string | undefined) {
   return adminEmails.includes(user.email.toLowerCase()) ? user : null
 }
 
-// DELETE /api/admin/session?sessionId=xxx
-// Admin-only soft-delete: sets session status to 'deleted'.
-// The couple gallery already filters out deleted sessions.
+// Admin-only session controls (all gated by verifyAdmin):
+//   DELETE /api/admin/session?sessionId=xxx        — soft-delete (status 'deleted')
+//   PATCH  /api/admin/session?sessionId=xxx { status: 'active' | 'hidden' }
+//     — restore a flagged/hidden photo to 'active', or manually hide an 'active'
+//       one. This is how the admin clears a moderation false-positive.
 export const handler: Handler = async (event) => {
-  if (event.httpMethod !== 'DELETE') {
-    return { statusCode: 405, body: 'Method Not Allowed' }
-  }
-
   const user = await verifyAdmin(event.headers.authorization)
   if (!user) return { statusCode: 401, body: 'Unauthorized' }
 
   const sessionId = event.queryStringParameters?.sessionId
   if (!sessionId) return { statusCode: 400, body: 'Missing sessionId' }
 
-  const { error } = await admin
-    .from('sessions')
-    .update({ status: 'deleted' })
-    .eq('id', sessionId)
+  if (event.httpMethod === 'DELETE') {
+    const { error } = await admin
+      .from('sessions')
+      .update({ status: 'deleted' })
+      .eq('id', sessionId)
+    if (error) return { statusCode: 500, body: 'Failed to delete session' }
+    return { statusCode: 200, body: JSON.stringify({ ok: true }) }
+  }
 
-  if (error) return { statusCode: 500, body: 'Failed to delete session' }
+  if (event.httpMethod === 'PATCH') {
+    let body: { status?: string }
+    try { body = JSON.parse(event.body ?? '{}') } catch { return { statusCode: 400, body: 'Invalid JSON' } }
+    if (!body.status || !['active', 'hidden'].includes(body.status)) {
+      return { statusCode: 400, body: "status must be 'active' or 'hidden'" }
+    }
+    const { error } = await admin
+      .from('sessions')
+      .update({ status: body.status })
+      .eq('id', sessionId)
+    if (error) return { statusCode: 500, body: 'Failed to update session' }
+    return { statusCode: 200, body: JSON.stringify({ ok: true }) }
+  }
 
-  return { statusCode: 200, body: JSON.stringify({ ok: true }) }
+  return { statusCode: 405, body: 'Method Not Allowed' }
 }
