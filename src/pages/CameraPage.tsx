@@ -149,12 +149,18 @@ export default function CameraPage() {
       const newPhotoCount = photosTaken + 1
       const isLastDemoPhoto = isDemo && photoCap !== undefined && newPhotoCount >= photoCap
 
-      // Annotation screen — signing/doodling only makes sense on Polaroid, which
-      // has the white border to sign on. Disposable/Super8 are full-bleed with no
-      // signing area, so they never route to annotate (matches the admin "sign on
-      // polaroids" label). Demo behaves the same: polaroid only.
-      const needsAnnotation =
-        selectedMode === 'polaroid' && weddingConfig.annotationMode !== 'disabled'
+      // Annotation routing:
+      //   • signature → Polaroid only (it's a sign-the-border moment)
+      //   • doodle    → any style (you're drawing on the photo itself)
+      //   • disabled  → never
+      // Demo always shows signing on Polaroid so guests experience it.
+      const needsAnnotation = isDemo
+        ? selectedMode === 'polaroid'
+        : weddingConfig.annotationMode === 'doodle'
+          ? true
+          : weddingConfig.annotationMode === 'signature'
+            ? selectedMode === 'polaroid'
+            : false
 
       if (needsAnnotation) {
         navigate(`/w/${weddingId ?? 'demo'}/annotate`, {
