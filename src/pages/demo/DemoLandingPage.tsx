@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 
 export default function DemoLandingPage() {
   const navigate = useNavigate()
@@ -98,13 +98,20 @@ export default function DemoLandingPage() {
         </div>
       </main>
 
-      {/* Bottom attribution */}
+      {/* Bottom attribution + legitimacy links */}
       <footer
-        className="relative z-10 flex justify-center pb-8 transition-all duration-700 delay-700"
+        className="relative z-10 flex flex-col items-center gap-2.5 pb-8 transition-all duration-700 delay-700"
         style={{ opacity: visible ? 1 : 0 }}
       >
         <p className="text-mono text-cream/15 text-[9px] tracking-[0.3em] uppercase">
           Every wedding. Every memory.
+        </p>
+        <p className="text-mono text-cream/20 text-[9px] tracking-[0.2em]">
+          Reverie
+          {' · '}
+          <a href="mailto:contact@rememberreverie.com" className="hover:text-cream/40 transition-colors">Contact</a>
+          {' · '}
+          <Link to="/privacy" className="hover:text-cream/40 transition-colors">Privacy</Link>
         </p>
       </footer>
     </div>

@@ -23,6 +23,7 @@ import AdminGalleryPage from '@/pages/admin/AdminGalleryPage'
 import SlugPage from '@/pages/SlugPage'
 import SlideshowPage from '@/pages/SlideshowPage'
 import SignatureLabPage from '@/pages/SignatureLabPage'
+import PrivacyPage from '@/pages/PrivacyPage'
 
 // Route structure:
 // /                      — demo landing (primary entry point for sales)
@@ -81,6 +82,7 @@ export default function App() {
       <Route path="/admin/weddings/:id" element={<WeddingDetailPage />} />
       <Route path="/admin/weddings/:id/gallery" element={<AdminGalleryPage />} />
       <Route path="/admin/signature-lab" element={<SignatureLabPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
       {/* Vanity slug — must be last; only matches single-segment paths not caught above */}
       <Route path="/:slug" element={<SlugPage />} />
     </Routes>
