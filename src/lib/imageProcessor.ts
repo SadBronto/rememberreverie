@@ -198,8 +198,8 @@ async function applyFrame(
 
     // Texture + aging are drawn BEFORE the photo, so the photo (painted next)
     // covers the centre and they only ever show on the border.
-    drawPaperGrain(ctx, totalW, totalH, 0.085)
-    drawAgedCorners(ctx, totalW, totalH, 0.035)
+    drawPaperGrain(ctx, totalW, totalH, 0.11)
+    drawAgedCorners(ctx, totalW, totalH, 0.05)
 
     ctx.drawImage(source, bL, bT)
 
@@ -222,22 +222,27 @@ async function applyFrame(
 
 // ── Polaroid frame helpers ─────────────────────────────────────────────────────
 
-// Faint paper tooth across the frame. Drawn before the photo so it's border-only.
+// Paper tooth across the frame. Drawn before the photo so it's border-only.
+// Generated at ~1/4 scale then upscaled, so the texture stays a visible "tooth"
+// on the full-size photo — 1px-per-pixel noise at full resolution is invisible.
 function drawPaperGrain(ctx: CanvasRenderingContext2D, w: number, h: number, alpha: number) {
+  const gw = Math.max(1, Math.round(w / 4))
+  const gh = Math.max(1, Math.round(h / 4))
   const n = document.createElement('canvas')
-  n.width = w
-  n.height = h
+  n.width = gw
+  n.height = gh
   const nc = n.getContext('2d')!
-  const id = nc.createImageData(w, h)
+  const id = nc.createImageData(gw, gh)
   for (let i = 0; i < id.data.length; i += 4) {
-    const v = 180 + Math.random() * 75
+    const v = 165 + Math.random() * 90
     id.data[i] = v; id.data[i + 1] = v; id.data[i + 2] = v; id.data[i + 3] = 255
   }
   nc.putImageData(id, 0, 0)
   ctx.save()
   ctx.globalAlpha = alpha
   ctx.globalCompositeOperation = 'multiply'
-  ctx.drawImage(n, 0, 0)
+  ctx.imageSmoothingEnabled = true
+  ctx.drawImage(n, 0, 0, w, h)
   ctx.restore()
 }
 

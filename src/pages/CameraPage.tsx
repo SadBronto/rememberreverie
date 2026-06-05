@@ -48,8 +48,10 @@ export default function CameraPage() {
   useEffect(() => {
     startCamera()
     return () => stopCamera()
+  // Only restart the camera when the MODE changes — not on orientation toggle,
+  // which must not re-zoom the feed (the overlay + capture handle orientation).
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMode, dispOrientation])
+  }, [selectedMode])
 
   // Retry any photos that didn't finish uploading on a previous visit, and keep a
   // live count so the guest can SEE that stranded photos are still being handled
@@ -74,11 +76,13 @@ export default function CameraPage() {
   async function startCamera() {
     stopCamera()
     setCameraError(null)
-    const isLandscape = captureConfig.aspectRatio > 1
+    // Request a generous, consistent feed and DON'T force the mode's aspect ratio —
+    // forcing it made the browser crop/zoom the sensor (Polaroid looked zoomed, and
+    // toggling Disposable orientation zoomed). We frame with the viewfinder overlay
+    // and crop to the mode's aspect at capture time instead.
     const videoConstraints = {
-      width: { ideal: isLandscape ? 3840 : 2160 },
-      height: { ideal: isLandscape ? 2160 : 3840 },
-      aspectRatio: { ideal: captureConfig.aspectRatio },
+      width:  { ideal: 2560 },
+      height: { ideal: 1440 },
     }
 
     // Try rear camera first, fall back to front camera / webcam
@@ -234,7 +238,7 @@ export default function CameraPage() {
           muted
           className="w-full h-full object-cover"
         />
-        <ViewfinderOverlay mode={selectedMode} phase={phase} />
+        <ViewfinderOverlay mode={selectedMode} phase={phase} aspectRatio={captureConfig.aspectRatio} />
       </div>
 
       {/* Top bar */}

@@ -62,7 +62,9 @@ export const handler: Handler = async (event) => {
         requests: [{ image: { content: base64 }, features: [{ type: 'SAFE_SEARCH_DETECTION' }] }],
       }),
     })
+    if (!res.ok) console.error('moderate: vision HTTP error', res.status)
     const json = await res.json()
+    if (json?.error) console.error('moderate: vision API error', JSON.stringify(json.error))
     safe = json?.responses?.[0]?.safeSearchAnnotation ?? null
   } catch (e) {
     console.error('moderate: vision call failed', e)
@@ -81,10 +83,17 @@ export const handler: Handler = async (event) => {
     atLeast(violence, 'VERY_LIKELY')
 
   if (flagged) {
-    await admin
+    const { error: flagErr } = await admin
       .from('sessions')
       .update({ status: 'flagged', moderation_labels: JSON.stringify({ adult, violence, racy }) })
       .eq('id', sessionId)
+    if (flagErr) {
+      // The migration may not be applied yet (no 'flagged' status / no labels
+      // column). Fall back to 'hidden' so the explicit photo is STILL removed from
+      // the slideshow and main gallery — better a couple-hidden than fully public.
+      console.error('moderate: flagged update failed, falling back to hidden', flagErr)
+      await admin.from('sessions').update({ status: 'hidden' }).eq('id', sessionId)
+    }
   }
 
   return {

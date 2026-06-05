@@ -5,6 +5,8 @@ import { CAMERA_MODES } from '@/config/modes'
 interface Props {
   mode: CameraModeName
   phase: 'ready' | 'capturing' | 'processing' | 'uploading'
+  /** Override the mode's default aspect (e.g. Disposable portrait) */
+  aspectRatio?: number
 }
 
 interface CropBox { left: number; top: number; width: number; height: number }
@@ -12,10 +14,10 @@ interface CropBox { left: number; top: number; width: number; height: number }
 // Shows the exact region that will be captured, darkening what falls outside.
 // The video fills the viewport with object-cover; the capture center-crops to the
 // mode's aspect ratio, so on a portrait phone landscape modes clip top/bottom.
-export default function ViewfinderOverlay({ mode, phase }: Props) {
+export default function ViewfinderOverlay({ mode, phase, aspectRatio }: Props) {
   const config = CAMERA_MODES[mode]
   const dimmed  = phase !== 'ready'
-  const ar      = config.aspectRatio   // width / height
+  const ar      = aspectRatio ?? config.aspectRatio   // width / height
 
   const [crop, setCrop] = useState<CropBox | null>(null)
 

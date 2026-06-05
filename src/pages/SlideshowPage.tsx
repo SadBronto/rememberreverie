@@ -14,6 +14,7 @@ interface SlideshowData {
   coupleNames: string
   weddingDate: string
   timestampEnabled: boolean
+  timestampStyle: string
   photos: SlideshowPhoto[]
 }
 
@@ -28,6 +29,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   const [coupleNames, setCoupleNames] = useState('')
   const [weddingDate, setWeddingDate] = useState('')
   const [timestampEnabled, setTimestampEnabled] = useState(false)
+  const [timestampStyle, setTimestampStyle] = useState('classic')
   const [photos, setPhotos]           = useState<SlideshowPhoto[]>([])
   const [index, setIndex]             = useState(0)
   const [incoming, setIncoming]       = useState<number | null>(null) // index crossfading in on top
@@ -57,6 +59,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       setCoupleNames(data.coupleNames)
       setWeddingDate(data.weddingDate)
       setTimestampEnabled(data.timestampEnabled)
+      setTimestampStyle(data.timestampStyle)
 
       setPhotos(prev => {
         const existingIds = new Set(prev.map(p => p.id))
@@ -238,7 +241,8 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
 
       {/* Bottom text: couple names + date */}
       <div className="absolute bottom-0 left-0 right-0 px-8 pb-7 flex flex-col items-center gap-1 pointer-events-none">
-        {coupleNames && (
+        {/* Elegant timestamp bakes the names into every photo, so don't repeat them here. */}
+        {!(timestampEnabled && timestampStyle === 'elegant') && coupleNames && (
           <p className="text-serif text-cream/80 text-xl font-normal italic tracking-wide">
             {coupleNames}
           </p>
