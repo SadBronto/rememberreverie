@@ -6,7 +6,7 @@ import { useDemoStore, DEMO_PROMPTS } from '@/store/demoStore'
 import { CAMERA_MODES } from '@/config/modes'
 import { processSession } from '@/lib/imageProcessor'
 import { playShutterSound } from '@/lib/sound'
-import { flushPendingUploads } from '@/lib/recovery'
+import { flushPendingUploads, countRecovery } from '@/lib/recovery'
 import type { CameraModeName } from '@/types/session'
 import ModeSelector from '@/components/ModeSelector'
 import ShutterButton from '@/components/ShutterButton'
@@ -27,6 +27,7 @@ export default function CameraPage() {
   const [phase, setPhase] = useState<CapturePhase>('ready')
   const [flashVisible, setFlashVisible] = useState(false)
   const [cameraError, setCameraError] = useState<CameraError>(null)
+  const [pendingCount, setPendingCount] = useState(0)
 
   const modeConfig = CAMERA_MODES[selectedMode]
   const isDemo = weddingConfig?.isDemoMode ?? false
@@ -41,10 +42,24 @@ export default function CameraPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMode])
 
-  // Retry any photos that didn't finish uploading on a previous visit
-  // (best-effort, runs in the background and won't block the camera).
+  // Retry any photos that didn't finish uploading on a previous visit, and keep a
+  // live count so the guest can SEE that stranded photos are still being handled
+  // (and that they clear once the connection's back).
   useEffect(() => {
-    void flushPendingUploads()
+    let alive = true
+    const refresh = async () => {
+      const n = await countRecovery()
+      if (alive) setPendingCount(n)
+    }
+    const flushAndRefresh = async () => { await flushPendingUploads(); await refresh() }
+    void flushAndRefresh()
+    const interval = setInterval(refresh, 5000)
+    window.addEventListener('online', flushAndRefresh)
+    return () => {
+      alive = false
+      clearInterval(interval)
+      window.removeEventListener('online', flushAndRefresh)
+    }
   }, [])
 
   async function startCamera() {
@@ -236,6 +251,18 @@ export default function CameraPage() {
         )}
         {!isDemo && <div className="w-9 h-9" />}
       </div>
+
+      {/* Pending-upload indicator — stranded photos retry automatically */}
+      {pendingCount > 0 && (
+        <div className="absolute top-16 left-0 right-0 z-20 flex justify-center pointer-events-none safe-top">
+          <div className="bg-ink/70 backdrop-blur-sm border border-amber-film/30 rounded-full px-3.5 py-1.5 flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full border-2 border-amber-film/50 border-t-transparent animate-spin" />
+            <p className="text-mono text-amber-film/80 text-[10px] tracking-widest uppercase">
+              {pendingCount} waiting to upload
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Demo prompt */}
       {prompt && phase === 'ready' && (
