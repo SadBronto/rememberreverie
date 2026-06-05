@@ -32,3 +32,7 @@ ALTER TABLE sessions
 
 -- ── 5. Store the moderation result (for admin review context) ─
 ALTER TABLE sessions ADD COLUMN IF NOT EXISTS moderation_labels text;
+
+-- ── 6. Per-event toggle: let the couple review their own flagged photos ─
+-- Default off — moderation review is admin-only unless the admin grants it.
+ALTER TABLE weddings ADD COLUMN IF NOT EXISTS couple_review_enabled boolean NOT NULL DEFAULT false;

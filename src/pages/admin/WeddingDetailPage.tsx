@@ -19,6 +19,7 @@ interface WeddingDetail {
   photo_cap: number | null
   slideshow_enabled: boolean
   slug: string | null
+  couple_review_enabled: boolean
 }
 
 interface Counts { disposable: number; polaroid: number; super8: number; total: number }
@@ -673,6 +674,18 @@ export default function WeddingDetailPage() {
               <option value="doodle">Doodle</option>
               <option value="disabled">Disabled</option>
             </AdminSelect>
+          </FormField>
+
+          <FormField label="Let couple review flagged photos">
+            <div className="flex items-center gap-3">
+              <AdminToggle value={form.couple_review_enabled ?? false} onChange={v => setField('couple_review_enabled', v)} />
+              <span className="text-sans text-cream/50 text-sm">
+                {form.couple_review_enabled ? 'Couple can review' : 'Admin only'}
+              </span>
+            </div>
+            <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
+              When on, the couple sees auto-hidden (flagged) photos in a "Needs review" section and can restore them. Off = only you review them.
+            </p>
           </FormField>
 
           <FormField label="Timestamp">

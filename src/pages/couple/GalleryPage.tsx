@@ -9,13 +9,14 @@ interface SessionRecord {
   memoryNumber: number | null
   capturedAt: string | null
   uploadedAt: string
-  status: 'active' | 'hidden'
+  status: 'active' | 'hidden' | 'flagged'
   photoUrl: string | null
   annotationUrl: string | null
 }
 
 interface GalleryData {
   wedding: { id: string; coupleNames: string; weddingDate: string }
+  coupleReviewEnabled?: boolean
   sessions: SessionRecord[]
 }
 
@@ -116,7 +117,7 @@ export default function CoupleGalleryPage() {
     }
   }
 
-  async function toggleVisibility(sessionId: string, currentStatus: 'active' | 'hidden') {
+  async function toggleVisibility(sessionId: string, currentStatus: 'active' | 'hidden' | 'flagged') {
     const nextStatus = currentStatus === 'active' ? 'hidden' : 'active'
 
     // Optimistic update
@@ -135,6 +136,16 @@ export default function CoupleGalleryPage() {
       // Revert on failure
       setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, status: currentStatus } : s))
     }
+  }
+
+  async function restoreSession(sessionId: string) {
+    setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, status: 'active' } : s))
+    const res = await fetch(`/api/couple/session?sessionId=${sessionId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenRef.current}` },
+      body: JSON.stringify({ status: 'active' }),
+    })
+    if (!res.ok) setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, status: 'flagged' } : s))
   }
 
   async function downloadPhoto(photoUrl: string, annotationUrl: string | null, memoryNumber: number | null) {
@@ -228,7 +239,12 @@ export default function CoupleGalleryPage() {
 
   const allSessions = sessions
   const activeSessions = allSessions.filter(s => s.status === 'active')
-  const visibleSessions = showHidden ? allSessions : activeSessions
+  const flaggedSessions = allSessions.filter(s => s.status === 'flagged')
+  const reviewEnabled = data?.coupleReviewEnabled ?? false
+  // Flagged photos never appear in the normal grid — they live in the review section.
+  const visibleSessions = showHidden
+    ? allSessions.filter(s => s.status !== 'flagged')
+    : activeSessions
 
   const totalPhotos = activeSessions.length
 
@@ -418,6 +434,41 @@ export default function CoupleGalleryPage() {
         )}
       </div>
 
+      {/* Needs review — flagged photos, shown only when the admin enabled it */}
+      {reviewEnabled && flaggedSessions.length > 0 && (
+        <div className="px-4 pt-3 pb-1">
+          <div className="bg-red-500/8 border border-red-500/25 rounded-xl p-3.5">
+            <p className="text-sans text-red-300/90 text-sm font-medium">Needs review ({flaggedSessions.length})</p>
+            <p className="text-mono text-cream/35 text-[10px] tracking-wide mt-1 mb-3 leading-relaxed">
+              An automatic check hid these. Keep the ones that are fine; remove the rest.
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {flaggedSessions.map(s => (
+                <div key={s.id} className="rounded-lg overflow-hidden bg-ink-light">
+                  {s.photoUrl && (
+                    <img src={s.photoUrl} alt="" draggable={false} className="w-full h-auto block" />
+                  )}
+                  <div className="flex">
+                    <button
+                      onClick={() => restoreSession(s.id)}
+                      className="flex-1 py-2 text-mono text-green-400/70 text-[10px] tracking-widest uppercase touch-manipulation active:bg-cream/5"
+                    >
+                      Keep
+                    </button>
+                    <button
+                      onClick={() => deleteSession(s.id)}
+                      className="flex-1 py-2 text-mono text-red-400/70 text-[10px] tracking-widest uppercase touch-manipulation active:bg-cream/5 border-l border-cream/10"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Onboarding — brand-new gallery with no photos yet */}
       {allSessions.length === 0 && (
         <OnboardingPanel
@@ -426,8 +477,8 @@ export default function CoupleGalleryPage() {
         />
       )}
 
-      {/* Empty state — has photos, but all hidden / filtered out */}
-      {allSessions.length > 0 && visibleSessions.length === 0 && (
+      {/* Empty state — has hidden photos, but none currently visible */}
+      {allSessions.some(s => s.status === 'hidden') && visibleSessions.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
           <p className="text-serif text-cream/40 text-xl italic">Nothing to show</p>
           <p className="text-sans text-cream/25 text-sm mt-2">
@@ -638,7 +689,7 @@ function PhotoTile({
   onOpen,
 }: {
   session: SessionRecord
-  onToggleVisibility: (id: string, status: 'active' | 'hidden') => void
+  onToggleVisibility: (id: string, status: 'active' | 'hidden' | 'flagged') => void
   onDownload: (photoUrl: string, annotationUrl: string | null, memoryNumber: number | null) => void
   onDelete: (id: string) => void
   onOpen: (session: SessionRecord) => void

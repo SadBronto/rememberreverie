@@ -39,7 +39,7 @@ export const handler: Handler = async (event) => {
   // Check the user's email matches this wedding's couple_email
   const { data: wedding, error: weddingError } = await admin
     .from('weddings')
-    .select('id, couple_names, wedding_date, couple_email, timestamp_enabled, timestamp_style')
+    .select('id, couple_names, wedding_date, couple_email, timestamp_enabled, timestamp_style, couple_review_enabled')
     .eq('id', weddingId)
     .single()
 
@@ -51,15 +51,18 @@ export const handler: Handler = async (event) => {
     return { statusCode: 403, body: 'Forbidden' }
   }
 
-  // Fetch sessions: includes hidden (couple manages visibility themselves) but
-  // EXCLUDES 'flagged' — moderation hits stay admin-only so potentially explicit
-  // content never surfaces to the couple, even under "Show hidden".
-  const { data: sessions, error: sessionsError } = await admin
+  const reviewEnabled = wedding.couple_review_enabled ?? false
+
+  // Includes hidden (couple manages their own visibility). 'flagged' (moderation
+  // hits) are EXCLUDED unless the admin has granted this couple review access —
+  // otherwise potentially explicit content never surfaces to the couple.
+  let query = admin
     .from('sessions')
     .select('id, mode, memory_number, captured_at, uploaded_at, status, output_path, annotation_path')
     .eq('wedding_id', weddingId)
     .neq('status', 'deleted')
-    .neq('status', 'flagged')
+  if (!reviewEnabled) query = query.neq('status', 'flagged')
+  const { data: sessions, error: sessionsError } = await query
     .order('uploaded_at', { ascending: true })
 
   if (sessionsError) {
@@ -93,6 +96,7 @@ export const handler: Handler = async (event) => {
         coupleNames:    wedding.couple_names,
         weddingDate:    wedding.wedding_date,
       },
+      coupleReviewEnabled: reviewEnabled,
       sessions: enriched,
     }),
   }
