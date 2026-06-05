@@ -33,6 +33,7 @@ export default function CoupleGalleryPage() {
   const [qrSettings, setQrSettings] = useState<QRSettings | null | 'loading'>(null)
   const [visible, setVisible] = useState(false)
   const [zipProgress, setZipProgress] = useState<{ current: number; total: number } | null>(null)
+  const [lightbox, setLightbox] = useState<SessionRecord | null>(null)
   const tokenRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -417,12 +418,20 @@ export default function CoupleGalleryPage() {
         )}
       </div>
 
-      {/* Empty state */}
-      {visibleSessions.length === 0 && (
+      {/* Onboarding — brand-new gallery with no photos yet */}
+      {allSessions.length === 0 && (
+        <OnboardingPanel
+          onCreateQR={() => setShowQR(true)}
+          onChooseLink={() => navigate(`/couple/${weddingId}/settings`)}
+        />
+      )}
+
+      {/* Empty state — has photos, but all hidden / filtered out */}
+      {allSessions.length > 0 && visibleSessions.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
-          <p className="text-serif text-cream/40 text-xl italic">No memories yet</p>
+          <p className="text-serif text-cream/40 text-xl italic">Nothing to show</p>
           <p className="text-sans text-cream/25 text-sm mt-2">
-            Photos your guests take will appear here.
+            Your visible memories are hidden. Tap "Show hidden" to see them.
           </p>
         </div>
       )}
@@ -441,6 +450,7 @@ export default function CoupleGalleryPage() {
                 onToggleVisibility={toggleVisibility}
                 onDownload={downloadPhoto}
                 onDelete={deleteSession}
+                onOpen={setLightbox}
               />
             ))}
           </div>
@@ -466,6 +476,80 @@ export default function CoupleGalleryPage() {
         <p className="text-mono text-cream/10 text-[9px] tracking-[0.2em] uppercase">
           RememberReverie.com
         </p>
+      </div>
+
+      {/* Lightbox — tap a photo to view it large */}
+      {lightbox && (
+        <Lightbox
+          session={lightbox}
+          onClose={() => setLightbox(null)}
+          onDownload={downloadPhoto}
+        />
+      )}
+    </div>
+  )
+}
+
+function Lightbox({
+  session,
+  onClose,
+  onDownload,
+}: {
+  session: SessionRecord
+  onClose: () => void
+  onDownload: (photoUrl: string, annotationUrl: string | null, memoryNumber: number | null) => void
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-[60] bg-ink/95 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8"
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <button
+        onClick={onClose}
+        title="Close"
+        className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-ink/60 border border-cream/10 touch-manipulation active:scale-95"
+      >
+        <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+          <path d="M2 2l8 8M10 2l-8 8" stroke="rgba(245,240,232,0.6)" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+      </button>
+
+      <div className="relative max-w-full max-h-[82dvh]">
+        {session.photoUrl && (
+          <img
+            src={session.photoUrl}
+            alt={`Memory #${session.memoryNumber}`}
+            draggable={false}
+            className="max-w-full max-h-[82dvh] object-contain rounded-sm"
+            style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.55)' }}
+          />
+        )}
+        {session.annotationUrl && (
+          <img
+            src={session.annotationUrl}
+            alt=""
+            draggable={false}
+            className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+            style={{ mixBlendMode: 'multiply' }}
+          />
+        )}
+      </div>
+
+      <div className="absolute bottom-5 left-0 right-0 flex items-center justify-center gap-4">
+        {session.memoryNumber != null && (
+          <span className="text-mono text-cream/40 text-[10px] tracking-[0.3em] uppercase">
+            Memory #{session.memoryNumber}
+          </span>
+        )}
+        {session.photoUrl && (
+          <button
+            onClick={() => onDownload(session.photoUrl!, session.annotationUrl, session.memoryNumber)}
+            className="flex items-center gap-2 text-sans text-cream/60 text-xs tracking-widest uppercase touch-manipulation active:text-cream/90"
+          >
+            <DownloadIcon />
+            Download
+          </button>
+        )}
       </div>
     </div>
   )
@@ -508,6 +592,35 @@ async function flattenPhoto(photoUrl: string, annotationUrl: string | null): Pro
 
 // ── Sub-components ──────────────────────────────────────────────
 
+function OnboardingPanel({ onCreateQR, onChooseLink }: { onCreateQR: () => void; onChooseLink: () => void }) {
+  return (
+    <div className="flex flex-col items-center text-center px-6 py-16 max-w-md mx-auto">
+      <p className="text-mono text-cream/30 text-[10px] tracking-[0.3em] uppercase">
+        Your gallery · Getting started
+      </p>
+      <h2 className="text-serif text-cream text-2xl font-normal mt-3">
+        This is where it all collects.
+      </h2>
+      <p className="text-sans text-cream/45 text-sm leading-relaxed mt-3">
+        Right now it's empty — but not for long. Create your QR code, set it where
+        your guests will find it, and every photo they take appears here, automatically.
+      </p>
+      <button
+        onClick={onCreateQR}
+        className="mt-7 px-7 py-3.5 rounded-full bg-cream text-ink text-sans text-sm font-medium tracking-widest uppercase active:scale-[0.97] transition-transform touch-manipulation"
+      >
+        Create your QR code
+      </button>
+      <button
+        onClick={onChooseLink}
+        className="mt-4 text-sans text-cream/35 text-xs italic touch-manipulation active:text-cream/60 transition-colors"
+      >
+        Make it yours — choose a custom link before you print
+      </button>
+    </div>
+  )
+}
+
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div>
@@ -522,11 +635,13 @@ function PhotoTile({
   onToggleVisibility,
   onDownload,
   onDelete,
+  onOpen,
 }: {
   session: SessionRecord
   onToggleVisibility: (id: string, status: 'active' | 'hidden') => void
   onDownload: (photoUrl: string, annotationUrl: string | null, memoryNumber: number | null) => void
   onDelete: (id: string) => void
+  onOpen: (session: SessionRecord) => void
 }) {
   const [imgVisible, setImgVisible] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -543,7 +658,8 @@ function PhotoTile({
             alt={`Memory #${session.memoryNumber}`}
             draggable={false}
             onLoad={() => setImgVisible(true)}
-            className="w-full h-auto block transition-opacity duration-500"
+            onClick={() => onOpen(session)}
+            className="w-full h-auto block transition-opacity duration-500 cursor-zoom-in"
             style={{ opacity: imgVisible ? 1 : 0 }}
           />
           {/* Annotation overlay */}
