@@ -40,6 +40,9 @@ export default function CameraPage() {
     return modeConfig
   }, [selectedMode, dispOrientation, modeConfig])
   const isDemo = weddingConfig?.isDemoMode ?? false
+  // The "sign here" border hint only applies to actual signature mode (demo always
+  // demonstrates signing). Doodle draws on the photo, and 'disabled' = no signing.
+  const signatureMode = isDemo ? true : weddingConfig?.annotationMode === 'signature'
   const photoCap = weddingConfig?.photoCap
   const atPhotoLimit = photoCap !== undefined && photosTaken >= photoCap
   const prompt = isDemo ? (DEMO_PROMPTS[currentPromptIndex] ?? null) : null
@@ -238,7 +241,7 @@ export default function CameraPage() {
           muted
           className="w-full h-full object-cover"
         />
-        <ViewfinderOverlay mode={selectedMode} phase={phase} aspectRatio={captureConfig.aspectRatio} />
+        <ViewfinderOverlay mode={selectedMode} phase={phase} aspectRatio={captureConfig.aspectRatio} signatureMode={signatureMode} />
       </div>
 
       {/* Top bar */}

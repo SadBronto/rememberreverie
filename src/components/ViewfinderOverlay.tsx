@@ -7,6 +7,8 @@ interface Props {
   phase: 'ready' | 'capturing' | 'processing' | 'uploading'
   /** Override the mode's default aspect (e.g. Disposable portrait) */
   aspectRatio?: number
+  /** Only show the Polaroid signing-area hint when guests actually sign */
+  signatureMode?: boolean
 }
 
 interface CropBox { left: number; top: number; width: number; height: number }
@@ -14,7 +16,7 @@ interface CropBox { left: number; top: number; width: number; height: number }
 // Shows the exact region that will be captured, darkening what falls outside.
 // The video fills the viewport with object-cover; the capture center-crops to the
 // mode's aspect ratio, so on a portrait phone landscape modes clip top/bottom.
-export default function ViewfinderOverlay({ mode, phase, aspectRatio }: Props) {
+export default function ViewfinderOverlay({ mode, phase, aspectRatio, signatureMode }: Props) {
   const config = CAMERA_MODES[mode]
   const dimmed  = phase !== 'ready'
   const ar      = aspectRatio ?? config.aspectRatio   // width / height
@@ -101,13 +103,15 @@ export default function ViewfinderOverlay({ mode, phase, aspectRatio }: Props) {
            The entire crop box is captured as the photo. The white signing border
            is added AFTER capture. We show it below to accurately represent the
            final output, not inside the photo area (which was misleading).     ── */}
-      {mode === 'polaroid' && (() => {
+      {mode === 'polaroid' && signatureMode && (() => {
         // Signing border height = borderBottom fraction of image height.
         // In viewfinder coordinates, the image height = crop box height.
         const sigH = Math.round(height * config.frame.borderBottom)
         const sigTop = top + height
-        // Only render if the indicator fits on screen (portrait phones have room)
-        if (sigTop + sigH > window.innerHeight) return null
+        // Hide if it would collide with the bottom controls (shutter + mode
+        // selector) — on tall phones there isn't room, and overlapping is worse
+        // than not showing the hint at all.
+        if (sigTop + sigH > window.innerHeight - 180) return null
         return (
           <div
             className="absolute flex flex-col items-center justify-center gap-1"
