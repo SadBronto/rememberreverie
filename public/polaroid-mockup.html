@@ -153,13 +153,13 @@ function render(canvas, img, style) {
   }
   if (style==='warm') {
     const g=ctx.createLinearGradient(0,0,0,H);
-    g.addColorStop(0,'#fbf9f5'); g.addColorStop(1,'#f2ebdf');
+    g.addColorStop(0,'#fbfaf7'); g.addColorStop(1,'#f4f0e9');   // less yellow at the bottom
     ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-    paperGrain(ctx, 0.05);
-    agedCorners(ctx, '0.05', 'rgba(120,90,50,A)');
+    paperGrain(ctx, 0.085);                                      // slight, visible tooth — BORDER ONLY (photo is drawn over it)
+    agedCorners(ctx, '0.035', 'rgba(110,85,55,A)');             // gentler, less yellow corners
     drawPhoto(ctx,img);
     innerShadow(ctx, 0.18);
-    caption(ctx, '0.9','0.5', 'rgba(60,44,28,A)', 'rgba(80,60,40,A)');
+    caption(ctx, '0.9','0.5', 'rgba(62,48,32,A)', 'rgba(88,70,50,A)');
     return;
   }
   if (style==='vintage') {
