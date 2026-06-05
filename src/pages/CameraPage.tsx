@@ -149,12 +149,12 @@ export default function CameraPage() {
       const newPhotoCount = photosTaken + 1
       const isLastDemoPhoto = isDemo && photoCap !== undefined && newPhotoCount >= photoCap
 
-      // Annotation screen — routes there for ANY mode when enabled.
-      // Demo always shows annotation on polaroid so guests experience signing.
-      // Real weddings: route to annotate whenever annotationMode is active, any mode.
-      const needsAnnotation = isDemo
-        ? selectedMode === 'polaroid'
-        : weddingConfig.annotationMode !== 'disabled'
+      // Annotation screen — signing/doodling only makes sense on Polaroid, which
+      // has the white border to sign on. Disposable/Super8 are full-bleed with no
+      // signing area, so they never route to annotate (matches the admin "sign on
+      // polaroids" label). Demo behaves the same: polaroid only.
+      const needsAnnotation =
+        selectedMode === 'polaroid' && weddingConfig.annotationMode !== 'disabled'
 
       if (needsAnnotation) {
         navigate(`/w/${weddingId ?? 'demo'}/annotate`, {

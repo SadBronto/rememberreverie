@@ -108,8 +108,10 @@ export const handler: Handler = async (event) => {
   }
 
   // ── DELETE: archive ────────────────────────────────────────
+  // Also release the slug (unique index ignores status, so an archived event
+  // would otherwise hold its vanity URL hostage from a new event reusing it).
   if (event.httpMethod === 'DELETE') {
-    const { error } = await admin.from('weddings').update({ status: 'archived' }).eq('id', id)
+    const { error } = await admin.from('weddings').update({ status: 'archived', slug: null }).eq('id', id)
     if (error) return { statusCode: 500, body: 'Failed to archive wedding' }
     return { statusCode: 200, body: JSON.stringify({ ok: true }) }
   }

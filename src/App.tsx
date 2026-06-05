@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { Routes, Route } from 'react-router-dom'
+import { flushPendingUploads } from '@/lib/recovery'
 import SlideshowSlugPage from '@/pages/SlideshowSlugPage'
 import LandingPage from '@/pages/LandingPage'
 import CameraPage from '@/pages/CameraPage'
@@ -35,6 +37,22 @@ import SignatureLabPage from '@/pages/SignatureLabPage'
 // /couple/:weddingId     — couple photo gallery (authenticated)
 
 export default function App() {
+  // Retry any photos stranded by a bad connection — the moment the device comes
+  // back online, and whenever the app returns to the foreground. Previously this
+  // only fired when the camera screen mounted, so a guest who reconnected but
+  // didn't reopen the camera could sit with an un-uploaded photo indefinitely.
+  useEffect(() => {
+    const flush = () => { void flushPendingUploads() }
+    flush() // also catch anything pending from a previous session on first load
+    window.addEventListener('online', flush)
+    const onVisible = () => { if (document.visibilityState === 'visible') flush() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      window.removeEventListener('online', flush)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [])
+
   // slideshow.rememberreverie.com/:slug → resolve slug and show slideshow directly
   if (window.location.hostname === 'slideshow.rememberreverie.com') {
     const slug = window.location.pathname.replace(/^\/+|\/+$/g, '')

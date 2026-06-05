@@ -7,6 +7,12 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      // Self-destroying: this app needs network anyway (camera upload, gallery,
+      // slideshow polling), so app-shell precaching buys nothing and causes guests
+      // to be served stale JS after deploys. selfDestroying ships a service worker
+      // that unregisters itself and clears caches on every client that had the old
+      // PWA installed — so everyone gets current code on every load.
+      selfDestroying: true,
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
       manifest: {
