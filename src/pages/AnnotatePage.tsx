@@ -64,10 +64,15 @@ export default function AnnotatePage() {
     activeColorRef.current = isRainbow ? 'rainbow' : colorHex
   }, [colorHex, isRainbow])
 
-  // Detect iOS and disable pressure mode (simulatePressure doesn't work on touch)
+  // Detect iOS and disable pressure mode (simulatePressure doesn't work on iOS touch)
+  // Pressure mode works on Android with proper pointer event sampling
   useEffect(() => {
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
     setIsIOS(iOS)
+    // If Android, default to pressure mode
+    if (/Android/.test(navigator.userAgent)) {
+      setMode('pressure')
+    }
   }, [])
 
   // Keep modeRef in sync
