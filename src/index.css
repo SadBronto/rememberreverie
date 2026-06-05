@@ -8,8 +8,8 @@
     height: 100dvh;
     overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
-    -webkit-touch-callout: none;
-    user-select: none;
+    /* Text is selectable by default (homepage, privacy, galleries). The
+       camera/signing/slideshow screens opt out individually via `select-none`. */
   }
 
   body {

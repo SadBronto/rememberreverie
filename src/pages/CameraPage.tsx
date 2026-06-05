@@ -221,7 +221,7 @@ export default function CameraPage() {
   }
 
   return (
-    <div className="relative flex flex-col items-center justify-between min-h-dvh bg-black overflow-hidden">
+    <div className="relative flex flex-col items-center justify-between min-h-dvh bg-black overflow-hidden select-none">
 
       {/* Flash */}
       <div
