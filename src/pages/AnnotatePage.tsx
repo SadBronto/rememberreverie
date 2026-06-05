@@ -83,9 +83,18 @@ export default function AnnotatePage() {
 
     const sync = () => {
       const { clientWidth, clientHeight } = container
-      if (canvas.width !== clientWidth || canvas.height !== clientHeight) {
-        canvas.width  = clientWidth
-        canvas.height = clientHeight
+      // Render at device resolution so the signature stays sharp when it's later
+      // scaled up onto the full-size photo. It used to be captured at CSS size and
+      // looked jagged/blurry once composited. The context is scaled to match, so
+      // all drawing code keeps working in CSS coordinates.
+      const res = Math.max(2, Math.min(window.devicePixelRatio || 1, 3))
+      const w = Math.round(clientWidth * res)
+      const h = Math.round(clientHeight * res)
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width  = w
+        canvas.height = h
+        const ctx = canvas.getContext('2d')
+        if (ctx) ctx.setTransform(res, 0, 0, res, 0, 0)
       }
     }
 
@@ -96,10 +105,9 @@ export default function AnnotatePage() {
   }, [photoUrl])
 
   function getCanvasPos(e: React.PointerEvent<HTMLCanvasElement>): [number, number] {
-    const rect   = canvasRef.current!.getBoundingClientRect()
-    const scaleX = canvasRef.current!.width  / rect.width
-    const scaleY = canvasRef.current!.height / rect.height
-    return [(e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY]
+    const rect = canvasRef.current!.getBoundingClientRect()
+    // The context is pre-scaled to device pixels, so we draw in CSS coordinates.
+    return [e.clientX - rect.left, e.clientY - rect.top]
   }
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -108,8 +116,10 @@ export default function AnnotatePage() {
     const ctx    = canvas?.getContext('2d')
     if (!ctx || !canvas) return
 
-    // Save state before this stroke so we can undo
+    // Save state before this stroke so we can undo. Cap the history — at device
+    // resolution each snapshot is several MB, so unbounded growth could OOM mobile.
     strokeHistoryRef.current.push(ctx.getImageData(0, 0, canvas.width, canvas.height))
+    if (strokeHistoryRef.current.length > 20) strokeHistoryRef.current.shift()
 
     const [x, y] = getCanvasPos(e)
     strokePointsRef.current = [{ x, y }]
@@ -139,7 +149,7 @@ export default function AnnotatePage() {
         size: weight * 2.4,
         thinning: 0.62,
         smoothing: 0.75,
-        streamline: 0.5,
+        streamline: 0.62,
         simulatePressure: true,
       })
       if (outline.length) {
@@ -150,7 +160,7 @@ export default function AnnotatePage() {
             size: prevStroke.weight * 2.4,
             thinning: 0.62,
             smoothing: 0.75,
-            streamline: 0.5,
+            streamline: 0.62,
             simulatePressure: true,
           })
           if (prevOutline.length) {
@@ -261,7 +271,7 @@ export default function AnnotatePage() {
           size: stroke.weight * 2.4,
           thinning: 0.62,
           smoothing: 0.75,
-          streamline: 0.5,
+          streamline: 0.62,
           simulatePressure: true,
         })
         if (outline.length) {
