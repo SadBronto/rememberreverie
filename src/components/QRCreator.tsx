@@ -27,6 +27,7 @@ export interface QRSettings {
   monogramText:  string
   monogramColor: string
   logoSize:      number
+  logoDataUrl?:  string | null   // retained uploaded logo (downscaled PNG data URL)
 }
 
 interface Props {
@@ -449,8 +450,8 @@ export default function QRCreator({ url, coupleNames, onClose, initialSettings, 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const didMountRef  = useRef(false)
   const [monogramDataUrl, setMonogramDataUrl] = useState<string|null>(null)
-  const [logoDataUrl,     setLogoDataUrl]     = useState<string|null>(null)
-  const [logoSize,        setLogoSize]        = useState(20)
+  const [logoDataUrl,     setLogoDataUrl]     = useState<string|null>(s?.logoDataUrl ?? null)
+  const [logoSize,        setLogoSize]        = useState(s?.logoSize ?? 20)
   const logoInputRef = useRef<HTMLInputElement>(null)
 
   // Re-render monogram whenever text/color changes
@@ -473,14 +474,14 @@ export default function QRCreator({ url, coupleNames, onClose, initialSettings, 
         useEyeColors, outerEye, innerEye,
         gradDir, gradColor2,
         quietZone, ecLevel, qrSize,
-        centerMode, monogramText, monogramColor, logoSize,
+        centerMode, monogramText, monogramColor, logoSize, logoDataUrl,
       })
     }, 800)
     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current) }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dotStyle, frameStyle, ballStyle, fgColor, bgColor, transparent, useEyeColors,
       outerEye, innerEye, gradDir, gradColor2, quietZone, ecLevel, qrSize,
-      centerMode, monogramText, monogramColor, logoSize])
+      centerMode, monogramText, monogramColor, logoSize, logoDataUrl])
 
   const centerDataUrl = centerMode === 'monogram' ? monogramDataUrl
     : centerMode === 'logo' ? logoDataUrl
@@ -552,7 +553,26 @@ export default function QRCreator({ url, coupleNames, onClose, initialSettings, 
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
-    reader.onload = ev => { setLogoDataUrl(ev.target?.result as string); setCenterMode('logo') }
+    reader.onload = ev => {
+      const src = ev.target?.result as string
+      // Downscale to ≤512px so the retained logo stays small (it lives in the
+      // QR center, which must stay under ~25% of the code anyway).
+      const img = new Image()
+      img.onload = () => {
+        const MAX = 512
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height))
+        const w = Math.max(1, Math.round(img.width * scale))
+        const h = Math.max(1, Math.round(img.height * scale))
+        const canvas = document.createElement('canvas')
+        canvas.width = w
+        canvas.height = h
+        canvas.getContext('2d')!.drawImage(img, 0, 0, w, h)
+        setLogoDataUrl(canvas.toDataURL('image/png'))
+        setCenterMode('logo')
+      }
+      img.onerror = () => { setLogoDataUrl(src); setCenterMode('logo') } // e.g. SVG — keep as-is
+      img.src = src
+    }
     reader.readAsDataURL(file)
   }
 
