@@ -382,12 +382,20 @@ export default function WeddingDetailPage() {
               </button>
             </div>
 
-            <button
-              onClick={downloadQR}
-              className="self-start px-4 py-2.5 rounded-full border border-cream/15 text-cream/50 text-sans text-xs tracking-widest uppercase touch-manipulation active:bg-cream/5"
-            >
-              Download QR as PNG
-            </button>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={downloadQR}
+                className="self-start px-4 py-2.5 rounded-full border border-cream/15 text-cream/50 text-sans text-xs tracking-widest uppercase touch-manipulation active:bg-cream/5"
+              >
+                Download QR as PNG
+              </button>
+              <button
+                onClick={() => navigate(`/admin/weddings/${id}/print`)}
+                className="self-start px-4 py-2.5 rounded-full border border-cream/15 text-cream/50 text-sans text-xs tracking-widest uppercase touch-manipulation active:bg-cream/5"
+              >
+                Print table sign →
+              </button>
+            </div>
 
             {/* Vanity slug */}
             <div className="flex flex-col gap-1.5 mt-1">

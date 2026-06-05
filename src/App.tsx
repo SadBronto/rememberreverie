@@ -20,6 +20,7 @@ import WeddingsPage from '@/pages/admin/WeddingsPage'
 import NewWeddingPage from '@/pages/admin/NewWeddingPage'
 import WeddingDetailPage from '@/pages/admin/WeddingDetailPage'
 import AdminGalleryPage from '@/pages/admin/AdminGalleryPage'
+import PrintSignPage from '@/pages/admin/PrintSignPage'
 import SlugPage from '@/pages/SlugPage'
 import SlideshowPage from '@/pages/SlideshowPage'
 import SignatureLabPage from '@/pages/SignatureLabPage'
@@ -81,6 +82,7 @@ export default function App() {
       <Route path="/admin/weddings/new" element={<NewWeddingPage />} />
       <Route path="/admin/weddings/:id" element={<WeddingDetailPage />} />
       <Route path="/admin/weddings/:id/gallery" element={<AdminGalleryPage />} />
+      <Route path="/admin/weddings/:id/print" element={<PrintSignPage />} />
       <Route path="/admin/signature-lab" element={<SignatureLabPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       {/* Vanity slug — must be last; only matches single-segment paths not caught above */}
