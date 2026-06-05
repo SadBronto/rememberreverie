@@ -146,8 +146,8 @@ export default function AnnotatePage() {
     if (modeRef.current === 'pressure') {
       // Perfect-freehand: simulatePressure derives width from drawing speed
       const outline = getStroke(pts.map(p => [p.x, p.y] as [number, number]), {
-        size: weight,
-        thinning: 0.72,
+        size: weight * 3.2,
+        thinning: 0.62,
         smoothing: 0.86,
         streamline: 0.72,
         simulatePressure: true,
@@ -157,8 +157,8 @@ export default function AnnotatePage() {
         // Redraw all previous strokes
         for (const prevStroke of strokePointsHistoryRef.current) {
           const prevOutline = getStroke(prevStroke.points, {
-            size: prevStroke.weight,
-            thinning: 0.72,
+            size: prevStroke.weight * 3.2,
+            thinning: 0.62,
             smoothing: 0.86,
             streamline: 0.72,
             simulatePressure: true,
@@ -221,10 +221,10 @@ export default function AnnotatePage() {
           weight,
         })
         if (pts.length === 1) {
-          // Tap: draw a dot
+          // Tap: draw a dot sized to match the pressure line
           ctx.fillStyle = color
           ctx.beginPath()
-          ctx.arc(pts[0]!.x, pts[0]!.y, weight / 2, 0, Math.PI * 2)
+          ctx.arc(pts[0]!.x, pts[0]!.y, (weight * 3.2) / 4, 0, Math.PI * 2)
           ctx.fill()
         }
         // For pressure mode, the stroke is already drawn in onPointerMove
@@ -268,8 +268,8 @@ export default function AnnotatePage() {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       for (const stroke of strokePointsHistoryRef.current) {
         const outline = getStroke(stroke.points, {
-          size: stroke.weight,
-          thinning: 0.72,
+          size: stroke.weight * 3.2,
+          thinning: 0.62,
           smoothing: 0.86,
           streamline: 0.72,
           simulatePressure: true,
