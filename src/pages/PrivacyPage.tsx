@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 
-const CONTACT_EMAIL = 'contact@rememberreverie.com'
-const LAST_UPDATED  = 'June 5, 2026'
+const CONTACT_URL  = 'https://www.thirddegreeentertainment.com/contact'
+const LAST_UPDATED = 'June 5, 2026'
 
 // Privacy policy — also serves as a legitimacy signal for the domain (a real
 // business with a clear data policy + contact, not a phishing throwaway).
@@ -19,10 +19,11 @@ export default function PrivacyPage() {
         </header>
 
         <p className="text-sans text-sm leading-relaxed">
-          Reverie is a private photo-sharing service for weddings and events. A host creates
-          a gallery, guests capture photos through their phone's browser, and those photos
-          appear in the host's private gallery and (optionally) a live slideshow. This policy
-          explains what we collect, how we use it, and your choices.
+          Reverie is a private photo-sharing service for weddings and events, operated by
+          Third Degree Entertainment. A host creates a gallery, guests capture photos through
+          their phone's browser, and those photos appear in the host's private gallery and
+          (optionally) a live slideshow. This policy explains what we collect, how we use it,
+          and your choices.
         </p>
 
         <Section title="Information we collect">
@@ -72,7 +73,7 @@ export default function PrivacyPage() {
         <Section title="Your choices">
           <Bullet>Download your photos at any time from your gallery.</Bullet>
           <Bullet>Hide or delete individual photos from your gallery.</Bullet>
-          <Bullet>Request access to, or deletion of, your account and data by emailing us.</Bullet>
+          <Bullet>Request access to, or deletion of, your account and data by contacting us (see below).</Bullet>
         </Section>
 
         <Section title="Children">
@@ -91,16 +92,17 @@ export default function PrivacyPage() {
 
         <Section title="Contact">
           <p className="text-sans text-sm leading-relaxed">
-            Questions or requests? Email{' '}
-            <a href={`mailto:${CONTACT_EMAIL}`} className="text-cream underline underline-offset-2">
-              {CONTACT_EMAIL}
+            Reverie is operated by Third Degree Entertainment. For questions or requests —
+            including access to or deletion of your data — please reach us through{' '}
+            <a href={CONTACT_URL} target="_blank" rel="noopener noreferrer" className="text-cream underline underline-offset-2">
+              thirddegreeentertainment.com/contact
             </a>.
           </p>
         </Section>
 
         <footer className="border-t border-cream/10 pt-6 mt-2">
           <p className="text-mono text-cream/25 text-[10px] tracking-[0.2em] uppercase">
-            © {new Date().getFullYear()} Reverie · RememberReverie.com
+            © {new Date().getFullYear()} Third Degree Entertainment · Reverie
           </p>
         </footer>
       </div>

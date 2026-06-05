@@ -107,9 +107,9 @@ export default function DemoLandingPage() {
           Every wedding. Every memory.
         </p>
         <p className="text-mono text-cream/20 text-[9px] tracking-[0.2em]">
-          Reverie
+          Reverie by Third Degree Entertainment
           {' · '}
-          <a href="mailto:contact@rememberreverie.com" className="hover:text-cream/40 transition-colors">Contact</a>
+          <a href="https://www.thirddegreeentertainment.com/contact" target="_blank" rel="noopener noreferrer" className="hover:text-cream/40 transition-colors">Contact</a>
           {' · '}
           <Link to="/privacy" className="hover:text-cream/40 transition-colors">Privacy</Link>
         </p>

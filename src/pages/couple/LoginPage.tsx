@@ -118,11 +118,11 @@ export default function LoginPage() {
       {/* Context + legitimacy links */}
       <div className="mt-12 text-center max-w-xs">
         <p className="text-sans text-cream/25 text-[11px] leading-relaxed">
-          Reverie is a private photo-sharing service for weddings &amp; events.
-          We use one-time email links to sign you in — never a password.
+          Reverie is a private photo-sharing service for weddings &amp; events, by
+          Third Degree Entertainment. We use one-time email links to sign you in — never a password.
         </p>
         <p className="text-mono text-cream/15 text-[9px] tracking-[0.2em] mt-3">
-          <a href="mailto:contact@rememberreverie.com" className="hover:text-cream/40 transition-colors">Contact</a>
+          <a href="https://www.thirddegreeentertainment.com/contact" target="_blank" rel="noopener noreferrer" className="hover:text-cream/40 transition-colors">Contact</a>
           {' · '}
           <Link to="/privacy" className="hover:text-cream/40 transition-colors">Privacy</Link>
         </p>
