@@ -15,7 +15,7 @@ interface SessionRecord {
 }
 
 interface GalleryData {
-  wedding: { id: string; coupleNames: string; weddingDate: string }
+  wedding: { id: string; coupleNames: string; weddingDate: string; slug?: string | null }
   coupleReviewEnabled?: boolean
   sessions: SessionRecord[]
 }
@@ -385,7 +385,9 @@ export default function CoupleGalleryPage() {
       {/* Slideshow CTA */}
       <div className="px-4 pt-3 pb-1">
         <a
-          href={`/w/${weddingId}/slideshow`}
+          href={data?.wedding.slug
+            ? `https://slideshow.rememberreverie.com/${data.wedding.slug}`
+            : `/w/${weddingId}/slideshow`}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center justify-between gap-4 bg-ink-light border border-cream/10 rounded-2xl px-4 py-4 touch-manipulation active:bg-cream/5 transition-colors group"
