@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Polaroid frame options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&family=DM+Mono:wght@400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background:
+      radial-gradient(circle at 30% 20%, #d9cbb8 0%, transparent 60%),
+      linear-gradient(135deg, #cdbfa8 0%, #b9a98e 100%);
+    min-height: 100vh;
+    padding: 48px 32px 80px;
+    color: #2a241c;
+  }
+  h1 { font-family: 'Playfair Display', serif; font-weight: 400; font-size: 30px; text-align: center; color: #1a1612; }
+  .sub { text-align: center; font-size: 13px; color: #5a5040; margin: 8px 0 40px; letter-spacing: 0.02em; }
+  .row { display: flex; flex-wrap: wrap; gap: 56px; justify-content: center; align-items: flex-start; }
+  .cell { display: flex; flex-direction: column; align-items: center; gap: 16px; width: 300px; }
+  .tag { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase; color: #4a4030; }
+  .name { font-family: 'Playfair Display', serif; font-size: 17px; color: #1a1612; }
+  .desc { font-size: 12px; line-height: 1.5; color: #5a5040; text-align: center; max-width: 260px; }
+  canvas { width: 300px; height: auto; display: block; }
+  .clean   canvas { box-shadow: 0 6px 18px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.15); }
+  .warm    canvas { box-shadow: 0 10px 26px rgba(40,28,12,0.26), 0 2px 5px rgba(40,28,12,0.2); }
+  .vintage canvas { box-shadow: 0 13px 32px rgba(40,24,8,0.32), 0 2px 6px rgba(40,24,8,0.22); }
+  .flat    canvas { box-shadow: none; outline: 1px dashed rgba(0,0,0,0.2); }
+  .note { text-align:center; font-size:12px; color:#4a4030; margin-top:48px; line-height:1.6; }
+</style>
+</head>
+<body>
+  <h1>Polaroid frame — pick a direction</h1>
+  <p class="sub">Frame, texture &amp; inner shadow are baked into the photo. The drop shadow is added when displayed (gallery &amp; slideshow).</p>
+  <div class="row">
+    <div class="cell flat">
+      <div class="tag">Current</div>
+      <canvas id="c0"></canvas>
+      <div class="name">Flat</div>
+      <div class="desc">What ships today — a plain fill. No depth.</div>
+    </div>
+    <div class="cell clean">
+      <div class="tag">Option A</div>
+      <canvas id="c1"></canvas>
+      <div class="name">Clean</div>
+      <div class="desc">Crisp cream frame, soft inner shadow so the photo sits <em>in</em> the frame. Modern, minimal.</div>
+    </div>
+    <div class="cell warm">
+      <div class="tag">Option B</div>
+      <canvas id="c2"></canvas>
+      <div class="name">Warm vintage</div>
+      <div class="desc">Faint paper grain, warm gradient, gentle aged corners. Closest to your reference.</div>
+    </div>
+    <div class="cell vintage">
+      <div class="tag">Option C</div>
+      <canvas id="c3"></canvas>
+      <div class="name">Heavy vintage</div>
+      <div class="desc">More texture, browned corners, a faint develop line up top. Most "real film."</div>
+    </div>
+  </div>
+  <p class="note">Same photo &amp; caption in every frame so you're comparing only the border treatment.</p>
+
+<script>
+const IMG = '/gallery/pexels-pavel-danilyuk-8815267.jpg';
+const NAMES = 'Corey & Stephanie';
+const DATE  = "06 · 04 · '26";
+
+// Real geometry from config/modes.ts (polaroid): square image, borders as fraction of image
+const IMGSIZE = 600;
+const bT = Math.round(IMGSIZE * 0.055);
+const bL = Math.round(IMGSIZE * 0.055);
+const bR = Math.round(IMGSIZE * 0.055);
+const bB = Math.round(IMGSIZE * 0.28);
+const W = IMGSIZE + bL + bR;
+const H = IMGSIZE + bT + bB;
+
+function drawPhoto(ctx, img) {
+  // cover-fit the source into the square image area
+  const dx = bL, dy = bT, dw = IMGSIZE, dh = IMGSIZE;
+  const sAsp = img.naturalWidth / img.naturalHeight;
+  let sx=0, sy=0, sw=img.naturalWidth, sh=img.naturalHeight;
+  if (sAsp > 1) { sw = img.naturalHeight; sx = (img.naturalWidth - sw)/2; }
+  else { sh = img.naturalWidth; sy = (img.naturalHeight - sh)/2; }
+  // gentle polaroid warmth so it reads like the real filter
+  ctx.save();
+  ctx.filter = 'contrast(0.95) saturate(0.86) brightness(1.03)';
+  ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+  ctx.restore();
+}
+
+function innerShadow(ctx, strength) {
+  const x=bL, y=bT, w=IMGSIZE, h=IMGSIZE, blur=Math.round(IMGSIZE*0.03);
+  const c0 = 'rgba(15,10,4,'+strength+')', c1='rgba(15,10,4,0)';
+  let g;
+  g=ctx.createLinearGradient(0,y,0,y+blur); g.addColorStop(0,c0); g.addColorStop(1,c1); ctx.fillStyle=g; ctx.fillRect(x,y,w,blur);
+  g=ctx.createLinearGradient(0,y+h,0,y+h-blur); g.addColorStop(0,c0); g.addColorStop(1,c1); ctx.fillStyle=g; ctx.fillRect(x,y+h-blur,w,blur);
+  g=ctx.createLinearGradient(x,0,x+blur,0); g.addColorStop(0,c0); g.addColorStop(1,c1); ctx.fillStyle=g; ctx.fillRect(x,y,blur,h);
+  g=ctx.createLinearGradient(x+w,0,x+w-blur,0); g.addColorStop(0,c0); g.addColorStop(1,c1); ctx.fillStyle=g; ctx.fillRect(x+w-blur,y,blur,h);
+  // crisp seam line
+  ctx.strokeStyle='rgba(0,0,0,0.10)'; ctx.lineWidth=1; ctx.strokeRect(x+0.5,y+0.5,w-1,h-1);
+}
+
+function paperGrain(ctx, alpha) {
+  const n=document.createElement('canvas'); n.width=W; n.height=H;
+  const nc=n.getContext('2d'); const id=nc.createImageData(W,H);
+  for(let i=0;i<id.data.length;i+=4){ const v=180+Math.random()*75; id.data[i]=v; id.data[i+1]=v; id.data[i+2]=v; id.data[i+3]=255; }
+  nc.putImageData(id,0,0);
+  ctx.save(); ctx.globalAlpha=alpha; ctx.globalCompositeOperation='multiply'; ctx.drawImage(n,0,0); ctx.restore();
+}
+
+function agedCorners(ctx, strength, tint) {
+  const corners=[[0,0],[W,0],[0,H],[W,H]];
+  for(const [cx,cy] of corners){
+    const g=ctx.createRadialGradient(cx,cy,0,cx,cy,W*0.5);
+    g.addColorStop(0, tint.replace('A', strength));
+    g.addColorStop(1, tint.replace('A','0'));
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  }
+}
+
+function caption(ctx, opacityNames, opacityDate, colorNames, colorDate) {
+  const cx=W/2;
+  const dateY=H - Math.round(bB*0.30);
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  ctx.font='400 16px "DM Mono", monospace';
+  ctx.fillStyle=colorDate.replace('A',opacityDate);
+  ctx.fillText(DATE, cx, dateY);
+  ctx.font='italic 400 30px "Playfair Display", serif';
+  ctx.fillStyle=colorNames.replace('A',opacityNames);
+  ctx.fillText(NAMES, cx, dateY - 30);
+}
+
+function render(canvas, img, style) {
+  canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d');
+
+  if (style==='flat') {
+    ctx.fillStyle='#faf8f4'; ctx.fillRect(0,0,W,H);
+    drawPhoto(ctx,img);
+    caption(ctx, '0.88','0.45', 'rgba(40,34,26,A)', 'rgba(40,34,26,A)');
+    return;
+  }
+  if (style==='clean') {
+    ctx.fillStyle='#faf8f4'; ctx.fillRect(0,0,W,H);
+    drawPhoto(ctx,img);
+    innerShadow(ctx, 0.16);
+    caption(ctx, '0.9','0.5', 'rgba(34,28,20,A)', 'rgba(34,28,20,A)');
+    return;
+  }
+  if (style==='warm') {
+    const g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#fbf9f5'); g.addColorStop(1,'#f2ebdf');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    paperGrain(ctx, 0.05);
+    agedCorners(ctx, '0.05', 'rgba(120,90,50,A)');
+    drawPhoto(ctx,img);
+    innerShadow(ctx, 0.18);
+    caption(ctx, '0.9','0.5', 'rgba(60,44,28,A)', 'rgba(80,60,40,A)');
+    return;
+  }
+  if (style==='vintage') {
+    const g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#f7f1e6'); g.addColorStop(1,'#ece0cc');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    paperGrain(ctx, 0.10);
+    agedCorners(ctx, '0.12', 'rgba(110,75,38,A)');
+    // faint develop line near top
+    ctx.fillStyle='rgba(120,90,55,0.08)'; ctx.fillRect(bL, Math.round(bT*0.4), IMGSIZE, 2);
+    drawPhoto(ctx,img);
+    innerShadow(ctx, 0.22);
+    caption(ctx, '0.92','0.55', 'rgba(70,48,26,A)', 'rgba(90,64,40,A)');
+    return;
+  }
+}
+
+async function main(){
+  await Promise.all([
+    document.fonts.load('italic 30px "Playfair Display"'),
+    document.fonts.load('400 16px "DM Mono"'),
+  ]).catch(()=>{});
+  const img=new Image();
+  img.crossOrigin='anonymous';
+  img.onload=()=>{
+    render(document.getElementById('c0'), img, 'flat');
+    render(document.getElementById('c1'), img, 'clean');
+    render(document.getElementById('c2'), img, 'warm');
+    render(document.getElementById('c3'), img, 'vintage');
+  };
+  img.onerror=()=>{
+    // fallback: solid block so frames still render
+    const ph=document.createElement('canvas'); ph.width=ph.height=600;
+    const p=ph.getContext('2d'); p.fillStyle='#7a6a55'; p.fillRect(0,0,600,600);
+    const im=new Image(); im.onload=()=>{
+      render(document.getElementById('c0'), im, 'flat');
+      render(document.getElementById('c1'), im, 'clean');
+      render(document.getElementById('c2'), im, 'warm');
+      render(document.getElementById('c3'), im, 'vintage');
+    }; im.src=ph.toDataURL();
+  };
+  img.src=IMG;
+}
+main();
+</script>
+</body>
+</html>
