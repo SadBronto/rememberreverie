@@ -365,8 +365,7 @@ function drawElegant(
   bB: number,
   coupleNames?: string,
 ) {
-  const t = now()
-  const datePart = `${t.mm} · ${t.dd} · '${t.yy}`
+  const datePart = new Date().toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })
   const nameSize = Math.round(w * 0.024)
   const dateSize = Math.round(w * 0.013)
   const lineGap  = Math.round(nameSize * 0.45)
