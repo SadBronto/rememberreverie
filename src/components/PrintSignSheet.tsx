@@ -47,7 +47,7 @@ export default function PrintSignSheet({
           style={{
             width: '8.5in',
             minHeight: '11in',
-            background: 'linear-gradient(180deg, #fbfaf7 0%, #f4efe6 100%)',
+            background: '#ffffff',
             boxShadow: '0 10px 40px rgba(0,0,0,0.4)',
             display: 'flex',
             flexDirection: 'column',
