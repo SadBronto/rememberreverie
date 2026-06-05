@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import { useSessionStore } from '@/store/sessionStore'
 import { useDemoStore, DEMO_PROMPTS } from '@/store/demoStore'
-import { CAMERA_MODES } from '@/config/modes'
+import { CAMERA_MODES, type CameraModeConfig } from '@/config/modes'
 import { processSession } from '@/lib/imageProcessor'
 import { playShutterSound } from '@/lib/sound'
 import { flushPendingUploads, countRecovery } from '@/lib/recovery'
@@ -28,8 +28,17 @@ export default function CameraPage() {
   const [flashVisible, setFlashVisible] = useState(false)
   const [cameraError, setCameraError] = useState<CameraError>(null)
   const [pendingCount, setPendingCount] = useState(0)
+  // Disposable can be shot landscape OR portrait (guest's choice, this mode only)
+  const [dispOrientation, setDispOrientation] = useState<'landscape' | 'portrait'>('landscape')
 
   const modeConfig = CAMERA_MODES[selectedMode]
+  // Disposable portrait flips the aspect ratio; everything else uses its own config.
+  const captureConfig = useMemo<CameraModeConfig>(() => {
+    if (selectedMode === 'disposable' && dispOrientation === 'portrait') {
+      return { ...modeConfig, aspectRatio: 2 / 3, orientation: 'portrait' }
+    }
+    return modeConfig
+  }, [selectedMode, dispOrientation, modeConfig])
   const isDemo = weddingConfig?.isDemoMode ?? false
   const photoCap = weddingConfig?.photoCap
   const atPhotoLimit = photoCap !== undefined && photosTaken >= photoCap
@@ -40,7 +49,7 @@ export default function CameraPage() {
     startCamera()
     return () => stopCamera()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMode])
+  }, [selectedMode, dispOrientation])
 
   // Retry any photos that didn't finish uploading on a previous visit, and keep a
   // live count so the guest can SEE that stranded photos are still being handled
@@ -65,11 +74,11 @@ export default function CameraPage() {
   async function startCamera() {
     stopCamera()
     setCameraError(null)
-    const isLandscape = modeConfig.aspectRatio > 1
+    const isLandscape = captureConfig.aspectRatio > 1
     const videoConstraints = {
       width: { ideal: isLandscape ? 3840 : 2160 },
       height: { ideal: isLandscape ? 2160 : 3840 },
-      aspectRatio: { ideal: modeConfig.aspectRatio },
+      aspectRatio: { ideal: captureConfig.aspectRatio },
     }
 
     // Try rear camera first, fall back to front camera / webcam
@@ -145,7 +154,7 @@ export default function CameraPage() {
 
       const outputBlob = await processSession(
         sourceImages,
-        modeConfig,
+        captureConfig,
         {
           timestampEnabled: weddingConfig.timestampEnabled,
           timestampStyle:   weddingConfig.timestampStyle,
@@ -195,7 +204,7 @@ export default function CameraPage() {
     } catch {
       setPhase('ready')
     }
-  }, [phase, weddingConfig, selectedMode, modeConfig, atPhotoLimit, isDemo, photosTaken, photoCap, beginSession, setActiveSessionOutput, finalizeSession, incrementPhotoCount, advancePrompt, navigate, weddingId])
+  }, [phase, weddingConfig, selectedMode, modeConfig, captureConfig, atPhotoLimit, isDemo, photosTaken, photoCap, beginSession, setActiveSessionOutput, finalizeSession, incrementPhotoCount, advancePrompt, navigate, weddingId])
 
   if (!weddingConfig) return null
 
@@ -277,6 +286,23 @@ export default function CameraPage() {
 
       {/* Bottom controls */}
       <div className="relative z-10 w-full flex flex-col items-center gap-5 pb-8 safe-bottom">
+        {/* Disposable orientation toggle (this mode only) */}
+        {selectedMode === 'disposable' && phase === 'ready' && (
+          <div className="flex gap-1.5">
+            {(['landscape', 'portrait'] as const).map(o => (
+              <button
+                key={o}
+                onClick={() => setDispOrientation(o)}
+                className={`px-3 py-1 rounded-full text-mono text-[10px] tracking-widest uppercase touch-manipulation transition-colors ${
+                  dispOrientation === o ? 'bg-cream text-ink' : 'border border-cream/20 text-cream/50'
+                }`}
+              >
+                {o}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Mode selector — only shown when couple has enabled multiple styles */}
         {allowedModes.length > 1 && (
           <ModeSelector
