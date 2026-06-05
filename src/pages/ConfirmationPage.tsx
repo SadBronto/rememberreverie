@@ -13,6 +13,7 @@ export default function ConfirmationPage() {
   const [textVisible, setTextVisible] = useState(false)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const [progress, setProgress] = useState(0)
+  const [paused, setPaused] = useState(false)   // stop auto-return once the guest engages save/share
 
   const lastSession = completedSessions[completedSessions.length - 1]
   const annotation = lastSession?.annotation ?? null
@@ -35,8 +36,9 @@ export default function ConfirmationPage() {
     return () => { clearTimeout(t1); clearTimeout(t2) }
   }, [])
 
-  // Auto-return progress bar + navigation
+  // Auto-return progress bar + navigation (skipped once the guest engages save/share)
   useEffect(() => {
+    if (paused) return
     const start = Date.now()
     const tick = () => {
       const elapsed = Date.now() - start
@@ -53,7 +55,25 @@ export default function ConfirmationPage() {
     )
 
     return () => { cancelAnimationFrame(raf); clearTimeout(nav) }
-  }, [navigate, weddingId])
+  }, [navigate, weddingId, paused])
+
+  async function handleSaveShare() {
+    setPaused(true)  // give the guest time to use the share sheet
+    const file = await buildShareFile(lastSession?.outputImage ?? null, annotation?.dataUrl ?? null, lastSession?.weddingId)
+    if (!file) return
+    const n = navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean }
+    if (n.share && n.canShare && n.canShare({ files: [file] })) {
+      try { await n.share({ files: [file], title: 'My photo' }) } catch { /* user cancelled */ }
+    } else {
+      // Desktop / unsupported — fall back to a direct download
+      const url = URL.createObjectURL(file)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = file.name
+      a.click()
+      URL.revokeObjectURL(url)
+    }
+  }
 
   return (
     <div className="flex flex-col items-center min-h-dvh bg-ink px-5 safe-top safe-bottom overflow-hidden">
@@ -140,23 +160,74 @@ export default function ConfirmationPage() {
             : 'Thank you for sharing this with us.'}
         </p>
 
+        {photoUrl && (
+          <button
+            onClick={handleSaveShare}
+            className="mt-2 px-7 py-3 rounded-full bg-cream text-ink text-sans text-sm font-medium tracking-widest uppercase active:scale-[0.97] transition-transform touch-manipulation"
+          >
+            Save / Share
+          </button>
+        )}
+
         <button
           onClick={() => navigate(`/w/${weddingId ?? 'demo'}/camera`, { replace: true })}
-          className="mt-2 text-mono text-cream/30 text-[10px] tracking-widest uppercase touch-manipulation"
+          className="mt-1 text-mono text-cream/30 text-[10px] tracking-widest uppercase touch-manipulation"
         >
           Take Another
         </button>
       </div>
 
-      {/* Auto-return progress bar */}
-      <div className="w-full h-px bg-cream/5 absolute bottom-0 left-0">
-        <div
-          className="h-full bg-cream/20 transition-none"
-          style={{ width: `${progress * 100}%` }}
-        />
-      </div>
+      {/* Auto-return progress bar — hidden once the guest pauses to save/share */}
+      {!paused && (
+        <div className="w-full h-px bg-cream/5 absolute bottom-0 left-0">
+          <div
+            className="h-full bg-cream/20 transition-none"
+            style={{ width: `${progress * 100}%` }}
+          />
+        </div>
+      )}
     </div>
   )
+}
+
+function loadImg(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = src
+  })
+}
+
+// Produce a single shareable JPEG. Real sessions keep the signature as a separate
+// overlay, so composite it; demo sessions already bake it into the photo.
+async function buildShareFile(
+  photoBlob: Blob | null,
+  annotationDataUrl: string | null,
+  weddingId?: string,
+): Promise<File | null> {
+  if (!photoBlob) return null
+  const isDemo = weddingId?.startsWith('demo-') ?? false
+  if (!annotationDataUrl || isDemo) {
+    return new File([photoBlob], 'reverie-memory.jpg', { type: 'image/jpeg' })
+  }
+  try {
+    const url = URL.createObjectURL(photoBlob)
+    const [photo, annot] = await Promise.all([loadImg(url), loadImg(annotationDataUrl)])
+    URL.revokeObjectURL(url)
+    const canvas = document.createElement('canvas')
+    canvas.width = photo.naturalWidth
+    canvas.height = photo.naturalHeight
+    const ctx = canvas.getContext('2d')!
+    ctx.drawImage(photo, 0, 0)
+    ctx.globalCompositeOperation = 'multiply'
+    ctx.drawImage(annot, 0, 0, canvas.width, canvas.height)
+    ctx.globalCompositeOperation = 'source-over'
+    const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/jpeg', 0.95))
+    return new File([blob ?? photoBlob], 'reverie-memory.jpg', { type: 'image/jpeg' })
+  } catch {
+    return new File([photoBlob], 'reverie-memory.jpg', { type: 'image/jpeg' })
+  }
 }
 
 function UploadingSpinner() {

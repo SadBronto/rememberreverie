@@ -65,8 +65,8 @@ export default function DemoLandingPage() {
           className="mt-6 transition-all duration-700 delay-300"
           style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(8px)' }}
         >
-          <p className="text-sans text-cream/45 text-sm font-light leading-relaxed max-w-[260px] mx-auto">
-            A premium disposable camera experience built for weddings.
+          <p className="text-sans text-cream/45 text-sm font-light leading-relaxed max-w-[280px] mx-auto">
+            The magic of disposable cameras, reimagined for modern events.
           </p>
         </div>
 

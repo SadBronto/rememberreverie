@@ -103,26 +103,29 @@ export const useSessionStore = create<SessionState>((set) => ({
       completedSessions: [...state.completedSessions, { ...session, uploadStatus: 'uploading' }],
     }))
 
-    const result = await uploadSession(session)
+    // Upload in the BACKGROUND so the guest isn't blocked on a spinner. The
+    // confirmation screen shows the photo immediately and reflects 'uploading' →
+    // 'success'/'failed' as this resolves. Recovery + the camera-mount flush cover
+    // a failed upload or a closed tab.
+    void uploadSession(session).then((result) => {
+      const updatedSession: CaptureSession = {
+        ...session,
+        uploadStatus: result.success ? 'success' : 'failed',
+        memoryNumber: result.memoryNumber ?? null,
+        retryCount: result.retryCount,
+      }
+      // Remove the recovery copy only on confirmed success; otherwise it stays
+      // queued for a later retry.
+      if (result.success) void removeRecovery(session.id)
 
-    const updatedSession: CaptureSession = {
-      ...session,
-      uploadStatus: result.success ? 'success' : 'failed',
-      memoryNumber: result.memoryNumber ?? null,
-      retryCount: result.retryCount,
-    }
-
-    // Remove the recovery copy only on confirmed success; otherwise it stays
-    // queued for a later retry.
-    if (result.success) void removeRecovery(session.id)
-
-    set((state) => ({
-      // Same race-condition guard as the demo path above
-      activeSession: state.activeSession?.id === session.id ? null : state.activeSession,
-      completedSessions: state.completedSessions.map((s) =>
-        s.id === session.id ? updatedSession : s
-      ),
-    }))
+      set((state) => ({
+        // Same race-condition guard as the demo path above
+        activeSession: state.activeSession?.id === session.id ? null : state.activeSession,
+        completedSessions: state.completedSessions.map((s) =>
+          s.id === session.id ? updatedSession : s
+        ),
+      }))
+    })
   },
 
   clearActiveSession: () => set({ activeSession: null }),
