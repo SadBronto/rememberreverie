@@ -8,9 +8,22 @@ interface GalleryPhoto {
   memoryNumber: number | null
   capturedAt: string | null
   uploadedAt: string
-  status: 'active' | 'hidden'
+  status: 'active' | 'hidden' | 'flagged'
+  moderationLabels: string | null
   photoUrl: string | null
   annotationUrl: string | null
+}
+
+// Short human reason from the stored SafeSearch result, e.g. "adult likely"
+function moderationReason(labels: string | null): string | null {
+  if (!labels) return null
+  try {
+    const o = JSON.parse(labels) as Record<string, string>
+    const parts = Object.entries(o)
+      .filter(([, v]) => v === 'LIKELY' || v === 'VERY_LIKELY')
+      .map(([k, v]) => `${k} ${v.replace('_', ' ').toLowerCase()}`)
+    return parts.length ? parts.join(', ') : null
+  } catch { return null }
 }
 
 const PAGE_SIZE = 48
@@ -83,6 +96,20 @@ export default function AdminGalleryPage() {
     }
   }
 
+  // Restore a flagged/hidden photo to active, or manually hide an active one.
+  async function setStatus(photo: GalleryPhoto, status: 'active' | 'hidden') {
+    if (!tokenRef.current) return
+    const res = await fetch(`/api/admin/session?sessionId=${photo.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenRef.current}` },
+      body: JSON.stringify({ status }),
+    })
+    if (res.ok) {
+      setPhotos(prev => prev.map(p => p.id === photo.id ? { ...p, status } : p))
+      setLightbox(prev => prev ? { ...prev, status } : prev)
+    }
+  }
+
   // ── Filtering (client-side on loaded batch) ───────────────────
 
   const filtered = photos.filter(p => {
@@ -92,6 +119,7 @@ export default function AdminGalleryPage() {
   })
 
   const hasMore = photos.length < total
+  const flaggedCount = photos.filter(p => p.status === 'flagged').length
 
   // ── Loading ───────────────────────────────────────────────────
 
@@ -127,9 +155,12 @@ export default function AdminGalleryPage() {
         <FilterChip active={filterMode === 'polaroid'}   onClick={() => setFilterMode('polaroid')}>Polaroid</FilterChip>
         <FilterChip active={filterMode === 'super8'}     onClick={() => setFilterMode('super8')}>Super 8</FilterChip>
         <span className="text-cream/10">·</span>
-        <FilterChip active={filterStatus === 'all'}    onClick={() => setFilterStatus('all')}>All</FilterChip>
-        <FilterChip active={filterStatus === 'active'} onClick={() => setFilterStatus('active')}>Visible</FilterChip>
-        <FilterChip active={filterStatus === 'hidden'} onClick={() => setFilterStatus('hidden')}>Hidden</FilterChip>
+        <FilterChip active={filterStatus === 'all'}     onClick={() => setFilterStatus('all')}>All</FilterChip>
+        <FilterChip active={filterStatus === 'active'}  onClick={() => setFilterStatus('active')}>Visible</FilterChip>
+        <FilterChip active={filterStatus === 'hidden'}  onClick={() => setFilterStatus('hidden')}>Hidden</FilterChip>
+        <FilterChip active={filterStatus === 'flagged'} onClick={() => setFilterStatus('flagged')}>
+          Flagged{flaggedCount > 0 ? ` (${flaggedCount})` : ''}
+        </FilterChip>
       </div>
 
       {/* Grid */}
@@ -206,6 +237,11 @@ export default function AdminGalleryPage() {
             {lightbox.status === 'hidden' && (
               <p className="text-mono text-amber-film/50 text-xs tracking-widest uppercase">Hidden</p>
             )}
+            {lightbox.status === 'flagged' && (
+              <p className="text-mono text-red-400/70 text-xs tracking-widest uppercase">
+                Flagged{moderationReason(lightbox.moderationLabels) ? ` · ${moderationReason(lightbox.moderationLabels)}` : ''}
+              </p>
+            )}
             {lightbox.capturedAt && (
               <p className="text-mono text-cream/25 text-xs tracking-widest">
                 {new Date(lightbox.capturedAt).toLocaleString('en-US', {
@@ -237,6 +273,28 @@ export default function AdminGalleryPage() {
                     >
                       Download
                     </a>
+                  </>
+                )}
+                {(lightbox.status === 'flagged' || lightbox.status === 'hidden') && (
+                  <>
+                    <span className="text-cream/10">·</span>
+                    <button
+                      onClick={() => setStatus(lightbox, 'active')}
+                      className="text-mono text-green-400/50 text-[10px] tracking-[0.3em] uppercase hover:text-green-400/80 transition-colors touch-manipulation"
+                    >
+                      Restore
+                    </button>
+                  </>
+                )}
+                {lightbox.status === 'active' && (
+                  <>
+                    <span className="text-cream/10">·</span>
+                    <button
+                      onClick={() => setStatus(lightbox, 'hidden')}
+                      className="text-mono text-cream/20 text-[10px] tracking-[0.3em] uppercase hover:text-cream/40 transition-colors touch-manipulation"
+                    >
+                      Hide
+                    </button>
                   </>
                 )}
                 <span className="text-cream/10">·</span>
@@ -300,11 +358,19 @@ function GalleryTile({ photo, onClick }: { photo: GalleryPhoto; onClick: () => v
             />
           )}
           <div className="absolute inset-0 bg-ink/0 group-hover:bg-ink/25 transition-colors duration-150" />
+          {photo.status === 'flagged' && (
+            <div className="absolute inset-0 ring-2 ring-inset ring-red-500/70 rounded-md pointer-events-none" />
+          )}
           {photo.memoryNumber != null && (
             <div className="absolute top-1 left-1 bg-ink/70 rounded px-1 py-px">
               <p className="text-mono text-cream/50 text-[8px] tracking-[0.15em]">
                 #{photo.memoryNumber}
               </p>
+            </div>
+          )}
+          {photo.status === 'flagged' && (
+            <div className="absolute top-1 right-1 bg-red-500/85 rounded px-1 py-px">
+              <p className="text-mono text-white text-[8px] tracking-[0.15em] uppercase">Flagged</p>
             </div>
           )}
         </>
