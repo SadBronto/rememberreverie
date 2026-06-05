@@ -33,7 +33,7 @@ export const handler: Handler = async (event) => {
 
   const { data: wedding } = await admin
     .from('weddings')
-    .select('couple_names, wedding_date')
+    .select('couple_names, wedding_date, timestamp_enabled')
     .eq('id', weddingId)
     .single()
 
@@ -70,9 +70,10 @@ export const handler: Handler = async (event) => {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
     body: JSON.stringify({
-      coupleNames: wedding.couple_names,
-      weddingDate: wedding.wedding_date,
-      photos:      photos.filter(p => p.photoUrl),
+      coupleNames:      wedding.couple_names,
+      weddingDate:      wedding.wedding_date,
+      timestampEnabled: wedding.timestamp_enabled ?? false,
+      photos:           photos.filter(p => p.photoUrl),
     }),
   }
 }

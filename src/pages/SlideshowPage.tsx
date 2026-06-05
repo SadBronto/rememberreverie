@@ -13,11 +13,12 @@ interface SlideshowPhoto {
 interface SlideshowData {
   coupleNames: string
   weddingDate: string
+  timestampEnabled: boolean
   photos: SlideshowPhoto[]
 }
 
-const SLIDE_DURATION   = 6000  // ms per photo
-const TRANSITION_MS    = 700   // crossfade duration
+const SLIDE_DURATION   = 7500  // ms per photo
+const TRANSITION_MS    = 1100  // crossfade duration (gentle)
 const POLL_INTERVAL_MS = 30000 // refresh for new photos
 
 export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?: string } = {}) {
@@ -26,9 +27,11 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
 
   const [coupleNames, setCoupleNames] = useState('')
   const [weddingDate, setWeddingDate] = useState('')
+  const [timestampEnabled, setTimestampEnabled] = useState(false)
   const [photos, setPhotos]           = useState<SlideshowPhoto[]>([])
   const [index, setIndex]             = useState(0)
-  const [visible, setVisible]         = useState(true)  // opacity gate for crossfade
+  const [incoming, setIncoming]       = useState<number | null>(null) // index crossfading in on top
+  const [incomingOpacity, setIncomingOpacity] = useState(0)
   const [newCount, setNewCount]       = useState(0)     // flash indicator on new arrivals
   const [loadError, setLoadError]     = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -53,6 +56,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
 
       setCoupleNames(data.coupleNames)
       setWeddingDate(data.weddingDate)
+      setTimestampEnabled(data.timestampEnabled)
 
       setPhotos(prev => {
         const existingIds = new Set(prev.map(p => p.id))
@@ -89,21 +93,39 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   // ── Auto-advance ──────────────────────────────────────────────
 
   const advance = useCallback((delta = 1) => {
-    const total = photosRef.current.length
+    const photos = photosRef.current
+    const total = photos.length
     if (total === 0 || transitioningRef.current) return
-
     transitioningRef.current = true
-    setVisible(false)
 
-    setTimeout(() => {
-      setIndex(prev => {
-        const next = (prev + delta + total) % total
+    const next = (indexRef.current + delta + total) % total
+
+    const begin = () => {
+      // True crossfade: the new photo fades in ON TOP of the current one, which
+      // stays put underneath — so we never flash through the black background.
+      setIncoming(next)
+      setIncomingOpacity(0)
+      // Two rAFs guarantee the browser paints opacity:0 before transitioning to 1.
+      requestAnimationFrame(() => requestAnimationFrame(() => setIncomingOpacity(1)))
+      window.setTimeout(() => {
+        setIndex(next)
         indexRef.current = next
-        return next
-      })
-      setVisible(true)
-      transitioningRef.current = false
-    }, TRANSITION_MS)
+        setIncoming(null)
+        setIncomingOpacity(0)
+        transitioningRef.current = false
+      }, TRANSITION_MS)
+    }
+
+    // Preload + decode the next image first, so it appears whole (no top-down load-in).
+    const url = photos[next]?.photoUrl
+    if (!url) { begin(); return }
+    let started = false
+    const once = () => { if (!started) { started = true; begin() } }
+    const img = new Image()
+    img.onload = once
+    img.onerror = once
+    img.src = url
+    if (img.complete) once()
   }, [])
 
   // Schedule the auto-advance timer; reset it whenever index changes
@@ -145,8 +167,9 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
 
   // ── Derived state ─────────────────────────────────────────────
 
-  const currentPhoto = photos[index] ?? null
-  const total        = photos.length
+  const currentPhoto  = photos[index] ?? null
+  const incomingPhoto = incoming != null ? photos[incoming] ?? null : null
+  const total         = photos.length
 
   const formattedDate = weddingDate
     ? new Date(weddingDate + 'T12:00:00').toLocaleDateString('en-US', {
@@ -194,32 +217,17 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       className="relative min-h-dvh bg-black flex items-center justify-center overflow-hidden select-none cursor-pointer"
       onClick={() => advance(1)}
     >
-      {/* Photo (+ signature overlay) */}
-      {currentPhoto && (
-        <div
-          key={currentPhoto.id}
-          className="relative"
-          style={{
-            opacity:    visible ? 1 : 0,
-            transition: `opacity ${TRANSITION_MS}ms ease-in-out`,
-          }}
-        >
-          <img
-            src={currentPhoto.photoUrl}
-            alt=""
-            draggable={false}
-            className="max-w-full max-h-dvh object-contain"
-          />
-          {currentPhoto.annotationUrl && (
-            <img
-              src={currentPhoto.annotationUrl}
-              alt=""
-              draggable={false}
-              className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-              style={{ mixBlendMode: 'multiply' }}
-            />
-          )}
-        </div>
+      {/* Base layer — current photo, always fully opaque */}
+      {currentPhoto && <PhotoLayer key={currentPhoto.id} photo={currentPhoto} opacity={1} />}
+
+      {/* Incoming layer — next photo crossfading in on top of the current one */}
+      {incomingPhoto && (
+        <PhotoLayer
+          key={incomingPhoto.id}
+          photo={incomingPhoto}
+          opacity={incomingOpacity}
+          transitionMs={TRANSITION_MS}
+        />
       )}
 
       {/* Bottom gradient scrim */}
@@ -235,7 +243,9 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
             {coupleNames}
           </p>
         )}
-        {formattedDate && (
+        {/* #15: photos already carry a baked-in timestamp when enabled, so don't
+            duplicate the date down here in that case. */}
+        {!timestampEnabled && formattedDate && (
           <p className="text-mono text-cream/35 text-[11px] tracking-[0.3em] uppercase">
             {formattedDate}
           </p>
@@ -257,10 +267,8 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
 
       {/* Memory number — top left */}
       {currentPhoto?.memoryNumber != null && (
-        <div
-          className="absolute top-5 left-5 pointer-events-none"
-          style={{ opacity: visible ? 1 : 0, transition: `opacity ${TRANSITION_MS}ms` }}
-        >
+        <div className="absolute top-5 left-5 pointer-events-none">
+
           <p className="text-mono text-cream/25 text-[10px] tracking-[0.3em]">
             #{currentPhoto.memoryNumber}
           </p>
@@ -298,6 +306,43 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       <div className="absolute bottom-5 right-5 flex items-center gap-1.5 pointer-events-none">
         <span className="w-1.5 h-1.5 rounded-full bg-green-400/60 animate-pulse" />
         <p className="text-mono text-cream/20 text-[9px] tracking-[0.3em] uppercase">Live</p>
+      </div>
+    </div>
+  )
+}
+
+// A single centered photo (+ signature overlay), absolutely filling the stage so
+// the base and incoming layers stack for a true crossfade.
+function PhotoLayer({
+  photo,
+  opacity,
+  transitionMs,
+}: {
+  photo: SlideshowPhoto
+  opacity: number
+  transitionMs?: number
+}) {
+  return (
+    <div
+      className="absolute inset-0 flex items-center justify-center"
+      style={{ opacity, transition: transitionMs ? `opacity ${transitionMs}ms ease-in-out` : undefined }}
+    >
+      <div className="relative">
+        <img
+          src={photo.photoUrl}
+          alt=""
+          draggable={false}
+          className="max-w-full max-h-dvh object-contain"
+        />
+        {photo.annotationUrl && (
+          <img
+            src={photo.annotationUrl}
+            alt=""
+            draggable={false}
+            className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+            style={{ mixBlendMode: 'multiply' }}
+          />
+        )}
       </div>
     </div>
   )
