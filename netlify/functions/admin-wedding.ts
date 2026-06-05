@@ -93,7 +93,7 @@ export const handler: Handler = async (event) => {
     const allowed = ['couple_names', 'wedding_date', 'couple_email', 'welcome_message',
                      'allowed_modes', 'annotation_mode', 'timestamp_enabled', 'timestamp_style',
                      'photo_cap', 'status', 'slideshow_enabled', 'slug',
-                     'is_event', 'event_end_date', 'couple_review_enabled']
+                     'is_event', 'event_end_date', 'couple_review_enabled', 'qr_settings']
     const update: Record<string, unknown> = {}
     for (const key of allowed) {
       if (key in body) update[key] = body[key] ?? null

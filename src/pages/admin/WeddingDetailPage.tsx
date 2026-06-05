@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import { supabase } from '@/lib/supabase'
+import QRCreator, { type QRSettings } from '@/components/QRCreator'
 
 interface WeddingDetail {
   id: string
@@ -20,6 +21,7 @@ interface WeddingDetail {
   slideshow_enabled: boolean
   slug: string | null
   couple_review_enabled: boolean
+  qr_settings: QRSettings | null
 }
 
 interface Counts { disposable: number; polaroid: number; super8: number; total: number }
@@ -73,6 +75,7 @@ export default function WeddingDetailPage() {
   const [showDelete, setShowDelete]                       = useState(false)
   const [deleteConfirmText, setDeleteConfirmText]         = useState('')
   const [deleting, setDeleting]                           = useState(false)
+  const [showQR, setShowQR]                               = useState(false)
 
   const guestUrl = id
     ? (form.slug
@@ -211,6 +214,16 @@ export default function WeddingDetailPage() {
     if (res.ok) navigate('/admin/weddings')
   }
 
+  async function saveQR(settings: QRSettings) {
+    if (!tokenRef.current) return
+    await fetch(`/api/admin/wedding?id=${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenRef.current}` },
+      body: JSON.stringify({ qr_settings: settings }),
+    })
+    setWedding(w => w ? { ...w, qr_settings: settings } : w)
+  }
+
   async function deleteWedding() {
     if (!tokenRef.current || deleting) return
     setDeleting(true)
@@ -334,6 +347,38 @@ export default function WeddingDetailPage() {
         )
       })()}
 
+      {/* QR designer modal */}
+      {showQR && (
+        <div
+          className="fixed inset-0 z-[60] bg-ink/80 backdrop-blur-sm flex items-end justify-center"
+          onClick={e => { if (e.target === e.currentTarget) setShowQR(false) }}
+        >
+          <div className="w-full max-w-lg bg-ink border-t border-cream/10 rounded-t-3xl px-6 pt-5 pb-10 overflow-y-auto max-h-[92dvh]">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <p className="text-mono text-cream/30 text-[9px] tracking-[0.3em] uppercase">QR Code</p>
+                <h2 className="text-serif text-cream text-lg font-normal mt-0.5">Design &amp; download</h2>
+              </div>
+              <button
+                onClick={() => setShowQR(false)}
+                className="w-9 h-9 flex items-center justify-center rounded-full border border-cream/10 touch-manipulation"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 2l8 8M10 2l-8 8" stroke="rgba(245,240,232,0.5)" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
+            <QRCreator
+              url={guestUrl}
+              coupleNames={wedding.couple_names}
+              initialSettings={wedding.qr_settings}
+              onSave={saveQR}
+              onClose={() => setShowQR(false)}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="px-5 py-5 flex flex-col gap-8 max-w-lg">
 
         {/* Pending setup banner */}
@@ -383,6 +428,12 @@ export default function WeddingDetailPage() {
             </div>
 
             <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => setShowQR(true)}
+                className="self-start px-4 py-2.5 rounded-full bg-cream text-ink text-xs font-medium tracking-widest uppercase touch-manipulation active:scale-95"
+              >
+                Design QR code
+              </button>
               <button
                 onClick={downloadQR}
                 className="self-start px-4 py-2.5 rounded-full border border-cream/15 text-cream/50 text-sans text-xs tracking-widest uppercase touch-manipulation active:bg-cream/5"
