@@ -69,6 +69,9 @@ export default function WeddingDetailPage() {
   const [copiedField, setCopiedField]       = useState<string | null>(null)
   const [lightboxPhoto, setLightboxPhoto]                 = useState<RecentPhoto | null>(null)
   const [lightboxConfirmDelete, setLightboxConfirmDelete] = useState(false)
+  const [showDelete, setShowDelete]                       = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText]         = useState('')
+  const [deleting, setDeleting]                           = useState(false)
 
   const guestUrl = id
     ? (form.slug
@@ -207,6 +210,21 @@ export default function WeddingDetailPage() {
     if (res.ok) navigate('/admin/weddings')
   }
 
+  async function deleteWedding() {
+    if (!tokenRef.current || deleting) return
+    setDeleting(true)
+    const res = await fetch(`/api/admin/wedding?id=${id}&hard=true`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${tokenRef.current}` },
+    })
+    if (res.ok) {
+      navigate('/admin/weddings')
+    } else {
+      setDeleting(false)
+      alert('Delete failed. Please try again.')
+    }
+  }
+
   if (loading) return (
     <div className="min-h-dvh bg-ink flex items-center justify-center">
       <div className="w-7 h-7 rounded-full border-2 border-cream/20 border-t-cream/60 animate-spin" />
@@ -257,8 +275,63 @@ export default function WeddingDetailPage() {
           >
             Archive
           </button>
+          <button
+            onClick={() => { setShowDelete(true); setDeleteConfirmText('') }}
+            className="px-3 py-1.5 rounded-full border border-red-400/25 text-red-400/60 text-sans text-[11px] tracking-widest uppercase touch-manipulation hover:bg-red-400/5 transition-colors"
+          >
+            Delete
+          </button>
         </div>
       </div>
+
+      {/* Permanent-delete confirmation — type to confirm */}
+      {showDelete && (() => {
+        const phrase = wedding.couple_names && wedding.couple_names !== 'TBD' ? wedding.couple_names : 'DELETE'
+        const armed = deleteConfirmText.trim().toLowerCase() === phrase.toLowerCase()
+        return (
+          <div
+            className="fixed inset-0 z-[60] bg-ink/85 backdrop-blur-sm flex items-center justify-center p-5"
+            onClick={e => { if (e.target === e.currentTarget && !deleting) setShowDelete(false) }}
+          >
+            <div className="w-full max-w-sm bg-ink-light border border-red-400/20 rounded-2xl p-6 flex flex-col gap-4">
+              <div>
+                <p className="text-mono text-red-400/70 text-[10px] tracking-[0.3em] uppercase">Permanent delete</p>
+                <h2 className="text-serif text-cream text-xl font-normal mt-1.5">Delete this event &amp; all photos?</h2>
+              </div>
+              <p className="text-sans text-cream/50 text-sm leading-relaxed">
+                This erases the event and <span className="text-cream/80">every photo</span> from storage forever.
+                It cannot be undone. To keep the photos, use <span className="text-cream/80">Archive</span> instead.
+              </p>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-sans text-cream/40 text-xs">Type <span className="text-cream/80 font-medium">{phrase}</span> to confirm</span>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={e => setDeleteConfirmText(e.target.value)}
+                  autoFocus
+                  className="w-full bg-ink border border-cream/15 rounded-xl px-3.5 py-2.5 text-cream text-sans text-sm focus:outline-none focus:border-red-400/40"
+                />
+              </label>
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setShowDelete(false)}
+                  disabled={deleting}
+                  className="px-4 py-2 rounded-full border border-cream/15 text-cream/50 text-sans text-xs tracking-widest uppercase touch-manipulation disabled:opacity-40"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={deleteWedding}
+                  disabled={!armed || deleting}
+                  className="px-4 py-2 rounded-full bg-red-500/80 text-white text-sans text-xs tracking-widest uppercase touch-manipulation disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  {deleting ? 'Deleting…' : 'Delete forever'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       <div className="px-5 py-5 flex flex-col gap-8 max-w-lg">
 

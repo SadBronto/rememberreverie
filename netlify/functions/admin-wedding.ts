@@ -107,10 +107,30 @@ export const handler: Handler = async (event) => {
     return { statusCode: 200, body: JSON.stringify({ ok: true }) }
   }
 
-  // ── DELETE: archive ────────────────────────────────────────
-  // Also release the slug (unique index ignores status, so an archived event
-  // would otherwise hold its vanity URL hostage from a new event reusing it).
+  // ── DELETE: archive (default) or permanent delete (?hard=true) ─
   if (event.httpMethod === 'DELETE') {
+    const hard = event.queryStringParameters?.hard === 'true'
+
+    if (hard) {
+      // Permanent + irreversible: remove every photo from storage, then delete
+      // the wedding row (session rows cascade-delete via the FK).
+      const { data: sess } = await admin
+        .from('sessions')
+        .select('output_path, annotation_path')
+        .eq('wedding_id', id)
+      const paths = (sess ?? []).flatMap(s =>
+        [s.output_path, s.annotation_path].filter(Boolean) as string[]
+      )
+      for (let i = 0; i < paths.length; i += 100) {
+        await admin.storage.from('photos').remove(paths.slice(i, i + 100))
+      }
+      const { error } = await admin.from('weddings').delete().eq('id', id)
+      if (error) return { statusCode: 500, body: 'Failed to delete wedding' }
+      return { statusCode: 200, body: JSON.stringify({ ok: true, deleted: true }) }
+    }
+
+    // Default: soft-archive + release the slug (the unique index ignores status,
+    // so an archived event would otherwise hold its vanity URL hostage).
     const { error } = await admin.from('weddings').update({ status: 'archived', slug: null }).eq('id', id)
     if (error) return { statusCode: 500, body: 'Failed to archive wedding' }
     return { statusCode: 200, body: JSON.stringify({ ok: true }) }
