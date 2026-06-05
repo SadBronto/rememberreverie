@@ -51,12 +51,15 @@ export const handler: Handler = async (event) => {
     return { statusCode: 403, body: 'Forbidden' }
   }
 
-  // Fetch all sessions (including hidden — couple manages visibility themselves)
+  // Fetch sessions: includes hidden (couple manages visibility themselves) but
+  // EXCLUDES 'flagged' — moderation hits stay admin-only so potentially explicit
+  // content never surfaces to the couple, even under "Show hidden".
   const { data: sessions, error: sessionsError } = await admin
     .from('sessions')
     .select('id, mode, memory_number, captured_at, uploaded_at, status, output_path, annotation_path')
     .eq('wedding_id', weddingId)
     .neq('status', 'deleted')
+    .neq('status', 'flagged')
     .order('uploaded_at', { ascending: true })
 
   if (sessionsError) {
