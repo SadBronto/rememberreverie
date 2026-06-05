@@ -8,10 +8,12 @@ export default function StyledQR({
   url,
   settings,
   size = 240,
+  transparent = false,
 }: {
   url: string
   settings: QRSettings | null | undefined
   size?: number
+  transparent?: boolean   // force a transparent background (e.g. on the white print sign)
 }) {
   const [svg, setSvg] = useState('')
 
@@ -47,7 +49,7 @@ export default function StyledQR({
         bgColor:    s?.bgColor ?? '#f5f0e8',
         outerCol:   useEye ? (s?.outerEye ?? fg) : fg,
         innerCol:   useEye ? (s?.innerEye ?? fg) : fg,
-        transparent: s?.transparent ?? false,
+        transparent: transparent || (s?.transparent ?? false),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         gradDir:    (s?.gradDir as any) ?? 'none',
         gradColor2: s?.gradColor2 ?? '#8a6a40',
@@ -59,7 +61,7 @@ export default function StyledQR({
     }
     build()
     return () => { dead = true }
-  }, [url, settings, size])
+  }, [url, settings, size, transparent])
 
   if (!svg) return <div style={{ width: size, height: size }} />
   return <div style={{ width: size, height: size }} dangerouslySetInnerHTML={{ __html: svg }} />

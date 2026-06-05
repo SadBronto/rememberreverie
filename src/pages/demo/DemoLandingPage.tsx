@@ -93,7 +93,7 @@ export default function DemoLandingPage() {
             rel="noopener noreferrer"
             className="mt-2 text-mono text-cream/28 text-[10px] tracking-[0.25em] uppercase touch-manipulation hover:text-cream/50 transition-colors duration-150"
           >
-            Book for your wedding →
+            Book for your wedding or event →
           </a>
         </div>
       </main>

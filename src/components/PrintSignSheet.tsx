@@ -58,6 +58,10 @@ export default function PrintSignSheet({
             color: '#2a241c',
           }}
         >
+          <p style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic', fontWeight: 400, fontSize: '28px', color: '#5a5040', margin: '0 0 8px' }}>
+            Capture a moment for
+          </p>
+
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontWeight: 400, fontSize: '48px', lineHeight: 1.1, margin: '0 0 6px', color: '#1a1612' }}>
             {coupleNames}
           </h1>
@@ -82,7 +86,7 @@ export default function PrintSignSheet({
 
           {/* Designed QR */}
           <div style={{ background: '#ffffff', padding: '22px', borderRadius: '18px', boxShadow: '0 4px 18px rgba(40,28,12,0.12)' }}>
-            <StyledQR url={guestUrl} settings={qrSettings} size={300} />
+            <StyledQR url={guestUrl} settings={qrSettings} size={300} transparent />
           </div>
 
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '14px', color: '#5a5040', margin: '26px 0 4px' }}>
