@@ -82,6 +82,10 @@ export default function WeddingDetailPage() {
         ? `https://rememberreverie.com/${form.slug}`
         : `https://rememberreverie.com/w/${id}`)
     : ''
+  // Slideshow uses the vanity subdomain when a slug is set, else the raw /w/:id URL
+  const slideshowUrl = form.slug
+    ? `https://slideshow.rememberreverie.com/${form.slug}`
+    : `${window.location.origin}/w/${id}/slideshow`
 
   useEffect(() => {
     async function load() {
@@ -513,7 +517,7 @@ export default function WeddingDetailPage() {
               Open on a TV or display at the reception — live updates as guests take photos.
             </p>
             <a
-              href={`/w/${id}/slideshow`}
+              href={slideshowUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="self-start px-4 py-2.5 rounded-full border border-cream/15 text-cream/50 text-sans text-xs tracking-widest uppercase touch-manipulation active:bg-cream/5 hover:border-cream/25 hover:text-cream/70 transition-colors"
@@ -522,10 +526,10 @@ export default function WeddingDetailPage() {
             </a>
             <div className="bg-ink-light rounded-xl px-4 py-3 flex items-center justify-between gap-3">
               <p className="text-mono text-cream/35 text-[11px] truncate">
-                {window.location.origin}/w/{id}/slideshow
+                {slideshowUrl}
               </p>
               <button
-                onClick={() => copyText(`${window.location.origin}/w/${id}/slideshow`, 'slideshow')}
+                onClick={() => copyText(slideshowUrl, 'slideshow')}
                 className="shrink-0 text-sans text-cream/40 text-xs tracking-widest uppercase touch-manipulation"
               >
                 {copiedField === 'slideshow' && copied ? 'Copied!' : 'Copy'}
