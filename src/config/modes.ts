@@ -30,6 +30,7 @@ export interface FrameConfig {
   borderColor: string      // hex
   showTimestamp: boolean
   timestampPosition: 'bottom-right' | 'bottom-left'
+  style?: 'flat' | 'polaroid'  // 'polaroid' = textured cream border w/ inner shadow; default flat
 }
 
 export const CAMERA_MODES: Record<CameraModeName, CameraModeConfig> = {
@@ -85,6 +86,7 @@ export const CAMERA_MODES: Record<CameraModeName, CameraModeConfig> = {
       borderColor: '#faf8f4',
       showTimestamp: false,
       timestampPosition: 'bottom-right',
+      style: 'polaroid',    // textured cream border, aged corners, recessed photo
     },
   },
 

@@ -186,11 +186,30 @@ async function applyFrame(
   canvas.height = totalH
   const ctx = canvas.getContext('2d')!
 
-  // Border fill
-  ctx.fillStyle = frame.borderColor
-  ctx.fillRect(0, 0, totalW, totalH)
+  if (frame.style === 'polaroid') {
+    // Warm vintage frame (Option B): cream gradient, faint paper tooth on the
+    // border only, gently aged corners, and a soft inner shadow so the photo
+    // reads as recessed into the frame.
+    const grad = ctx.createLinearGradient(0, 0, 0, totalH)
+    grad.addColorStop(0, '#fbfaf7')
+    grad.addColorStop(1, '#f4f0e9')   // less yellow at the bottom
+    ctx.fillStyle = grad
+    ctx.fillRect(0, 0, totalW, totalH)
 
-  ctx.drawImage(source, bL, bT)
+    // Texture + aging are drawn BEFORE the photo, so the photo (painted next)
+    // covers the centre and they only ever show on the border.
+    drawPaperGrain(ctx, totalW, totalH, 0.085)
+    drawAgedCorners(ctx, totalW, totalH, 0.035)
+
+    ctx.drawImage(source, bL, bT)
+
+    drawInnerShadow(ctx, bL, bT, source.width, source.height, 0.18)
+  } else {
+    // Flat border (disposable / super8 have zero borders; this is the default)
+    ctx.fillStyle = frame.borderColor
+    ctx.fillRect(0, 0, totalW, totalH)
+    ctx.drawImage(source, bL, bT)
+  }
 
   // Wedding-level timestampEnabled is the sole gate — mode's showTimestamp is only
   // a design default and should not override the couple's explicit configuration.
@@ -199,6 +218,59 @@ async function applyFrame(
   }
 
   return canvas
+}
+
+// ── Polaroid frame helpers ─────────────────────────────────────────────────────
+
+// Faint paper tooth across the frame. Drawn before the photo so it's border-only.
+function drawPaperGrain(ctx: CanvasRenderingContext2D, w: number, h: number, alpha: number) {
+  const n = document.createElement('canvas')
+  n.width = w
+  n.height = h
+  const nc = n.getContext('2d')!
+  const id = nc.createImageData(w, h)
+  for (let i = 0; i < id.data.length; i += 4) {
+    const v = 180 + Math.random() * 75
+    id.data[i] = v; id.data[i + 1] = v; id.data[i + 2] = v; id.data[i + 3] = 255
+  }
+  nc.putImageData(id, 0, 0)
+  ctx.save()
+  ctx.globalAlpha = alpha
+  ctx.globalCompositeOperation = 'multiply'
+  ctx.drawImage(n, 0, 0)
+  ctx.restore()
+}
+
+// Subtle warm darkening from each corner — a hint of age, not a heavy vignette.
+function drawAgedCorners(ctx: CanvasRenderingContext2D, w: number, h: number, strength: number) {
+  const corners: [number, number][] = [[0, 0], [w, 0], [0, h], [w, h]]
+  ctx.save()
+  for (const [cx, cy] of corners) {
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, w * 0.5)
+    g.addColorStop(0, `rgba(110,85,55,${strength})`)
+    g.addColorStop(1, 'rgba(110,85,55,0)')
+    ctx.fillStyle = g
+    ctx.fillRect(0, 0, w, h)
+  }
+  ctx.restore()
+}
+
+// Soft inner shadow around the photo so it sits recessed in the frame.
+function drawInnerShadow(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number,
+  strength: number,
+) {
+  const blur = Math.round(w * 0.03)
+  const c0 = `rgba(15,10,4,${strength})`, c1 = 'rgba(15,10,4,0)'
+  let g: CanvasGradient
+  g = ctx.createLinearGradient(0, y, 0, y + blur);             g.addColorStop(0, c0); g.addColorStop(1, c1); ctx.fillStyle = g; ctx.fillRect(x, y, w, blur)
+  g = ctx.createLinearGradient(0, y + h, 0, y + h - blur);     g.addColorStop(0, c0); g.addColorStop(1, c1); ctx.fillStyle = g; ctx.fillRect(x, y + h - blur, w, blur)
+  g = ctx.createLinearGradient(x, 0, x + blur, 0);             g.addColorStop(0, c0); g.addColorStop(1, c1); ctx.fillStyle = g; ctx.fillRect(x, y, blur, h)
+  g = ctx.createLinearGradient(x + w, 0, x + w - blur, 0);     g.addColorStop(0, c0); g.addColorStop(1, c1); ctx.fillStyle = g; ctx.fillRect(x + w - blur, y, blur, h)
+  ctx.strokeStyle = 'rgba(0,0,0,0.10)'
+  ctx.lineWidth = 1
+  ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1)
 }
 
 // ── Timestamp drawing ────────────────────────────────────────────────────────
