@@ -52,16 +52,13 @@ export default function PrintSignSheet({
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
+            justifyContent: 'center',
             textAlign: 'center',
             padding: '1in 0.85in',
             color: '#2a241c',
           }}
         >
-          <p style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic', fontWeight: 400, fontSize: '30px', color: '#5a5040' }}>
-            Capture a moment for
-          </p>
-
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontWeight: 400, fontSize: '50px', lineHeight: 1.1, margin: '8px 0 6px', color: '#1a1612' }}>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontWeight: 400, fontSize: '48px', lineHeight: 1.1, margin: '0 0 6px', color: '#1a1612' }}>
             {coupleNames}
           </h1>
 
@@ -71,24 +68,28 @@ export default function PrintSignSheet({
             </p>
           )}
 
-          <div style={{ width: '56px', height: '1px', background: '#c8b9a0', margin: '34px 0' }} />
+          <div style={{ width: '56px', height: '1px', background: '#c8b9a0', margin: '30px 0' }} />
+
+          <p style={{ fontFamily: "'Playfair Display', serif", fontStyle: 'italic', fontWeight: 400, fontSize: '27px', color: '#1a1612', margin: '0 0 18px' }}>
+            Every memory tells part of the story.
+          </p>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '15px', lineHeight: 1.65, color: '#5a5040', maxWidth: '5.3in', margin: '0 0 34px' }}>
+            Our photographers will capture the milestones, but the candid moments, shared laughter,
+            and little details often come from the people who experience them alongside us. Scan the
+            QR code to share your photos and help create a collection of memories we&rsquo;ll cherish
+            for years to come.
+          </p>
 
           {/* Designed QR */}
           <div style={{ background: '#ffffff', padding: '22px', borderRadius: '18px', boxShadow: '0 4px 18px rgba(40,28,12,0.12)' }}>
-            <StyledQR url={guestUrl} settings={qrSettings} size={320} />
+            <StyledQR url={guestUrl} settings={qrSettings} size={300} />
           </div>
 
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '15px', color: '#5a5040', margin: '30px 0 4px' }}>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '14px', color: '#5a5040', margin: '26px 0 4px' }}>
             Having trouble scanning the QR code? Go to
           </p>
-          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '19px', color: '#1a1612', letterSpacing: '0.02em' }}>
+          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '18px', color: '#1a1612', letterSpacing: '0.02em' }}>
             {guestUrl.replace(/^https?:\/\//, '')}
-          </p>
-
-          <div style={{ flex: 1 }} />
-
-          <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', letterSpacing: '0.3em', textTransform: 'uppercase', color: '#b3a588', marginTop: '40px' }}>
-            Reverie · by Third Degree Entertainment
           </p>
         </div>
       </div>
