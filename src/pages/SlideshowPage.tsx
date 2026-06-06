@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import StyledQR from '@/components/StyledQR'
+import type { QRSettings } from '@/components/QRCreator'
 
 interface SlideshowPhoto {
   id: string
@@ -10,17 +12,26 @@ interface SlideshowPhoto {
   annotationUrl: string | null
 }
 
+// A slide is either a guest photo or an interspersed "scan to share" QR slide.
+type Slide =
+  | { id: string; kind: 'photo'; photo: SlideshowPhoto }
+  | { id: string; kind: 'qr' }
+
 interface SlideshowData {
   coupleNames: string
   weddingDate: string
   timestampEnabled: boolean
   timestampStyle: string
+  slug: string | null
+  qrSettings: QRSettings | null
+  qrSlideEnabled: boolean
   photos: SlideshowPhoto[]
 }
 
-const SLIDE_DURATION   = 7500  // ms per photo
+const SLIDE_DURATION   = 7500  // ms per slide
 const TRANSITION_MS    = 1100  // crossfade duration (gentle)
 const POLL_INTERVAL_MS = 30000 // refresh for new photos
+const QR_EVERY         = 6     // insert a "scan to share" slide after every N photos
 
 export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?: string } = {}) {
   const { weddingId: weddingIdParam } = useParams<{ weddingId: string }>()
@@ -30,6 +41,9 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   const [weddingDate, setWeddingDate] = useState('')
   const [timestampEnabled, setTimestampEnabled] = useState(false)
   const [timestampStyle, setTimestampStyle] = useState('classic')
+  const [slug, setSlug] = useState<string | null>(null)
+  const [qrSettings, setQrSettings] = useState<QRSettings | null>(null)
+  const [qrSlideEnabled, setQrSlideEnabled] = useState(false)
   const [photos, setPhotos]           = useState<SlideshowPhoto[]>([])
   const [index, setIndex]             = useState(0)
   const [incoming, setIncoming]       = useState<number | null>(null) // index crossfading in on top
@@ -38,14 +52,12 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   const [loadError, setLoadError]     = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
 
-  const photosRef        = useRef<SlideshowPhoto[]>([])
+  const slidesRef        = useRef<Slide[]>([])
   const indexRef         = useRef(0)
   const advanceTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
   const transitioningRef = useRef(false)
 
-  // Keep refs in sync so timer callbacks always see fresh values
-  useEffect(() => { photosRef.current = photos }, [photos])
-  useEffect(() => { indexRef.current  = index  }, [index])
+  useEffect(() => { indexRef.current = index }, [index])
 
   // ── Data fetching ─────────────────────────────────────────────
 
@@ -60,6 +72,9 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       setWeddingDate(data.weddingDate)
       setTimestampEnabled(data.timestampEnabled)
       setTimestampStyle(data.timestampStyle)
+      setSlug(data.slug ?? null)
+      setQrSettings(data.qrSettings ?? null)
+      setQrSlideEnabled(data.qrSlideEnabled ?? false)
 
       setPhotos(prev => {
         const existingIds = new Set(prev.map(p => p.id))
@@ -68,9 +83,9 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
           const fresh = data.photos.find(f => f.id === p.id)
           return fresh ? { ...p, photoUrl: fresh.photoUrl } : p
         })
-        const incoming = data.photos.filter(p => !existingIds.has(p.id))
-        if (!isInitial && incoming.length > 0) setNewCount(n => n + incoming.length)
-        return [...updated, ...incoming]
+        const newcomers = data.photos.filter(p => !existingIds.has(p.id))
+        if (!isInitial && newcomers.length > 0) setNewCount(n => n + newcomers.length)
+        return [...updated, ...newcomers]
       })
 
       if (isInitial) setLoadError(false)
@@ -93,22 +108,39 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     return () => clearTimeout(t)
   }, [newCount])
 
-  // ── Auto-advance ──────────────────────────────────────────────
+  // ── Build the slide list (photos + interspersed QR "scan to share" slides) ──
+
+  const guestUrl = weddingId
+    ? (slug ? `https://rememberreverie.com/${slug}` : `https://rememberreverie.com/w/${weddingId}`)
+    : ''
+
+  const slides = useMemo<Slide[]>(() => {
+    const out: Slide[] = []
+    photos.forEach((p, i) => {
+      out.push({ id: p.id, kind: 'photo', photo: p })
+      if (qrSlideEnabled && guestUrl && (i + 1) % QR_EVERY === 0) {
+        out.push({ id: `qr-${i}`, kind: 'qr' })
+      }
+    })
+    return out
+  }, [photos, qrSlideEnabled, guestUrl])
+
+  useEffect(() => { slidesRef.current = slides }, [slides])
+
+  // ── Auto-advance / crossfade ──────────────────────────────────
 
   const advance = useCallback((delta = 1) => {
-    const photos = photosRef.current
-    const total = photos.length
+    const list = slidesRef.current
+    const total = list.length
     if (total === 0 || transitioningRef.current) return
     transitioningRef.current = true
 
     const next = (indexRef.current + delta + total) % total
 
     const begin = () => {
-      // True crossfade: the new photo fades in ON TOP of the current one, which
-      // stays put underneath — so we never flash through the black background.
+      // True crossfade: the new slide fades in ON TOP of the current one.
       setIncoming(next)
       setIncomingOpacity(0)
-      // Two rAFs guarantee the browser paints opacity:0 before transitioning to 1.
       requestAnimationFrame(() => requestAnimationFrame(() => setIncomingOpacity(1)))
       window.setTimeout(() => {
         setIndex(next)
@@ -119,8 +151,9 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       }, TRANSITION_MS)
     }
 
-    // Preload + decode the next image first, so it appears whole (no top-down load-in).
-    const url = photos[next]?.photoUrl
+    // Preload the next image first (only photo slides have one).
+    const nextSlide = list[next]
+    const url = nextSlide?.kind === 'photo' ? nextSlide.photo.photoUrl : null
     if (!url) { begin(); return }
     let started = false
     const once = () => { if (!started) { started = true; begin() } }
@@ -131,17 +164,16 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     if (img.complete) once()
   }, [])
 
-  // Schedule the auto-advance timer; reset it whenever index changes
   useEffect(() => {
-    if (photos.length === 0) return
+    if (slides.length === 0) return
     if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current)
     advanceTimerRef.current = setTimeout(() => advance(1), SLIDE_DURATION)
     return () => {
       if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current)
     }
-  }, [index, photos.length, advance])
+  }, [index, slides.length, advance])
 
-  // ── Keyboard + click navigation ───────────────────────────────
+  // ── Keyboard + fullscreen ─────────────────────────────────────
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -153,7 +185,6 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     return () => window.removeEventListener('keydown', onKey)
   }, [advance])
 
-  // Fullscreen state sync
   useEffect(() => {
     function onChange() { setIsFullscreen(!!document.fullscreenElement) }
     document.addEventListener('fullscreenchange', onChange)
@@ -170,9 +201,10 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
 
   // ── Derived state ─────────────────────────────────────────────
 
-  const currentPhoto  = photos[index] ?? null
-  const incomingPhoto = incoming != null ? photos[incoming] ?? null : null
-  const total         = photos.length
+  const currentSlide  = slides[index] ?? null
+  const incomingSlide = incoming != null ? slides[incoming] ?? null : null
+  const currentPhoto  = currentSlide?.kind === 'photo' ? currentSlide.photo : null
+  const total         = slides.length
 
   const formattedDate = weddingDate
     ? new Date(weddingDate + 'T12:00:00').toLocaleDateString('en-US', {
@@ -201,14 +233,25 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
           </div>
         )}
         <div className="w-8 h-px bg-cream/10" />
-        {/* Pulsing camera icon */}
-        <div className="flex flex-col items-center gap-3 animate-pulse">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(245,240,232,0.2)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
-            <circle cx="12" cy="13" r="4"/>
-          </svg>
-          <p className="text-sans text-cream/25 text-sm">Capturing memories…</p>
-        </div>
+        {qrSlideEnabled && guestUrl ? (
+          <div className="flex flex-col items-center gap-5">
+            <p className="text-serif text-cream/85 italic leading-snug" style={{ fontSize: 'clamp(1.5rem, 3.5vw, 2.5rem)', maxWidth: '20ch' }}>
+              Be part of the story — scan to add your photos.
+            </p>
+            <div className="bg-white p-6 rounded-2xl shadow-2xl">
+              <StyledQR url={guestUrl} settings={qrSettings} size={300} transparent />
+            </div>
+            <p className="text-mono text-cream/50 text-sm tracking-[0.3em] uppercase">Scan to get started</p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-3 animate-pulse">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(245,240,232,0.2)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            <p className="text-sans text-cream/25 text-sm">Capturing memories…</p>
+          </div>
+        )}
       </div>
     )
   }
@@ -220,70 +263,61 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       className="relative min-h-dvh bg-black flex items-center justify-center overflow-hidden select-none cursor-pointer"
       onClick={() => advance(1)}
     >
-      {/* Base layer — current photo, always fully opaque */}
-      {currentPhoto && <PhotoLayer key={currentPhoto.id} photo={currentPhoto} opacity={1} />}
+      {/* Base layer — current slide, always fully opaque */}
+      {currentSlide && (
+        <SlideLayer key={currentSlide.id} slide={currentSlide} opacity={1} guestUrl={guestUrl} qrSettings={qrSettings} />
+      )}
 
-      {/* Incoming layer — next photo crossfading in on top of the current one */}
-      {incomingPhoto && (
-        <PhotoLayer
-          key={incomingPhoto.id}
-          photo={incomingPhoto}
+      {/* Incoming layer — next slide crossfading in on top */}
+      {incomingSlide && (
+        <SlideLayer
+          key={incomingSlide.id}
+          slide={incomingSlide}
           opacity={incomingOpacity}
           transitionMs={TRANSITION_MS}
+          guestUrl={guestUrl}
+          qrSettings={qrSettings}
         />
       )}
 
-      {/* Bottom gradient scrim */}
-      <div
-        className="absolute bottom-0 left-0 right-0 h-40 pointer-events-none"
-        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 100%)' }}
-      />
-
-      {/* Bottom text: couple names + date */}
-      <div className="absolute bottom-0 left-0 right-0 px-8 pb-7 flex flex-col items-center gap-1 pointer-events-none">
-        {/* Elegant timestamp bakes the names into every photo, so don't repeat them here. */}
-        {!(timestampEnabled && timestampStyle === 'elegant') && coupleNames && (
-          <p className="text-serif text-cream/80 text-xl font-normal italic tracking-wide">
-            {coupleNames}
-          </p>
-        )}
-        {/* #15: photos already carry a baked-in timestamp when enabled, so don't
-            duplicate the date down here in that case. */}
-        {!timestampEnabled && formattedDate && (
-          <p className="text-mono text-cream/35 text-[11px] tracking-[0.3em] uppercase">
-            {formattedDate}
-          </p>
-        )}
-      </div>
+      {/* Bottom scrim + names/date — only on photo slides */}
+      {currentPhoto && (
+        <>
+          <div
+            className="absolute bottom-0 left-0 right-0 h-40 pointer-events-none"
+            style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 100%)' }}
+          />
+          <div className="absolute bottom-0 left-0 right-0 px-8 pb-7 flex flex-col items-center gap-1 pointer-events-none">
+            {!(timestampEnabled && timestampStyle === 'elegant') && coupleNames && (
+              <p className="text-serif text-cream/80 text-xl font-normal italic tracking-wide">{coupleNames}</p>
+            )}
+            {!timestampEnabled && formattedDate && (
+              <p className="text-mono text-cream/35 text-[11px] tracking-[0.3em] uppercase">{formattedDate}</p>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Progress bar */}
       {total > 0 && (
         <div className="absolute bottom-0 left-0 right-0 h-px bg-cream/10 pointer-events-none">
           <div
             className="h-full bg-cream/30"
-            style={{
-              width:      `${((index + 1) / total) * 100}%`,
-              transition: 'width 300ms ease-out',
-            }}
+            style={{ width: `${((index + 1) / total) * 100}%`, transition: 'width 300ms ease-out' }}
           />
         </div>
       )}
 
-      {/* Memory number — top left */}
+      {/* Memory number — top left, photo slides only */}
       {currentPhoto?.memoryNumber != null && (
         <div className="absolute top-5 left-5 pointer-events-none">
-
-          <p className="text-mono text-cream/25 text-[10px] tracking-[0.3em]">
-            #{currentPhoto.memoryNumber}
-          </p>
+          <p className="text-mono text-cream/25 text-[10px] tracking-[0.3em]">#{currentPhoto.memoryNumber}</p>
         </div>
       )}
 
-      {/* Photo counter — top right area (next to fullscreen button) */}
+      {/* Slide counter — top right */}
       <div className="absolute top-5 right-16 pointer-events-none">
-        <p className="text-mono text-cream/20 text-[10px] tracking-[0.2em]">
-          {index + 1} / {total}
-        </p>
+        <p className="text-mono text-cream/20 text-[10px] tracking-[0.2em]">{index + 1} / {total}</p>
       </div>
 
       {/* New photos toast */}
@@ -297,7 +331,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
         </div>
       )}
 
-      {/* Fullscreen toggle — top right */}
+      {/* Fullscreen toggle */}
       <button
         onClick={e => { e.stopPropagation(); toggleFullscreen() }}
         className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-black/30 hover:bg-black/50 transition-colors touch-manipulation"
@@ -306,7 +340,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
         {isFullscreen ? <ExitFullscreenIcon /> : <EnterFullscreenIcon />}
       </button>
 
-      {/* Live pulse dot — bottom right */}
+      {/* Live pulse dot */}
       <div className="absolute bottom-5 right-5 flex items-center gap-1.5 pointer-events-none">
         <span className="w-1.5 h-1.5 rounded-full bg-green-400/60 animate-pulse" />
         <p className="text-mono text-cream/20 text-[9px] tracking-[0.3em] uppercase">Live</p>
@@ -315,39 +349,58 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   )
 }
 
-// A single centered photo (+ signature overlay), absolutely filling the stage so
-// the base and incoming layers stack for a true crossfade.
-function PhotoLayer({
-  photo,
+// One stacked layer — a guest photo (+ signature overlay) or a "scan to share"
+// QR slide — so the base and incoming layers crossfade cleanly.
+function SlideLayer({
+  slide,
   opacity,
   transitionMs,
+  guestUrl,
+  qrSettings,
 }: {
-  photo: SlideshowPhoto
+  slide: Slide
   opacity: number
   transitionMs?: number
+  guestUrl: string
+  qrSettings: QRSettings | null
 }) {
   return (
     <div
       className="absolute inset-0 flex items-center justify-center"
       style={{ opacity, transition: transitionMs ? `opacity ${transitionMs}ms ease-in-out` : undefined }}
     >
-      <div className="relative">
-        <img
-          src={photo.photoUrl}
-          alt=""
-          draggable={false}
-          className="max-w-full max-h-dvh object-contain"
-        />
-        {photo.annotationUrl && (
+      {slide.kind === 'photo' ? (
+        <div className="relative">
           <img
-            src={photo.annotationUrl}
+            src={slide.photo.photoUrl}
             alt=""
             draggable={false}
-            className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-            style={{ mixBlendMode: 'multiply' }}
+            className="max-w-full max-h-dvh object-contain"
           />
-        )}
-      </div>
+          {slide.photo.annotationUrl && (
+            <img
+              src={slide.photo.annotationUrl}
+              alt=""
+              draggable={false}
+              className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+              style={{ mixBlendMode: 'multiply' }}
+            />
+          )}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center gap-8 px-8 text-center">
+          <p
+            className="text-serif text-cream/90 italic leading-snug"
+            style={{ fontSize: 'clamp(1.8rem, 4vw, 3rem)', maxWidth: '22ch' }}
+          >
+            Want to share <span className="not-italic font-medium">YOUR</span> memories of this moment?
+          </p>
+          <div className="bg-white p-6 rounded-2xl shadow-2xl">
+            <StyledQR url={guestUrl} settings={qrSettings} size={340} transparent />
+          </div>
+          <p className="text-mono text-cream/55 text-sm tracking-[0.3em] uppercase">Scan to get started</p>
+        </div>
+      )}
     </div>
   )
 }

@@ -36,3 +36,9 @@ ALTER TABLE sessions ADD COLUMN IF NOT EXISTS moderation_labels text;
 -- ── 6. Per-event toggle: let the couple review their own flagged photos ─
 -- Default off — moderation review is admin-only unless the admin grants it.
 ALTER TABLE weddings ADD COLUMN IF NOT EXISTS couple_review_enabled boolean NOT NULL DEFAULT false;
+
+-- ── 7. Slideshow extras ─────────────────────────────────────
+-- QR "scan to share" slide interspersed in the slideshow (per-event toggle), and
+-- custom uploaded slides (stored as an ordered list of storage paths).
+ALTER TABLE weddings ADD COLUMN IF NOT EXISTS slideshow_qr_slide boolean NOT NULL DEFAULT true;
+ALTER TABLE weddings ADD COLUMN IF NOT EXISTS slideshow_slides jsonb NOT NULL DEFAULT '[]'::jsonb;

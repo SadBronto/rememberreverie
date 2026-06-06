@@ -22,6 +22,7 @@ interface WeddingDetail {
   slug: string | null
   couple_review_enabled: boolean
   qr_settings: QRSettings | null
+  slideshow_qr_slide: boolean
 }
 
 interface Counts { disposable: number; polaroid: number; super8: number; total: number }
@@ -755,6 +756,18 @@ export default function WeddingDetailPage() {
                 </AdminSelect>
               )}
             </div>
+          </FormField>
+
+          <FormField label="Slideshow “scan to share” slide">
+            <div className="flex items-center gap-3">
+              <AdminToggle value={form.slideshow_qr_slide ?? true} onChange={v => setField('slideshow_qr_slide', v)} />
+              <span className="text-sans text-cream/50 text-sm">
+                {(form.slideshow_qr_slide ?? true) ? 'On' : 'Off'}
+              </span>
+            </div>
+            <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
+              Mixes a "Want to share YOUR memories? Scan to get started" slide (with your QR) into the slideshow every few photos.
+            </p>
           </FormField>
 
           <FormField label="Gallery size limit">

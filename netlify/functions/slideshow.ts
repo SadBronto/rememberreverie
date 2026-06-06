@@ -33,7 +33,7 @@ export const handler: Handler = async (event) => {
 
   const { data: wedding } = await admin
     .from('weddings')
-    .select('couple_names, wedding_date, timestamp_enabled, timestamp_style')
+    .select('couple_names, wedding_date, timestamp_enabled, timestamp_style, slug, qr_settings, slideshow_qr_slide')
     .eq('id', weddingId)
     .single()
 
@@ -74,6 +74,9 @@ export const handler: Handler = async (event) => {
       weddingDate:      wedding.wedding_date,
       timestampEnabled: wedding.timestamp_enabled ?? false,
       timestampStyle:   wedding.timestamp_style ?? 'classic',
+      slug:             wedding.slug ?? null,
+      qrSettings:       wedding.qr_settings ?? null,
+      qrSlideEnabled:   wedding.slideshow_qr_slide ?? false,
       photos:           photos.filter(p => p.photoUrl),
     }),
   }
