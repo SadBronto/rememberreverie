@@ -176,7 +176,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     return () => {
       if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current)
     }
-  }, [index, slides, advance])
+  }, [index, slides.length, advance])
 
   // ── Keyboard + fullscreen ─────────────────────────────────────
 
