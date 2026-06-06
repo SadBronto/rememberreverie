@@ -374,7 +374,7 @@ function SlideLayer({
 }) {
   return (
     <div
-      className="absolute inset-0 flex items-center justify-center"
+      className="absolute inset-0 flex items-center justify-center bg-black"
       style={{ opacity, transition: transitionMs ? `opacity ${transitionMs}ms ease-in-out` : undefined }}
     >
       {slide.kind === 'photo' ? (
