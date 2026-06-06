@@ -31,7 +31,8 @@ interface SlideshowData {
 const SLIDE_DURATION   = 7500  // ms per slide
 const TRANSITION_MS    = 1100  // crossfade duration (gentle)
 const POLL_INTERVAL_MS = 30000 // refresh for new photos
-const QR_EVERY         = 6     // insert a "scan to share" slide after every N photos
+const QR_EVERY         = 10    // insert a "scan to share" slide after every N photos
+const QR_DURATION      = 12000 // QR slide lingers longer than a photo
 
 export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?: string } = {}) {
   const { weddingId: weddingIdParam } = useParams<{ weddingId: string }>()
@@ -167,11 +168,12 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   useEffect(() => {
     if (slides.length === 0) return
     if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current)
-    advanceTimerRef.current = setTimeout(() => advance(1), SLIDE_DURATION)
+    const dur = slides[index]?.kind === 'qr' ? QR_DURATION : SLIDE_DURATION
+    advanceTimerRef.current = setTimeout(() => advance(1), dur)
     return () => {
       if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current)
     }
-  }, [index, slides.length, advance])
+  }, [index, slides, advance])
 
   // ── Keyboard + fullscreen ─────────────────────────────────────
 
