@@ -33,7 +33,7 @@ export const handler: Handler = async (event) => {
 
   const { data: wedding } = await admin
     .from('weddings')
-    .select('couple_names, wedding_date, timestamp_enabled, timestamp_style, slug, qr_settings')
+    .select('couple_names, wedding_date, welcome_message, timestamp_enabled, timestamp_style, slug, qr_settings')
     .eq('id', weddingId)
     .single()
 
@@ -85,6 +85,7 @@ export const handler: Handler = async (event) => {
     body: JSON.stringify({
       coupleNames:      wedding.couple_names,
       weddingDate:      wedding.wedding_date,
+      welcomeMessage:   wedding.welcome_message ?? 'Leave us a memory.',
       timestampEnabled: wedding.timestamp_enabled ?? false,
       timestampStyle:   wedding.timestamp_style ?? 'classic',
       slug:             wedding.slug ?? null,

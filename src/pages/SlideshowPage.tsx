@@ -20,6 +20,7 @@ type Slide =
 interface SlideshowData {
   coupleNames: string
   weddingDate: string
+  welcomeMessage: string
   timestampEnabled: boolean
   timestampStyle: string
   slug: string | null
@@ -40,6 +41,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
 
   const [coupleNames, setCoupleNames] = useState('')
   const [weddingDate, setWeddingDate] = useState('')
+  const [welcomeMessage, setWelcomeMessage] = useState('Leave us a memory.')
   const [timestampEnabled, setTimestampEnabled] = useState(false)
   const [timestampStyle, setTimestampStyle] = useState('classic')
   const [slug, setSlug] = useState<string | null>(null)
@@ -71,6 +73,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
 
       setCoupleNames(data.coupleNames)
       setWeddingDate(data.weddingDate)
+      setWelcomeMessage(data.welcomeMessage ?? 'Leave us a memory.')
       setTimestampEnabled(data.timestampEnabled)
       setTimestampStyle(data.timestampStyle)
       setSlug(data.slug ?? null)
@@ -238,7 +241,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
         {qrSlideEnabled && guestUrl ? (
           <div className="flex flex-col items-center gap-5">
             <p className="text-serif text-cream/85 italic leading-snug" style={{ fontSize: 'clamp(1.5rem, 3.5vw, 2.5rem)', maxWidth: '20ch' }}>
-              Be part of the story — scan to add your photos.
+              {welcomeMessage}
             </p>
             <div className="bg-white p-6 rounded-2xl shadow-2xl">
               <StyledQR url={guestUrl} settings={qrSettings} size={300} transparent />
@@ -267,7 +270,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     >
       {/* Base layer — current slide, always fully opaque */}
       {currentSlide && (
-        <SlideLayer key={currentSlide.id} slide={currentSlide} opacity={1} guestUrl={guestUrl} qrSettings={qrSettings} />
+        <SlideLayer key={currentSlide.id} slide={currentSlide} opacity={1} guestUrl={guestUrl} qrSettings={qrSettings} message={welcomeMessage} />
       )}
 
       {/* Incoming layer — next slide crossfading in on top */}
@@ -279,6 +282,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
           transitionMs={TRANSITION_MS}
           guestUrl={guestUrl}
           qrSettings={qrSettings}
+          message={welcomeMessage}
         />
       )}
 
@@ -359,12 +363,14 @@ function SlideLayer({
   transitionMs,
   guestUrl,
   qrSettings,
+  message,
 }: {
   slide: Slide
   opacity: number
   transitionMs?: number
   guestUrl: string
   qrSettings: QRSettings | null
+  message: string
 }) {
   return (
     <div
@@ -395,7 +401,7 @@ function SlideLayer({
             className="text-serif text-cream/90 italic leading-snug"
             style={{ fontSize: 'clamp(1.8rem, 4vw, 3rem)', maxWidth: '22ch' }}
           >
-            Want to share <span className="not-italic font-medium">YOUR</span> memories of this moment?
+            {message}
           </p>
           <div className="bg-white p-6 rounded-2xl shadow-2xl">
             <StyledQR url={guestUrl} settings={qrSettings} size={340} transparent />
