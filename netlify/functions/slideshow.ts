@@ -33,11 +33,24 @@ export const handler: Handler = async (event) => {
 
   const { data: wedding } = await admin
     .from('weddings')
-    .select('couple_names, wedding_date, timestamp_enabled, timestamp_style, slug, qr_settings, slideshow_qr_slide')
+    .select('couple_names, wedding_date, timestamp_enabled, timestamp_style, slug, qr_settings')
     .eq('id', weddingId)
     .single()
 
   if (!wedding) return { statusCode: 404, body: 'Wedding not found' }
+
+  // QR-slide toggle is fetched separately and tolerantly: if the
+  // slideshow_qr_slide column hasn't been migrated yet, the slideshow still loads
+  // (the QR slide just stays off until the migration runs).
+  let qrSlideEnabled = false
+  {
+    const { data: extra, error: extraErr } = await admin
+      .from('weddings')
+      .select('slideshow_qr_slide')
+      .eq('id', weddingId)
+      .single()
+    qrSlideEnabled = !extraErr && extra ? (extra.slideshow_qr_slide ?? false) : false
+  }
 
   const { data: sessions, error } = await admin
     .from('sessions')
@@ -76,7 +89,7 @@ export const handler: Handler = async (event) => {
       timestampStyle:   wedding.timestamp_style ?? 'classic',
       slug:             wedding.slug ?? null,
       qrSettings:       wedding.qr_settings ?? null,
-      qrSlideEnabled:   wedding.slideshow_qr_slide ?? false,
+      qrSlideEnabled:   qrSlideEnabled,
       photos:           photos.filter(p => p.photoUrl),
     }),
   }
