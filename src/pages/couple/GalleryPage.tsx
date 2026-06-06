@@ -716,6 +716,7 @@ function PhotoTile({
             src={session.photoUrl}
             alt={`Memory #${session.memoryNumber}`}
             draggable={false}
+            loading="lazy"
             onLoad={() => setImgVisible(true)}
             onClick={() => onOpen(session)}
             className="w-full h-auto block transition-opacity duration-500 cursor-zoom-in"

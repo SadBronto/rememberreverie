@@ -344,6 +344,7 @@ function GalleryTile({ photo, onClick }: { photo: GalleryPhoto; onClick: () => v
             src={photo.photoUrl}
             alt={`Memory #${photo.memoryNumber}`}
             draggable={false}
+            loading="lazy"
             onLoad={() => setLoaded(true)}
             className="w-full h-auto block transition-opacity duration-300"
             style={{ opacity: loaded ? 1 : 0 }}
