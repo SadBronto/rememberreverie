@@ -64,7 +64,7 @@ export const handler: Handler = async (event) => {
 
   // 2-hour signed URLs — slideshow polls every 30s so they never actually expire.
   // Sign every photo + annotation in a SINGLE batch request (not one call each).
-  const EXPIRY = 7200
+  const EXPIRY = 86400  // 24h — URLs stay stable for the event so the slideshow caches images instead of re-downloading every poll
   const urlMap = await signPaths(
     (sessions ?? []).flatMap(s => [s.output_path, s.annotation_path].filter(Boolean) as string[]),
     EXPIRY,

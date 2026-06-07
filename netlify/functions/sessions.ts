@@ -103,11 +103,14 @@ export const handler: Handler = async (event) => {
     }
   }
 
-  // Create signed upload URL — client will PUT the photo blob here directly
+  // Create signed upload URL — client will PUT the photo blob here directly.
+  // upsert:true so a recovered/retried upload of an already-stored photo re-issues
+  // the URL (and overwrites the identical blob) instead of failing with a 409
+  // "resource already exists" — which used to leave the retry stuck in the queue.
   const outputPath = `${weddingId}/${sessionId}/output.jpg`
   const { data: signedData, error: signedError } = await supabase.storage
     .from('photos')
-    .createSignedUploadUrl(outputPath)
+    .createSignedUploadUrl(outputPath, { upsert: true })
 
   if (signedError || !signedData) {
     console.error('Signed URL error:', signedError)
@@ -120,7 +123,7 @@ export const handler: Handler = async (event) => {
     const annotPath = `${weddingId}/${sessionId}/annotation.png`
     const { data: annotData } = await supabase.storage
       .from('photos')
-      .createSignedUploadUrl(annotPath)
+      .createSignedUploadUrl(annotPath, { upsert: true })
     annotationUploadUrl = annotData?.signedUrl
   }
 

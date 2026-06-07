@@ -81,15 +81,16 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       setQrSlideEnabled(data.qrSlideEnabled ?? false)
 
       setPhotos(prev => {
-        const existingIds = new Set(prev.map(p => p.id))
-        // Update signed URLs in-place (they rotate), then append newcomers
-        const updated  = prev.map(p => {
-          const fresh = data.photos.find(f => f.id === p.id)
-          return fresh ? { ...p, photoUrl: fresh.photoUrl } : p
-        })
-        const newcomers = data.photos.filter(p => !existingIds.has(p.id))
-        if (!isInitial && newcomers.length > 0) setNewCount(n => n + newcomers.length)
-        return [...updated, ...newcomers]
+        const prevById = new Map(prev.map(p => [p.id, p]))
+        // Reconcile to the API's current ACTIVE set on every poll:
+        //  • keep photos still active, REUSING their existing (stable) URL so the
+        //    browser serves them from cache instead of re-downloading each poll;
+        //  • add new arrivals (with their fresh URL);
+        //  • drop anything no longer returned (hidden / flagged / deleted).
+        const reconciled = data.photos.map(f => prevById.get(f.id) ?? f)
+        const newcomers  = data.photos.filter(f => !prevById.has(f.id)).length
+        if (!isInitial && newcomers > 0) setNewCount(n => n + newcomers)
+        return reconciled
       })
 
       if (isInitial) setLoadError(false)
@@ -130,6 +131,15 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   }, [photos, qrSlideEnabled, guestUrl])
 
   useEffect(() => { slidesRef.current = slides }, [slides])
+
+  // If photos were removed (hidden / flagged / deleted) and the list shrank past
+  // the current position, snap back into range so we never land on a blank slide.
+  useEffect(() => {
+    if (slides.length > 0 && index >= slides.length) {
+      setIndex(0)
+      indexRef.current = 0
+    }
+  }, [slides.length, index])
 
   // ── Auto-advance / crossfade ──────────────────────────────────
 
