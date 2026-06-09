@@ -258,49 +258,39 @@ export default function AdminGalleryPage() {
               <>
                 <button
                   onClick={() => { setLightbox(null); setConfirmDelete(false) }}
-                  className="text-mono text-cream/20 text-[10px] tracking-[0.3em] uppercase hover:text-cream/40 transition-colors touch-manipulation"
+                  className="px-4 py-2 rounded-full border border-cream/15 text-cream/60 text-sans text-xs font-medium tracking-widest uppercase hover:bg-cream/5 hover:text-cream/80 transition-colors touch-manipulation"
                 >
                   Close
                 </button>
                 {lightbox.photoUrl && (
-                  <>
-                    <span className="text-cream/10">·</span>
-                    <a
-                      href={lightbox.photoUrl}
-                      download={`memory-${lightbox.memoryNumber ?? lightbox.id}.jpg`}
-                      className="text-mono text-cream/20 text-[10px] tracking-[0.3em] uppercase hover:text-cream/40 transition-colors touch-manipulation"
-                      onClick={e => e.stopPropagation()}
-                    >
-                      Download
-                    </a>
-                  </>
+                  <a
+                    href={lightbox.photoUrl}
+                    download={`memory-${lightbox.memoryNumber ?? lightbox.id}.jpg`}
+                    className="px-4 py-2 rounded-full border border-cream/20 text-cream/80 text-sans text-xs font-medium tracking-widest uppercase hover:bg-cream/5 transition-colors touch-manipulation"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    Download
+                  </a>
                 )}
                 {(lightbox.status === 'flagged' || lightbox.status === 'hidden') && (
-                  <>
-                    <span className="text-cream/10">·</span>
-                    <button
-                      onClick={() => setStatus(lightbox, 'active')}
-                      className="text-mono text-green-400/50 text-[10px] tracking-[0.3em] uppercase hover:text-green-400/80 transition-colors touch-manipulation"
-                    >
-                      Restore
-                    </button>
-                  </>
+                  <button
+                    onClick={() => setStatus(lightbox, 'active')}
+                    className="px-4 py-2 rounded-full border border-green-400/30 text-green-400/80 text-sans text-xs font-medium tracking-widest uppercase hover:bg-green-400/10 transition-colors touch-manipulation"
+                  >
+                    Restore
+                  </button>
                 )}
                 {lightbox.status === 'active' && (
-                  <>
-                    <span className="text-cream/10">·</span>
-                    <button
-                      onClick={() => setStatus(lightbox, 'hidden')}
-                      className="text-mono text-cream/20 text-[10px] tracking-[0.3em] uppercase hover:text-cream/40 transition-colors touch-manipulation"
-                    >
-                      Hide
-                    </button>
-                  </>
+                  <button
+                    onClick={() => setStatus(lightbox, 'hidden')}
+                    className="px-4 py-2 rounded-full border border-cream/15 text-cream/60 text-sans text-xs font-medium tracking-widest uppercase hover:bg-cream/5 hover:text-cream/80 transition-colors touch-manipulation"
+                  >
+                    Hide
+                  </button>
                 )}
-                <span className="text-cream/10">·</span>
                 <button
                   onClick={() => setConfirmDelete(true)}
-                  className="text-mono text-red-400/40 text-[10px] tracking-[0.3em] uppercase hover:text-red-400/70 transition-colors touch-manipulation"
+                  className="px-4 py-2 rounded-full border border-red-400/30 text-red-400/80 text-sans text-xs font-medium tracking-widest uppercase hover:bg-red-400/10 transition-colors touch-manipulation"
                 >
                   Delete
                 </button>

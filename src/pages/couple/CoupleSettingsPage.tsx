@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { isDemoId } from '@/demo/demoConfig'
+import { useDemoStore } from '@/store/demoStore'
+import type { CameraModeName, WeddingConfig } from '@/types/session'
 
 interface WeddingSettings {
   couple_names:      string
@@ -23,6 +26,9 @@ export default function CoupleSettingsPage() {
   const { weddingId } = useParams<{ weddingId: string }>()
   const navigate       = useNavigate()
   const tokenRef       = useRef<string | null>(null)
+  const demo           = isDemoId(weddingId)
+  const demoConfig     = useDemoStore((s) => s.config)
+  const applySetup     = useDemoStore((s) => s.applySetup)
 
   const [form, setForm]       = useState<WeddingSettings | null>(null)
   const [noDate, setNoDate]   = useState(false)
@@ -31,6 +37,23 @@ export default function CoupleSettingsPage() {
   const [saveMsg, setSaveMsg] = useState<'saved' | 'error' | string | null>(null)
 
   useEffect(() => {
+    // Demo mode: load from the demo store, no auth/backend.
+    if (demo) {
+      setForm({
+        couple_names:      demoConfig.coupleNames,
+        wedding_date:      demoConfig.weddingDate ?? '',
+        welcome_message:   demoConfig.welcomeMessage,
+        allowed_modes:     demoConfig.allowedModes,
+        annotation_mode:   demoConfig.annotationMode,
+        timestamp_enabled: demoConfig.timestampEnabled,
+        timestamp_style:   demoConfig.timestampStyle,
+        slug:              null,
+      })
+      setNoDate(!demoConfig.weddingDate)
+      setLoading(false)
+      return
+    }
+
     async function load() {
       if (!supabase) return
       const { data: { session } } = await supabase.auth.getSession()
@@ -73,13 +96,32 @@ export default function CoupleSettingsPage() {
   }
 
   async function save() {
-    if (!form || !tokenRef.current) return
+    if (!form) return
+    if (!demo && !tokenRef.current) return
     if (!form.couple_names.trim()) {
       setSaveMsg('Names are required.')
       return
     }
     if (form.allowed_modes.length === 0) {
       setSaveMsg('Select at least one camera style.')
+      return
+    }
+
+    // Demo mode: apply to the demo store so changes show up in the Guest flow /
+    // Client gallery; no backend write.
+    if (demo) {
+      const overrides: Partial<WeddingConfig> = {
+        coupleNames:      form.couple_names,
+        weddingDate:      noDate ? null : form.wedding_date,
+        welcomeMessage:   form.welcome_message,
+        allowedModes:     form.allowed_modes as CameraModeName[],
+        annotationMode:   form.annotation_mode as WeddingConfig['annotationMode'],
+        timestampEnabled: form.timestamp_enabled,
+        timestampStyle:   form.timestamp_style as WeddingConfig['timestampStyle'],
+      }
+      applySetup(overrides)
+      setSaveMsg('saved')
+      setTimeout(() => setSaveMsg(null), 2500)
       return
     }
 

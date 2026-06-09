@@ -8,11 +8,12 @@ import CameraPage from '@/pages/CameraPage'
 import AnnotatePage from '@/pages/AnnotatePage'
 import ConfirmationPage from '@/pages/ConfirmationPage'
 import DemoLandingPage from '@/pages/demo/DemoLandingPage'
+import DemoMenuBar from '@/demo/DemoMenuBar'
 
 // ── Everything else: lazy-loaded on demand (keeps the guest bundle small) ──
 const SlideshowSlugPage  = lazy(() => import('@/pages/SlideshowSlugPage'))
+const DemoHome           = lazy(() => import('@/demo/DemoHome'))
 const SlideshowPage      = lazy(() => import('@/pages/SlideshowPage'))
-const DemoSetupPage      = lazy(() => import('@/pages/demo/DemoSetupPage'))
 const DemoGalleryPage    = lazy(() => import('@/pages/demo/DemoGalleryPage'))
 const LoginPage          = lazy(() => import('@/pages/couple/LoginPage'))
 const AuthCallbackPage   = lazy(() => import('@/pages/couple/AuthCallbackPage'))
@@ -65,10 +66,12 @@ export default function App() {
   }
 
   return (
+    <>
     <Suspense fallback={<Loading />}>
       <Routes>
         <Route path="/" element={<DemoLandingPage />} />
-        <Route path="/demo/setup" element={<DemoSetupPage />} />
+        <Route path="/demo" element={<DemoHome />} />
+        <Route path="/demo/setup" element={<CoupleSetupPage />} />
         <Route path="/demo/gallery" element={<DemoGalleryPage />} />
         <Route path="/w/:weddingId" element={<LandingPage />} />
         <Route path="/w/:weddingId/camera" element={<CameraPage />} />
@@ -94,5 +97,8 @@ export default function App() {
         <Route path="/:slug" element={<SlugPage />} />
       </Routes>
     </Suspense>
+    {/* Persistent demo persona menu — self-hides outside the demo */}
+    <DemoMenuBar />
+    </>
   )
 }

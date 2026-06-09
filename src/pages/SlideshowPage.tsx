@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import StyledQR from '@/components/StyledQR'
 import type { QRSettings } from '@/components/QRCreator'
+import { isDemoId } from '@/demo/demoConfig'
+import { useDemoStore } from '@/store/demoStore'
+import { buildDemoGallery } from '@/demo/demoGallery'
 
 interface SlideshowPhoto {
   id: string
@@ -38,6 +41,7 @@ const QR_DURATION      = 12000 // QR slide lingers longer than a photo
 export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?: string } = {}) {
   const { weddingId: weddingIdParam } = useParams<{ weddingId: string }>()
   const weddingId = weddingIdProp ?? weddingIdParam
+  const demoConfig = useDemoStore((s) => s.config)
 
   const [coupleNames, setCoupleNames] = useState('')
   const [weddingDate, setWeddingDate] = useState('')
@@ -66,6 +70,28 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
 
   const fetchPhotos = useCallback(async (isInitial = false) => {
     if (!weddingId) return
+
+    // Demo mode: build slides from the bundled photos (filtered via the real
+    // pipeline), no backend. QR slide on so the feature is demonstrated.
+    if (isDemoId(weddingId)) {
+      const sess = await buildDemoGallery()
+      const mapped: SlideshowPhoto[] = sess
+        .filter(s => s.status === 'active' && s.photoUrl)
+        .map(s => ({
+          id: s.id, mode: s.mode, memoryNumber: s.memoryNumber,
+          capturedAt: s.capturedAt, photoUrl: s.photoUrl!, annotationUrl: s.annotationUrl,
+        }))
+      setCoupleNames(demoConfig.coupleNames)
+      setWeddingDate(demoConfig.weddingDate ?? '')
+      setWelcomeMessage(demoConfig.welcomeMessage)
+      setSlug(null)
+      setQrSettings(null)
+      setQrSlideEnabled(true)
+      setPhotos(mapped)
+      if (isInitial) setLoadError(false)
+      return
+    }
+
     try {
       const res = await fetch(`/api/slideshow?weddingId=${weddingId}`)
       if (!res.ok) { if (isInitial) setLoadError(true); return }
@@ -97,7 +123,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     } catch {
       if (isInitial) setLoadError(true)
     }
-  }, [weddingId])
+  }, [weddingId, demoConfig])
 
   // Initial load + polling
   useEffect(() => {

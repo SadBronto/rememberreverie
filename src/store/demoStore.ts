@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import type { CameraModeName } from '@/types/session'
+import type { CameraModeName, WeddingConfig } from '@/types/session'
+import { DEMO_BASE_CONFIG } from '@/demo/demoConfig'
 
 export interface DemoSetup {
   coupleNames: string
@@ -8,6 +9,7 @@ export interface DemoSetup {
 }
 
 interface DemoState {
+  // ── Legacy demo (original guided flow) ──
   setup: DemoSetup | null
   photosTaken: number
   currentPromptIndex: number
@@ -16,6 +18,18 @@ interface DemoState {
   incrementPhotoCount: () => void
   advancePrompt: () => void
   reset: () => void
+
+  // ── New persona shell (Guest / Client / Setup) ──
+  // `active` gates the persistent bottom menu; `config` is the demo wedding
+  // config, mutated by the Setup persona so a prospect's choices flow into the
+  // Guest flow and Client gallery. Resets on reload — every prospect starts clean.
+  active: boolean
+  config: WeddingConfig
+
+  enter: () => void
+  exit: () => void
+  applySetup: (overrides: Partial<WeddingConfig>) => void
+  resetConfig: () => void
 }
 
 export const useDemoStore = create<DemoState>((set) => ({
@@ -27,6 +41,15 @@ export const useDemoStore = create<DemoState>((set) => ({
   incrementPhotoCount: () => set((s) => ({ photosTaken: s.photosTaken + 1 })),
   advancePrompt: () => set((s) => ({ currentPromptIndex: s.currentPromptIndex + 1 })),
   reset: () => set({ setup: null, photosTaken: 0, currentPromptIndex: 0 }),
+
+  active: false,
+  config: DEMO_BASE_CONFIG,
+
+  enter: () => set({ active: true }),
+  exit: () => set({ active: false, config: DEMO_BASE_CONFIG }),
+  applySetup: (overrides) =>
+    set((s) => ({ config: { ...s.config, ...overrides, id: s.config.id } })),
+  resetConfig: () => set({ config: DEMO_BASE_CONFIG }),
 }))
 
 export const DEMO_PHOTO_CAP = 5

@@ -28,3 +28,7 @@ npm-debug.log*
 # Scratch files
 *.docx
 Images/
+
+# Demo source drop-folder — raw inputs only; the processed assets in
+# public/demo-media/ (committed) are what the app actually serves.
+DEMO PHOTOS/

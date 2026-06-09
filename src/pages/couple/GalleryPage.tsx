@@ -2,8 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import QRCreator, { type QRSettings } from '@/components/QRCreator'
+import { isDemoId } from '@/demo/demoConfig'
+import { useDemoStore } from '@/store/demoStore'
+import { useSessionStore } from '@/store/sessionStore'
+import { buildDemoGallery } from '@/demo/demoGallery'
 
-interface SessionRecord {
+export interface SessionRecord {
   id: string
   mode: 'disposable' | 'polaroid' | 'super8'
   memoryNumber: number | null
@@ -25,6 +29,9 @@ type LoadState = 'loading' | 'ready' | 'auth-required' | 'error'
 export default function CoupleGalleryPage() {
   const { weddingId } = useParams<{ weddingId: string }>()
   const navigate = useNavigate()
+  const demo = isDemoId(weddingId)
+  const demoConfig = useDemoStore((s) => s.config)
+  const completedSessions = useSessionStore((s) => s.completedSessions)
 
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [data, setData] = useState<GalleryData | null>(null)
@@ -38,6 +45,28 @@ export default function CoupleGalleryPage() {
   const tokenRef = useRef<string | null>(null)
 
   useEffect(() => {
+    // Demo mode: build the gallery from the bundled photos (filtered through the
+    // real pipeline) + any Guest-persona captures. No auth, no backend.
+    if (demo && weddingId) {
+      setLoadState('loading')
+      buildDemoGallery(completedSessions).then((sess) => {
+        setData({
+          wedding: {
+            id: weddingId,
+            coupleNames: demoConfig.coupleNames,
+            weddingDate: demoConfig.weddingDate ?? '',
+            slug: null,
+          },
+          coupleReviewEnabled: true, // surface the flagged-review section in the demo
+          sessions: sess,
+        })
+        setSessions(sess)
+        setLoadState('ready')
+        setTimeout(() => setVisible(true), 60)
+      })
+      return
+    }
+
     if (!supabase || !weddingId) {
       setLoadState('error')
       return
@@ -105,6 +134,7 @@ export default function CoupleGalleryPage() {
   async function deleteSession(sessionId: string) {
     // Optimistic: remove from list immediately
     setSessions(prev => prev.filter(s => s.id !== sessionId))
+    if (demo) return // demo edits are local only
 
     const res = await fetch(`/api/couple/session?sessionId=${sessionId}`, {
       method: 'DELETE',
@@ -122,6 +152,7 @@ export default function CoupleGalleryPage() {
 
     // Optimistic update
     setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, status: nextStatus } : s))
+    if (demo) return // demo edits are local only
 
     const res = await fetch(`/api/couple/session?sessionId=${sessionId}`, {
       method: 'PATCH',
@@ -140,6 +171,7 @@ export default function CoupleGalleryPage() {
 
   async function restoreSession(sessionId: string) {
     setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, status: 'active' } : s))
+    if (demo) return // demo edits are local only
     const res = await fetch(`/api/couple/session?sessionId=${sessionId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenRef.current}` },
@@ -279,7 +311,7 @@ export default function CoupleGalleryPage() {
   })()
 
   return (
-    <div className="min-h-dvh bg-ink overflow-y-auto">
+    <div className="min-h-dvh bg-ink overflow-y-auto" style={demo ? { paddingBottom: '5.5rem' } : undefined}>
 
       {/* Sticky header */}
       <div
@@ -299,12 +331,14 @@ export default function CoupleGalleryPage() {
           >
             QR Code
           </button>
-          <button
-            onClick={() => navigate(`/couple/${weddingId}/print`)}
-            className="px-3 py-1.5 rounded-full border border-cream/15 text-cream/50 text-sans text-[11px] tracking-widest uppercase touch-manipulation active:bg-cream/5 transition-colors"
-          >
-            Print
-          </button>
+          {!demo && (
+            <button
+              onClick={() => navigate(`/couple/${weddingId}/print`)}
+              className="px-3 py-1.5 rounded-full border border-cream/15 text-cream/50 text-sans text-[11px] tracking-widest uppercase touch-manipulation active:bg-cream/5 transition-colors"
+            >
+              Print
+            </button>
+          )}
           <button
             onClick={() => navigate(`/couple/${weddingId}/settings`)}
             title="Settings"
@@ -316,10 +350,10 @@ export default function CoupleGalleryPage() {
             </svg>
           </button>
           <button
-            onClick={signOut}
+            onClick={demo ? () => navigate('/demo') : signOut}
             className="px-3 py-1.5 rounded-full border border-cream/10 text-cream/30 text-sans text-[11px] tracking-widest uppercase touch-manipulation active:bg-cream/5 transition-colors"
           >
-            Sign out
+            {demo ? 'Exit' : 'Sign out'}
           </button>
         </div>
       </div>
@@ -412,24 +446,26 @@ export default function CoupleGalleryPage() {
 
       {/* Controls */}
       <div className="px-5 py-3 border-b border-cream/5 flex items-center justify-between gap-3">
-        {/* Download all ZIP */}
-        <button
-          onClick={downloadAll}
-          disabled={!!zipProgress || activeSessions.length === 0}
-          className="flex items-center gap-2 text-sans text-cream/50 text-xs tracking-widest uppercase touch-manipulation active:text-cream/80 transition-colors disabled:opacity-30"
-        >
-          {zipProgress ? (
-            <>
-              <span className="w-3.5 h-3.5 rounded-full border border-cream/40 border-t-cream/80 animate-spin shrink-0" />
-              <span>{zipProgress.current} / {zipProgress.total}</span>
-            </>
-          ) : (
-            <>
-              <DownloadIcon />
-              <span>Download all</span>
-            </>
-          )}
-        </button>
+        {/* Download all ZIP — hidden in the demo (downloads disabled) */}
+        {demo ? <span /> : (
+          <button
+            onClick={downloadAll}
+            disabled={!!zipProgress || activeSessions.length === 0}
+            className="flex items-center gap-2 text-sans text-cream/50 text-xs tracking-widest uppercase touch-manipulation active:text-cream/80 transition-colors disabled:opacity-30"
+          >
+            {zipProgress ? (
+              <>
+                <span className="w-3.5 h-3.5 rounded-full border border-cream/40 border-t-cream/80 animate-spin shrink-0" />
+                <span>{zipProgress.current} / {zipProgress.total}</span>
+              </>
+            ) : (
+              <>
+                <DownloadIcon />
+                <span>Download all</span>
+              </>
+            )}
+          </button>
+        )}
 
         {/* Show/hide hidden toggle */}
         {allSessions.some(s => s.status === 'hidden') && (
@@ -506,6 +542,7 @@ export default function CoupleGalleryPage() {
               <PhotoTile
                 key={session.id}
                 session={session}
+                canDownload={!demo}
                 onToggleVisibility={toggleVisibility}
                 onDownload={downloadPhoto}
                 onDelete={deleteSession}
@@ -541,6 +578,7 @@ export default function CoupleGalleryPage() {
       {lightbox && (
         <Lightbox
           session={lightbox}
+          canDownload={!demo}
           onClose={() => setLightbox(null)}
           onDownload={downloadPhoto}
         />
@@ -551,13 +589,16 @@ export default function CoupleGalleryPage() {
 
 function Lightbox({
   session,
+  canDownload,
   onClose,
   onDownload,
 }: {
   session: SessionRecord
+  canDownload: boolean
   onClose: () => void
   onDownload: (photoUrl: string, annotationUrl: string | null, memoryNumber: number | null) => void
 }) {
+  const showBar = session.memoryNumber != null || (canDownload && !!session.photoUrl)
   return (
     <div
       className="fixed inset-0 z-[60] bg-ink/95 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8"
@@ -594,22 +635,28 @@ function Lightbox({
         )}
       </div>
 
-      <div className="absolute bottom-5 left-0 right-0 flex items-center justify-center gap-4">
-        {session.memoryNumber != null && (
-          <span className="text-mono text-cream/40 text-[10px] tracking-[0.3em] uppercase">
-            Memory #{session.memoryNumber}
-          </span>
-        )}
-        {session.photoUrl && (
-          <button
-            onClick={() => onDownload(session.photoUrl!, session.annotationUrl, session.memoryNumber)}
-            className="flex items-center gap-2 text-sans text-cream/60 text-xs tracking-widest uppercase touch-manipulation active:text-cream/90"
-          >
-            <DownloadIcon />
-            Download
-          </button>
-        )}
-      </div>
+      {showBar && (
+        <div className="absolute bottom-6 left-0 right-0 flex items-center justify-center px-4">
+          <div className="flex items-center gap-3 bg-ink/85 backdrop-blur-md border border-cream/15 rounded-full pl-5 pr-2 py-2 shadow-xl">
+            {session.memoryNumber != null && (
+              <span className="text-mono text-cream/75 text-sm tracking-[0.12em] uppercase">
+                Memory #{session.memoryNumber}
+              </span>
+            )}
+            {canDownload && session.photoUrl && (
+              <button
+                onClick={() => onDownload(session.photoUrl!, session.annotationUrl, session.memoryNumber)}
+                className="flex items-center gap-2 bg-cream text-ink rounded-full px-4 py-2 text-sans text-sm font-medium tracking-wide uppercase active:scale-95 transition-transform touch-manipulation"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M7 2v7M4 6l3 3 3-3M2 10v2h10v-2" />
+                </svg>
+                Download
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -691,12 +738,14 @@ function Stat({ value, label }: { value: string; label: string }) {
 
 function PhotoTile({
   session,
+  canDownload,
   onToggleVisibility,
   onDownload,
   onDelete,
   onOpen,
 }: {
   session: SessionRecord
+  canDownload: boolean
   onToggleVisibility: (id: string, status: 'active' | 'hidden' | 'flagged') => void
   onDownload: (photoUrl: string, annotationUrl: string | null, memoryNumber: number | null) => void
   onDelete: (id: string) => void
@@ -767,7 +816,7 @@ function PhotoTile({
           {/* Actions overlay */}
           {!confirmDelete && (
             <div className="absolute top-2 right-2 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200">
-              {session.photoUrl && (
+              {canDownload && session.photoUrl && (
                 <ActionButton
                   title="Download"
                   onClick={() => onDownload(session.photoUrl!, session.annotationUrl, session.memoryNumber)}

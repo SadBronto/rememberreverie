@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useSessionStore } from '@/store/sessionStore'
 import FilmGrain from '@/components/FilmGrain'
 import type { WeddingConfig } from '@/types/session'
+import { isDemoId, DEMO_BASE_CONFIG } from '@/demo/demoConfig'
 
 // Fallback used in dev when the API isn't available (no Supabase credentials yet)
 const DEV_FALLBACK: WeddingConfig = {
@@ -31,6 +32,14 @@ export default function LandingPage() {
     // If a config is already loaded for this wedding (e.g. set by the demo
     // setup wizard), don't overwrite it.
     if (weddingConfig && weddingConfig.id === id) {
+      setLoading(false)
+      return
+    }
+
+    // Demo guest landing never hits the API — fall back to the base demo config
+    // (keeps the Guest flow reload-safe even though demo state isn't persisted).
+    if (isDemoId(id)) {
+      setWeddingConfig({ ...DEMO_BASE_CONFIG, id })
       setLoading(false)
       return
     }

@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
-import type { CameraModeName } from '@/types/session'
+import type { CameraModeName, WeddingConfig } from '@/types/session'
 import StylePreviewThumb from '@/components/StylePreviewThumb'
+import { useDemoStore } from '@/store/demoStore'
+import { DEMO_WEDDING_ID } from '@/demo/demoConfig'
 
 type Step = 'loading' | 'names' | 'date' | 'style' | 'annotation' | 'timestamp' | 'welcome' | 'saving' | 'error'
 
@@ -33,6 +35,9 @@ const STEPS_ORDERED: Step[] = ['names', 'date', 'style', 'annotation', 'timestam
 
 export default function CoupleSetupPage() {
   const navigate = useNavigate()
+  const demo = useLocation().pathname.startsWith('/demo')
+  const demoConfig = useDemoStore((s) => s.config)
+  const applySetup = useDemoStore((s) => s.applySetup)
 
   const [step, setStep]                       = useState<Step>('loading')
   const [visible, setVisible]                 = useState(false)
@@ -54,6 +59,22 @@ export default function CoupleSetupPage() {
 
   // ── Load their wedding on mount ──────────────────────────────────────────────
   useEffect(() => {
+    // Demo mode: prefill from the demo store, no auth/backend.
+    if (demo) {
+      setWeddingId(DEMO_WEDDING_ID)
+      setCoupleNames(demoConfig.coupleNames === 'Avery & Jordan' ? '' : demoConfig.coupleNames)
+      setWeddingDate(demoConfig.weddingDate ?? '')
+      setNoDate(!demoConfig.weddingDate)
+      setSelectedModes(demoConfig.allowedModes)
+      setPreviewMode(demoConfig.allowedModes[0] ?? 'disposable')
+      setAnnotationMode(demoConfig.annotationMode)
+      setTimestampEnabled(demoConfig.timestampEnabled)
+      setTimestampStyle(demoConfig.timestampStyle)
+      setWelcomeMessage(demoConfig.welcomeMessage)
+      setStep('names')
+      return
+    }
+
     async function load() {
       if (!supabase) { setErrorMsg('App not configured.'); setStep('error'); return }
       const { data: { session } } = await supabase.auth.getSession()
@@ -122,6 +143,22 @@ export default function CoupleSetupPage() {
   }
 
   async function handleFinish() {
+    // Demo mode: apply choices to the demo store and drop into the Client gallery.
+    if (demo) {
+      const overrides: Partial<WeddingConfig> = {
+        coupleNames:      coupleNames.trim() || 'Avery & Jordan',
+        weddingDate:      noDate ? null : weddingDate,
+        welcomeMessage:   welcomeMessage.trim() || 'Leave us a memory.',
+        allowedModes:     selectedModes,
+        annotationMode,
+        timestampEnabled,
+        timestampStyle,
+      }
+      applySetup(overrides)
+      navigate(`/couple/${DEMO_WEDDING_ID}`)
+      return
+    }
+
     if (!tokenRef.current || !weddingId) return
     setStep('saving')
 

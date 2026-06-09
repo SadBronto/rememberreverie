@@ -6,10 +6,10 @@ export default function DemoLandingPage() {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    // demo.rememberreverie.com should drop users straight into the setup wizard,
-    // not the marketing landing page.
+    // demo.rememberreverie.com should drop users straight into the demo shell
+    // (Guest / Client / Setup), not the marketing landing page.
     if (window.location.hostname === 'demo.rememberreverie.com') {
-      navigate('/demo/setup', { replace: true })
+      navigate('/demo', { replace: true })
       return
     }
     const t = setTimeout(() => setVisible(true), 80)
@@ -82,7 +82,7 @@ export default function DemoLandingPage() {
             Client Portal
           </button>
           <button
-            onClick={() => navigate('/demo/setup')}
+            onClick={() => navigate('/demo')}
             className="w-full py-3.5 rounded-full border border-cream/20 text-cream/60 text-sans text-sm font-light tracking-widest uppercase active:scale-[0.97] transition-transform duration-100 touch-manipulation"
           >
             Try a Demo
