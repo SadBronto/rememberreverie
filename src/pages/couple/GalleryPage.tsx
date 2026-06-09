@@ -36,7 +36,8 @@ export default function CoupleGalleryPage() {
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [data, setData] = useState<GalleryData | null>(null)
   const [sessions, setSessions] = useState<SessionRecord[]>([])
-  const [showHidden, setShowHidden] = useState(false)
+  const [filterMode, setFilterMode] = useState<string>('all')
+  const [filterStatus, setFilterStatus] = useState<'active' | 'hidden' | 'flagged'>('active')
   const [showQR, setShowQR] = useState(false)
   const [qrSettings, setQrSettings] = useState<QRSettings | null | 'loading'>(null)
   const [visible, setVisible] = useState(false)
@@ -271,12 +272,16 @@ export default function CoupleGalleryPage() {
 
   const allSessions = sessions
   const activeSessions = allSessions.filter(s => s.status === 'active')
+  const hiddenSessions = allSessions.filter(s => s.status === 'hidden')
   const flaggedSessions = allSessions.filter(s => s.status === 'flagged')
   const reviewEnabled = data?.coupleReviewEnabled ?? false
-  // Flagged photos never appear in the normal grid — they live in the review section.
-  const visibleSessions = showHidden
-    ? allSessions.filter(s => s.status !== 'flagged')
-    : activeSessions
+
+  // The grid shows photos matching the active mode + status filters.
+  const gridSessions = allSessions.filter(s => {
+    if (s.status !== filterStatus) return false
+    if (filterMode !== 'all' && s.mode !== filterMode) return false
+    return true
+  })
 
   const totalPhotos = activeSessions.length
 
@@ -444,38 +449,51 @@ export default function CoupleGalleryPage() {
         </a>
       </div>
 
-      {/* Controls */}
-      <div className="px-5 py-3 border-b border-cream/5 flex items-center justify-between gap-3">
-        {/* Download all ZIP — hidden in the demo (downloads disabled) */}
-        {demo ? <span /> : (
-          <button
-            onClick={downloadAll}
-            disabled={!!zipProgress || activeSessions.length === 0}
-            className="flex items-center gap-2 text-sans text-cream/50 text-xs tracking-widest uppercase touch-manipulation active:text-cream/80 transition-colors disabled:opacity-30"
-          >
-            {zipProgress ? (
-              <>
-                <span className="w-3.5 h-3.5 rounded-full border border-cream/40 border-t-cream/80 animate-spin shrink-0" />
-                <span>{zipProgress.current} / {zipProgress.total}</span>
-              </>
-            ) : (
-              <>
-                <DownloadIcon />
-                <span>Download all</span>
-              </>
-            )}
-          </button>
-        )}
+      {/* Controls + filters */}
+      <div className="px-5 py-3 border-b border-cream/5 flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-3">
+          {/* Download all ZIP — hidden in the demo (downloads disabled) */}
+          {demo ? <span /> : (
+            <button
+              onClick={downloadAll}
+              disabled={!!zipProgress || activeSessions.length === 0}
+              className="flex items-center gap-2 text-sans text-cream/50 text-xs tracking-widest uppercase touch-manipulation active:text-cream/80 transition-colors disabled:opacity-30"
+            >
+              {zipProgress ? (
+                <>
+                  <span className="w-3.5 h-3.5 rounded-full border border-cream/40 border-t-cream/80 animate-spin shrink-0" />
+                  <span>{zipProgress.current} / {zipProgress.total}</span>
+                </>
+              ) : (
+                <>
+                  <DownloadIcon />
+                  <span>Download all</span>
+                </>
+              )}
+            </button>
+          )}
+          <span className="text-mono text-cream/25 text-[10px] tracking-widest uppercase">
+            {gridSessions.length} shown
+          </span>
+        </div>
 
-        {/* Show/hide hidden toggle */}
-        {allSessions.some(s => s.status === 'hidden') && (
-          <button
-            onClick={() => setShowHidden(v => !v)}
-            className="text-sans text-cream/30 text-xs tracking-widest uppercase touch-manipulation active:text-cream/60 transition-colors"
-          >
-            {showHidden ? 'Hide hidden' : 'Show hidden'}
-          </button>
-        )}
+        {/* Filter by style + status */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <FilterChip active={filterMode === 'all'}        onClick={() => setFilterMode('all')}>All</FilterChip>
+          <FilterChip active={filterMode === 'disposable'} onClick={() => setFilterMode('disposable')}>Disposable</FilterChip>
+          <FilterChip active={filterMode === 'polaroid'}   onClick={() => setFilterMode('polaroid')}>Polaroid</FilterChip>
+          <FilterChip active={filterMode === 'super8'}     onClick={() => setFilterMode('super8')}>Super 8</FilterChip>
+          <span className="text-cream/10">·</span>
+          <FilterChip active={filterStatus === 'active'}  onClick={() => setFilterStatus('active')}>Visible</FilterChip>
+          {hiddenSessions.length > 0 && (
+            <FilterChip active={filterStatus === 'hidden'} onClick={() => setFilterStatus('hidden')}>Hidden</FilterChip>
+          )}
+          {flaggedSessions.length > 0 && (
+            <FilterChip active={filterStatus === 'flagged'} onClick={() => setFilterStatus('flagged')}>
+              Flagged ({flaggedSessions.length})
+            </FilterChip>
+          )}
+        </div>
       </div>
 
       {/* Needs review — flagged photos, shown only when the admin enabled it */}
@@ -521,24 +539,22 @@ export default function CoupleGalleryPage() {
         />
       )}
 
-      {/* Empty state — has hidden photos, but none currently visible */}
-      {allSessions.some(s => s.status === 'hidden') && visibleSessions.length === 0 && (
+      {/* Empty state — no photos match the current filter */}
+      {allSessions.length > 0 && gridSessions.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
-          <p className="text-serif text-cream/40 text-xl italic">Nothing to show</p>
-          <p className="text-sans text-cream/25 text-sm mt-2">
-            Your visible memories are hidden. Tap "Show hidden" to see them.
-          </p>
+          <p className="text-serif text-cream/40 text-xl italic">Nothing here</p>
+          <p className="text-sans text-cream/25 text-sm mt-2">No photos match this filter.</p>
         </div>
       )}
 
       {/* Photo grid */}
-      {visibleSessions.length > 0 && (
+      {gridSessions.length > 0 && (
         <div
           className="px-3 pt-3 pb-6 transition-all duration-700 delay-200"
           style={{ opacity: visible ? 1 : 0 }}
         >
           <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-2">
-            {visibleSessions.map(session => (
+            {gridSessions.map(session => (
               <PhotoTile
                 key={session.id}
                 session={session}
@@ -724,6 +740,21 @@ function OnboardingPanel({ onCreateQR, onChooseLink }: { onCreateQR: () => void;
         Make it yours — choose a custom link before you print
       </button>
     </div>
+  )
+}
+
+function FilterChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-3 py-1 rounded-full text-sans text-[11px] tracking-wide touch-manipulation transition-colors ${
+        active
+          ? 'bg-cream/10 text-cream/80 border border-cream/20'
+          : 'text-cream/35 border border-transparent hover:text-cream/55'
+      }`}
+    >
+      {children}
+    </button>
   )
 }
 

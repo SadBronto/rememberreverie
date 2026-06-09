@@ -49,7 +49,6 @@ export default function CoupleSetupPage() {
   const [weddingDate, setWeddingDate]         = useState('')
   const [noDate, setNoDate]                   = useState(false)
   const [selectedModes, setSelectedModes]     = useState<CameraModeName[]>(['disposable'])
-  const [previewMode, setPreviewMode]         = useState<CameraModeName>('disposable')
   const [annotationMode, setAnnotationMode]   = useState<'signature' | 'doodle' | 'disabled'>('signature')
   const [timestampEnabled, setTimestampEnabled] = useState(true)
   const [timestampStyle, setTimestampStyle]   = useState<'classic' | 'vertical' | 'elegant'>('classic')
@@ -66,7 +65,6 @@ export default function CoupleSetupPage() {
       setWeddingDate(demoConfig.weddingDate ?? '')
       setNoDate(!demoConfig.weddingDate)
       setSelectedModes(demoConfig.allowedModes)
-      setPreviewMode(demoConfig.allowedModes[0] ?? 'disposable')
       setAnnotationMode(demoConfig.annotationMode)
       setTimestampEnabled(demoConfig.timestampEnabled)
       setTimestampStyle(demoConfig.timestampStyle)
@@ -268,8 +266,9 @@ export default function CoupleSetupPage() {
         <div className="w-9" />
       </header>
 
-      {/* Step content */}
-      <main className="flex-1 flex flex-col justify-center px-8">
+      {/* Step content (extra bottom space in demo so the persistent menu bar
+          never covers the Continue button) */}
+      <main className={`flex-1 flex flex-col justify-center px-8 ${demo ? 'pb-28' : ''}`}>
 
         {/* NAMES */}
         {step === 'names' && (
@@ -325,47 +324,40 @@ export default function CoupleSetupPage() {
           <StepWrapper visible={visible}>
             <StepLabel>Now for the fun part.</StepLabel>
             <StepQuestion>How do you want your memories to feel?</StepQuestion>
-            <p className="text-sans text-cream/35 text-xs mt-2">Choose one or more.</p>
+            <p className="text-sans text-cream/35 text-xs mt-2">Choose one or more — you'll see each style you pick.</p>
 
-            {/* Full-ratio preview — switches as you tap each style */}
-            <div className="mt-6">
-              <StylePreviewThumb
-                mode={previewMode}
-                sourceAlign={previewMode === 'polaroid' ? 'left' : 'center'}
-                fit="natural"
-                maxHeight="44vh"
-              />
+            {/* A preview for every selected style, shown together */}
+            <div className="mt-6 flex flex-col gap-5">
+              {STYLE_OPTIONS.filter(o => selectedModes.includes(o.mode)).map(opt => (
+                <div key={opt.mode}>
+                  <StylePreviewThumb
+                    mode={opt.mode}
+                    sourceAlign={opt.mode === 'polaroid' ? 'left' : 'center'}
+                    fit="natural"
+                    maxHeight={selectedModes.length === 1 ? '40vh' : selectedModes.length === 2 ? '30vh' : '24vh'}
+                  />
+                  <p className="text-serif text-cream/55 text-sm italic mt-2 text-center">{opt.mood}</p>
+                </div>
+              ))}
+              {selectedModes.length === 0 && (
+                <p className="text-sans text-cream/30 text-sm text-center py-10">Pick a style below to preview it.</p>
+              )}
             </div>
 
-            {/* Dynamic mood line */}
-            <p className="text-serif text-cream/55 text-sm italic mt-3 text-center">
-              {STYLE_OPTIONS.find(o => o.mode === previewMode)?.mood}
-            </p>
-
             {/* Compact selector rows */}
-            <div className="mt-4 flex flex-col">
+            <div className="mt-5 flex flex-col">
               {STYLE_OPTIONS.map((opt, i) => {
                 const selected = selectedModes.includes(opt.mode)
-                const isPreviewing = previewMode === opt.mode
                 return (
                   <button
                     key={opt.mode}
-                    onClick={() => {
-                      const isSelected = selectedModes.includes(opt.mode)
-                      if (!isSelected) {
-                        setPreviewMode(opt.mode)
-                      } else if (opt.mode === previewMode) {
-                        const remaining = selectedModes.filter(m => m !== opt.mode)
-                        if (remaining.length > 0) setPreviewMode(remaining[0]!)
-                      }
-                      toggleMode(opt.mode)
-                    }}
+                    onClick={() => toggleMode(opt.mode)}
                     className={`flex items-center justify-between py-3.5 touch-manipulation ${i < STYLE_OPTIONS.length - 1 ? 'border-b border-cream/[0.07]' : ''}`}
                   >
-                    <span className={`text-sans text-sm transition-colors ${isPreviewing || selected ? 'text-cream' : 'text-cream/45'}`}>
+                    <span className={`text-sans text-sm transition-colors ${selected ? 'text-cream' : 'text-cream/45'}`}>
                       {opt.label}
                     </span>
-                    <div className={`w-5 h-5 rounded-full border flex-shrink-0 flex items-center justify-center transition-all duration-200 ${selected ? 'border-cream bg-cream' : isPreviewing ? 'border-cream/50' : 'border-cream/20'}`}>
+                    <div className={`w-5 h-5 rounded-full border flex-shrink-0 flex items-center justify-center transition-all duration-200 ${selected ? 'border-cream bg-cream' : 'border-cream/20'}`}>
                       {selected && (
                         <svg width="9" height="9" viewBox="0 0 8 8" fill="none">
                           <path d="M1.5 4l2 2 3-3" stroke="#1a1612" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
