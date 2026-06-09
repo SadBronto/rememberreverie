@@ -9,6 +9,7 @@ import AnnotatePage from '@/pages/AnnotatePage'
 import ConfirmationPage from '@/pages/ConfirmationPage'
 import DemoLandingPage from '@/pages/demo/DemoLandingPage'
 import DemoMenuBar from '@/demo/DemoMenuBar'
+import DemoSplash from '@/demo/DemoSplash'
 
 // ── Everything else: lazy-loaded on demand (keeps the guest bundle small) ──
 const SlideshowSlugPage  = lazy(() => import('@/pages/SlideshowSlugPage'))
@@ -99,6 +100,8 @@ export default function App() {
     </Suspense>
     {/* Persistent demo persona menu — self-hides outside the demo */}
     <DemoMenuBar />
+    {/* First-time-per-persona intro splash */}
+    <DemoSplash />
     </>
   )
 }

@@ -11,13 +11,22 @@ export default function DemoHome() {
   const navigate = useNavigate()
   const enter = useDemoStore((s) => s.enter)
   const config = useDemoStore((s) => s.config)
+  const splashSeen = useDemoStore((s) => s.splashSeen)
+  const requestSplash = useDemoStore((s) => s.requestSplash)
   const setWeddingConfig = useSessionStore((s) => s.setWeddingConfig)
 
   useEffect(() => { enter() }, [enter])
 
-  const goGuest = () => { enter(); setWeddingConfig(config); navigate(`/w/${config.id}`) }
-  const goClient = () => { enter(); navigate(`/couple/${config.id}`) }
-  const goSetup  = () => { enter(); navigate('/demo/setup') }
+  // First open of a persona this session → intro splash; then straight in.
+  const go = (persona: 'guest' | 'client' | 'setup', path: string, before?: () => void) => {
+    before?.()
+    enter()
+    if (splashSeen[persona]) navigate(path)
+    else requestSplash(persona, path)
+  }
+  const goGuest  = () => go('guest',  `/w/${config.id}`,      () => setWeddingConfig(config))
+  const goClient = () => go('client', `/couple/${config.id}`)
+  const goSetup  = () => go('setup',  '/demo/setup')
 
   return (
     <div className="relative min-h-dvh bg-ink flex flex-col items-center px-6 overflow-hidden safe-top">

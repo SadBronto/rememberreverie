@@ -30,7 +30,19 @@ interface DemoState {
   exit: () => void
   applySetup: (overrides: Partial<WeddingConfig>) => void
   resetConfig: () => void
+
+  // First-time-per-session intro splash. Each persona shows its splash only the
+  // first time it's opened this session; the global DemoSplash renders it and
+  // navigates to `path` when the prospect taps Continue.
+  splashSeen: Record<DemoPersona, boolean>
+  pendingSplash: { persona: DemoPersona; path: string } | null
+  requestSplash: (persona: DemoPersona, path: string) => void
+  clearSplash: () => void
 }
+
+export type DemoPersona = 'guest' | 'client' | 'setup'
+
+const NO_SPLASH_SEEN: Record<DemoPersona, boolean> = { guest: false, client: false, setup: false }
 
 export const useDemoStore = create<DemoState>((set) => ({
   setup: null,
@@ -46,10 +58,16 @@ export const useDemoStore = create<DemoState>((set) => ({
   config: DEMO_BASE_CONFIG,
 
   enter: () => set({ active: true }),
-  exit: () => set({ active: false, config: DEMO_BASE_CONFIG }),
+  exit: () => set({ active: false, config: DEMO_BASE_CONFIG, pendingSplash: null, splashSeen: NO_SPLASH_SEEN }),
   applySetup: (overrides) =>
     set((s) => ({ config: { ...s.config, ...overrides, id: s.config.id } })),
   resetConfig: () => set({ config: DEMO_BASE_CONFIG }),
+
+  splashSeen: NO_SPLASH_SEEN,
+  pendingSplash: null,
+  requestSplash: (persona, path) =>
+    set((s) => ({ pendingSplash: { persona, path }, splashSeen: { ...s.splashSeen, [persona]: true } })),
+  clearSplash: () => set({ pendingSplash: null }),
 }))
 
 export const DEMO_PHOTO_CAP = 5

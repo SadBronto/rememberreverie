@@ -14,6 +14,8 @@ export default function DemoMenuBar() {
   const active = useDemoStore((s) => s.active)
   const enter = useDemoStore((s) => s.enter)
   const config = useDemoStore((s) => s.config)
+  const splashSeen = useDemoStore((s) => s.splashSeen)
+  const requestSplash = useDemoStore((s) => s.requestSplash)
   const setWeddingConfig = useSessionStore((s) => s.setWeddingConfig)
 
   const path = location.pathname
@@ -38,15 +40,19 @@ export default function DemoMenuBar() {
     : path === '/demo' || path === '/demo/'                              ? 'home'
     : null
 
-  const goGuest = () => {
+  // First time a persona is opened this session → show its intro splash; after
+  // that, go straight in. `before` runs at click time (e.g. seeding the guest config).
+  const go = (persona: 'guest' | 'client' | 'setup', path: string, before?: () => void) => {
+    before?.()
     enter()
-    // Seed the demo config into the session store so the real guest screens render
-    // it instead of trying to fetch /api/weddings/demo-reverie (which 404s in prod).
-    setWeddingConfig(config)
-    navigate(`/w/${config.id}`)
+    if (splashSeen[persona]) navigate(path)
+    else requestSplash(persona, path)
   }
-  const goClient = () => { enter(); navigate(`/couple/${config.id}`) }
-  const goSetup  = () => { enter(); navigate('/demo/setup') }
+  // Seed the demo config into the session store so the real guest screens render it
+  // instead of trying to fetch /api/weddings/demo-reverie (which 404s in prod).
+  const goGuest  = () => go('guest',  `/w/${config.id}`,      () => setWeddingConfig(config))
+  const goClient = () => go('client', `/couple/${config.id}`)
+  const goSetup  = () => go('setup',  '/demo/setup')
 
   return (
     <nav className="fixed bottom-0 inset-x-0 z-[100] safe-bottom select-none pointer-events-none">
