@@ -36,6 +36,7 @@ export default function CoupleGalleryPage() {
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [data, setData] = useState<GalleryData | null>(null)
   const [sessions, setSessions] = useState<SessionRecord[]>([])
+  const [demoProcessing, setDemoProcessing] = useState(false) // demo photos still running through the filter pipeline
   const [filter, setFilter] = useState<'all' | 'disposable' | 'polaroid' | 'super8' | 'hidden' | 'flagged'>('all')
   const [showQR, setShowQR] = useState(false)
   const [qrSettings, setQrSettings] = useState<QRSettings | null | 'loading'>(null)
@@ -48,21 +49,26 @@ export default function CoupleGalleryPage() {
     // Demo mode: build the gallery from the bundled photos (filtered through the
     // real pipeline) + any Guest-persona captures. No auth, no backend.
     if (demo && weddingId) {
-      setLoadState('loading')
+      // Show the page chrome instantly with an empty gallery, then process the
+      // photos in the background behind a "developing" state — so prospects aren't
+      // staring at a blank spinner while 46 images run through the filter pipeline.
+      setData({
+        wedding: {
+          id: weddingId,
+          coupleNames: demoConfig.coupleNames,
+          weddingDate: demoConfig.weddingDate ?? '',
+          slug: null,
+        },
+        coupleReviewEnabled: true, // surface the flagged-review section in the demo
+        sessions: [],
+      })
+      setSessions([])
+      setDemoProcessing(true)
+      setLoadState('ready')
+      setTimeout(() => setVisible(true), 60)
       buildDemoGallery(completedSessions).then((sess) => {
-        setData({
-          wedding: {
-            id: weddingId,
-            coupleNames: demoConfig.coupleNames,
-            weddingDate: demoConfig.weddingDate ?? '',
-            slug: null,
-          },
-          coupleReviewEnabled: true, // surface the flagged-review section in the demo
-          sessions: sess,
-        })
         setSessions(sess)
-        setLoadState('ready')
-        setTimeout(() => setVisible(true), 60)
+        setDemoProcessing(false)
       })
       return
     }
@@ -403,19 +409,21 @@ export default function CoupleGalleryPage() {
       )}
 
 
-      {/* Stats */}
-      <div
-        className="px-5 py-5 border-b border-cream/5 transition-all duration-700 delay-100"
-        style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(6px)' }}
-      >
-        <div className="flex gap-6">
-          <Stat value={String(totalPhotos)} label="memories captured" />
-          <Stat value={peakHourDisplay} label="most active hour" />
-          {allSessions.length - activeSessions.length > 0 && (
-            <Stat value={String(allSessions.length - activeSessions.length)} label="hidden" />
-          )}
+      {/* Stats (appear once the photos have loaded) */}
+      {!demoProcessing && (
+        <div
+          className="px-5 py-5 border-b border-cream/5 transition-all duration-700 delay-100"
+          style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(6px)' }}
+        >
+          <div className="flex gap-6">
+            <Stat value={String(totalPhotos)} label="memories captured" />
+            <Stat value={peakHourDisplay} label="most active hour" />
+            {allSessions.length - activeSessions.length > 0 && (
+              <Stat value={String(allSessions.length - activeSessions.length)} label="hidden" />
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Retention notice — shown when ≤ 60 days to deletion */}
       {retentionInfo && retentionInfo.daysLeft <= 60 && (
@@ -473,9 +481,11 @@ export default function CoupleGalleryPage() {
               )}
             </button>
           )}
-          <span className="text-mono text-cream/25 text-[10px] tracking-widest uppercase">
-            {gridSessions.length} shown
-          </span>
+          {!demoProcessing && (
+            <span className="text-mono text-cream/25 text-[10px] tracking-widest uppercase">
+              {gridSessions.length} shown
+            </span>
+          )}
         </div>
 
         {/* Filter — one at a time */}
@@ -530,8 +540,16 @@ export default function CoupleGalleryPage() {
         </div>
       )}
 
+      {/* Developing — demo photos still running through the filter pipeline */}
+      {demoProcessing && (
+        <div className="flex flex-col items-center justify-center py-28 px-6 text-center gap-4">
+          <div className="w-7 h-7 rounded-full border-2 border-cream/20 border-t-cream/60 animate-spin" />
+          <p className="text-sans text-cream/45 text-sm tracking-wide">Developing your gallery…</p>
+        </div>
+      )}
+
       {/* Onboarding — brand-new gallery with no photos yet */}
-      {allSessions.length === 0 && (
+      {!demoProcessing && allSessions.length === 0 && (
         <OnboardingPanel
           onCreateQR={() => setShowQR(true)}
           onChooseLink={() => navigate(`/couple/${weddingId}/settings`)}
@@ -539,7 +557,7 @@ export default function CoupleGalleryPage() {
       )}
 
       {/* Empty state — no photos match the current filter */}
-      {allSessions.length > 0 && gridSessions.length === 0 && (
+      {!demoProcessing && allSessions.length > 0 && gridSessions.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
           <p className="text-serif text-cream/40 text-xl italic">Nothing here</p>
           <p className="text-sans text-cream/25 text-sm mt-2">No photos match this filter.</p>
