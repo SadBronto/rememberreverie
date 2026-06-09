@@ -61,6 +61,16 @@ export default function PrivacyPage() {
           </p>
         </Section>
 
+        <Section title="Demo imagery">
+          <p className="text-sans text-sm leading-relaxed">
+            Photographs shown in our product demo are free stock images from{' '}
+            <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer" className="text-cream underline underline-offset-2">
+              Unsplash
+            </a>
+            {' '}— they are not real customer photos.
+          </p>
+        </Section>
+
         <Section title="How long we keep photos">
           <p className="text-sans text-sm leading-relaxed">
             Photos are retained for the life of your event and then deleted — typically around
