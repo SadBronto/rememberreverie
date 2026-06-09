@@ -434,6 +434,7 @@ export default function CoupleSetupPage() {
                     mode="disposable"
                     timestampEnabled={true}
                     timestampStyle={timestampStyle}
+                    coupleNames={coupleNames}
                     fit="natural"
                     maxHeight="36vh"
                   />

@@ -47,6 +47,8 @@ interface Props {
   fit?: 'cover' | 'natural'
   /** Maximum CSS height for 'natural' fit. Default '50vh'. */
   maxHeight?: string
+  /** Names shown by the 'elegant' timestamp. Falls back to a sample when empty. */
+  coupleNames?: string
 }
 
 // ── Aspect ratios of the processed output (after frame borders are added) ─────
@@ -73,8 +75,12 @@ export default function StylePreviewThumb({
   sourceAlign      = 'center',
   fit              = 'cover',
   maxHeight        = '50vh',
+  coupleNames,
 }: Props) {
-  const cacheKey = `${mode}-${timestampEnabled ? 't' : 'f'}-${timestampStyle}-${sourceAlign}`
+  // Only the 'elegant' timestamp renders names; fall back to a sample when empty.
+  const names = (coupleNames ?? '').trim() || 'Sophia & James'
+  const nameKey = timestampEnabled && timestampStyle === 'elegant' ? names : ''
+  const cacheKey = `${mode}-${timestampEnabled ? 't' : 'f'}-${timestampStyle}-${sourceAlign}-${nameKey}`
 
   const [dataUrl, setDataUrl] = useState<string | null>(() => previewCache.get(cacheKey) ?? null)
   const [failed,  setFailed]  = useState(false)
@@ -93,7 +99,7 @@ export default function StylePreviewThumb({
         const out  = await processSession(
           [{ blob, capturedAt: new Date('2026-05-21T12:00:00'), index: 0 }],
           CAMERA_MODES[mode],
-          { timestampEnabled, timestampStyle, coupleNames: 'Sophia & James', sourceAlign },
+          { timestampEnabled, timestampStyle, coupleNames: names, sourceAlign },
           400,
         )
         const url = await blobToDataUrl(out)
