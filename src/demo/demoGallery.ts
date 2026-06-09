@@ -8,9 +8,9 @@ import { processSession } from '@/lib/imageProcessor'
 // Builds the demo gallery by running each raw demo photo through the REAL
 // processSession pipeline (so the demo can't drift from the product), then layers
 // in any photos the prospect captured in the Guest persona. The expensive bit —
-// filtering the 46 bundled photos — is processed once and cached for the session.
+// filtering the 46 bundled photos — is processed in batches and cached.
 
-let manifestCache: Promise<SessionRecord[]> | null = null
+let manifestCache: SessionRecord[] | null = null
 
 async function processManifestPhoto(p: DemoPhoto): Promise<SessionRecord> {
   const blob = await (await fetch(p.src)).blob()
@@ -55,14 +55,43 @@ function guestCaptureToSession(s: CaptureSession): SessionRecord | null {
   }
 }
 
-export async function buildDemoGallery(guestSessions: CaptureSession[] = []): Promise<SessionRecord[]> {
-  if (!manifestCache) manifestCache = Promise.all(DEMO_PHOTOS.map(processManifestPhoto))
-  const base = await manifestCache
+export async function buildDemoGallery(
+  guestSessions: CaptureSession[] = [],
+  onProgress?: (batch: SessionRecord[], currentCount: number, total: number) => void,
+): Promise<SessionRecord[]> {
   // Prospect's own Guest captures float to the top (most recent first).
   const guests = guestSessions
     .filter((s) => isDemoId(s.weddingId))
     .map(guestCaptureToSession)
     .filter((s): s is SessionRecord => s !== null)
     .reverse()
-  return [...guests, ...base]
+
+  let manifest: SessionRecord[]
+
+  if (manifestCache) {
+    // Already processed — return from cache. If a callback was provided
+    // (re-entering the gallery), fire it all at once since there's no staggering.
+    manifest = manifestCache
+    if (onProgress) {
+      onProgress(manifest, manifest.length, DEMO_PHOTOS.length)
+    }
+  } else {
+    // First load: process manifest in batches of 4, staggered. Each batch fires
+    // the onProgress callback, so photos appear in the UI over ~1.5–2 seconds.
+    manifest = []
+    const BATCH_SIZE = 4
+
+    for (let i = 0; i < DEMO_PHOTOS.length; i += BATCH_SIZE) {
+      const batch = DEMO_PHOTOS.slice(i, i + BATCH_SIZE)
+      const processed = await Promise.all(batch.map(processManifestPhoto))
+      manifest.push(...processed)
+      if (onProgress) {
+        onProgress(processed, manifest.length, DEMO_PHOTOS.length)
+      }
+    }
+
+    manifestCache = manifest
+  }
+
+  return [...guests, ...manifest]
 }
