@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 
 const CONTACT_URL  = 'https://www.thirddegreeentertainment.com/contact'
-const LAST_UPDATED = 'June 5, 2026'
+const LAST_UPDATED = 'June 9, 2026'
 
 // Privacy policy — also serves as a legitimacy signal for the domain (a real
 // business with a clear data policy + contact, not a phishing throwaway).
