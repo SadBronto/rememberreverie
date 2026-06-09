@@ -36,8 +36,7 @@ export default function CoupleGalleryPage() {
   const [loadState, setLoadState] = useState<LoadState>('loading')
   const [data, setData] = useState<GalleryData | null>(null)
   const [sessions, setSessions] = useState<SessionRecord[]>([])
-  const [filterMode, setFilterMode] = useState<string>('all')
-  const [filterStatus, setFilterStatus] = useState<'active' | 'hidden' | 'flagged'>('active')
+  const [filter, setFilter] = useState<'all' | 'disposable' | 'polaroid' | 'super8' | 'hidden' | 'flagged'>('all')
   const [showQR, setShowQR] = useState(false)
   const [qrSettings, setQrSettings] = useState<QRSettings | null | 'loading'>(null)
   const [visible, setVisible] = useState(false)
@@ -276,11 +275,13 @@ export default function CoupleGalleryPage() {
   const flaggedSessions = allSessions.filter(s => s.status === 'flagged')
   const reviewEnabled = data?.coupleReviewEnabled ?? false
 
-  // The grid shows photos matching the active mode + status filters.
+  // Single-select filter: a mode chip shows visible photos of that style;
+  // Hidden/Flagged show those sets; All shows every visible photo.
   const gridSessions = allSessions.filter(s => {
-    if (s.status !== filterStatus) return false
-    if (filterMode !== 'all' && s.mode !== filterMode) return false
-    return true
+    if (filter === 'hidden')  return s.status === 'hidden'
+    if (filter === 'flagged') return s.status === 'flagged'
+    if (filter === 'all')     return s.status === 'active'
+    return s.status === 'active' && s.mode === filter
   })
 
   const totalPhotos = activeSessions.length
@@ -477,19 +478,17 @@ export default function CoupleGalleryPage() {
           </span>
         </div>
 
-        {/* Filter by style + status */}
+        {/* Filter — one at a time */}
         <div className="flex items-center gap-2 flex-wrap">
-          <FilterChip active={filterMode === 'all'}        onClick={() => setFilterMode('all')}>All</FilterChip>
-          <FilterChip active={filterMode === 'disposable'} onClick={() => setFilterMode('disposable')}>Disposable</FilterChip>
-          <FilterChip active={filterMode === 'polaroid'}   onClick={() => setFilterMode('polaroid')}>Polaroid</FilterChip>
-          <FilterChip active={filterMode === 'super8'}     onClick={() => setFilterMode('super8')}>Super 8</FilterChip>
-          <span className="text-cream/10">·</span>
-          <FilterChip active={filterStatus === 'active'}  onClick={() => setFilterStatus('active')}>Visible</FilterChip>
+          <FilterChip active={filter === 'all'}        onClick={() => setFilter('all')}>All</FilterChip>
+          <FilterChip active={filter === 'disposable'} onClick={() => setFilter('disposable')}>Disposable</FilterChip>
+          <FilterChip active={filter === 'polaroid'}   onClick={() => setFilter('polaroid')}>Polaroid</FilterChip>
+          <FilterChip active={filter === 'super8'}     onClick={() => setFilter('super8')}>Super 8</FilterChip>
           {hiddenSessions.length > 0 && (
-            <FilterChip active={filterStatus === 'hidden'} onClick={() => setFilterStatus('hidden')}>Hidden</FilterChip>
+            <FilterChip active={filter === 'hidden'} onClick={() => setFilter('hidden')}>Hidden</FilterChip>
           )}
           {flaggedSessions.length > 0 && (
-            <FilterChip active={filterStatus === 'flagged'} onClick={() => setFilterStatus('flagged')}>
+            <FilterChip active={filter === 'flagged'} onClick={() => setFilter('flagged')}>
               Flagged ({flaggedSessions.length})
             </FilterChip>
           )}
