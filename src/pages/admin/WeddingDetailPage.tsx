@@ -1,8 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, lazy, Suspense } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import QRCreator, { type QRSettings } from '@/components/QRCreator'
 import StyledQR from '@/components/StyledQR'
+
+// Leaflet-backed venue picker — lazy so the map library only loads for admins
+// who actually open the geofence editor (and never reaches the guest bundle).
+const GeofenceMap = lazy(() => import('@/components/GeofenceMap'))
 
 interface WeddingDetail {
   id: string
@@ -23,6 +27,11 @@ interface WeddingDetail {
   couple_review_enabled: boolean
   qr_settings: QRSettings | null
   slideshow_qr_slide: boolean
+  geofence_enabled: boolean
+  geofence_lat: number | null
+  geofence_lng: number | null
+  geofence_radius_m: number | null
+  geofence_bypass_code: string | null
 }
 
 interface Counts { disposable: number; polaroid: number; super8: number; total: number }
@@ -775,6 +784,85 @@ export default function WeddingDetailPage() {
             <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
               Max photos kept in this gallery. When it fills up, the oldest photos roll off so new ones always save. Leave blank for unlimited.
             </p>
+          </FormField>
+
+          <FormField label="Location fence">
+            <div className="flex items-center gap-3">
+              <AdminToggle
+                value={form.geofence_enabled ?? false}
+                onChange={v => setForm(f => ({
+                  ...f,
+                  geofence_enabled: v,
+                  geofence_radius_m: v && f.geofence_radius_m == null ? 150 : f.geofence_radius_m,
+                }))}
+              />
+              <span className="text-sans text-cream/50 text-sm">
+                {form.geofence_enabled ? 'Guests must be at the venue' : 'Off'}
+              </span>
+            </div>
+            <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
+              When on, guests can only open the camera if their phone reports they're inside the fence.
+              A soft anti-abuse gate (phone GPS isn't tamper-proof). Set a bypass code for guests whose
+              location can't be checked.
+            </p>
+
+            {form.geofence_enabled && (
+              <div className="flex flex-col gap-3 mt-3">
+                <Suspense fallback={
+                  <div className="w-full h-64 rounded-xl bg-ink-light border border-cream/10 flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-full border-2 border-cream/20 border-t-cream/60 animate-spin" />
+                  </div>
+                }>
+                  <GeofenceMap
+                    lat={form.geofence_lat ?? null}
+                    lng={form.geofence_lng ?? null}
+                    radius={form.geofence_radius_m ?? 150}
+                    onMove={(la, lo) => setForm(f => ({ ...f, geofence_lat: la, geofence_lng: lo }))}
+                  />
+                </Suspense>
+
+                {/* Radius */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sans text-cream/50 text-xs">Fence radius</label>
+                    <span className="text-mono text-cream/50 text-[11px]">
+                      {form.geofence_radius_m ?? 150} m · ~{Math.round((form.geofence_radius_m ?? 150) * 3.28084)} ft
+                    </span>
+                  </div>
+                  <input
+                    type="range" min={25} max={1000} step={25}
+                    value={form.geofence_radius_m ?? 150}
+                    onChange={e => setField('geofence_radius_m', Number(e.target.value))}
+                    className="w-full accent-amber-film"
+                  />
+                  <p className="text-mono text-cream/25 text-[10px] leading-relaxed">
+                    Indoor GPS can drift 30–100m — keep the radius generous (150m+) so real guests aren't blocked.
+                  </p>
+                </div>
+
+                {/* Coordinates readout / warning */}
+                {form.geofence_lat != null && form.geofence_lng != null ? (
+                  <p className="text-mono text-cream/30 text-[10px]">
+                    Venue: {form.geofence_lat.toFixed(5)}, {form.geofence_lng.toFixed(5)}
+                  </p>
+                ) : (
+                  <p className="text-sans text-amber-film/70 text-xs">Set the venue location above before saving.</p>
+                )}
+
+                {/* Bypass code */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sans text-cream/50 text-xs">Bypass code (optional)</label>
+                  <AdminInput
+                    value={form.geofence_bypass_code ?? ''}
+                    onChange={v => setField('geofence_bypass_code', v || null)}
+                    placeholder="e.g. PAWS2026"
+                  />
+                  <p className="text-mono text-cream/25 text-[10px] leading-relaxed">
+                    Post this at the venue or give it to staff. Guests whose location can't be verified can enter it to get in.
+                  </p>
+                </div>
+              </div>
+            )}
           </FormField>
 
           <div className="flex items-center gap-3 pt-1">

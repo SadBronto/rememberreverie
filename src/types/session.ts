@@ -56,4 +56,12 @@ export interface WeddingConfig {
   // Demo mode: enables photo cap, guided prompts, seeded gallery
   isDemoMode?: boolean
   photoCap?: number               // max captures; undefined = unlimited
+  // Location fence (admin-set). When enabled, guests must be within radius of
+  // the venue to open the camera. The bypass code is verified server-side and is
+  // never included here. Distance is checked in the browser; location isn't stored.
+  geofenceEnabled?: boolean
+  geofenceLat?: number | null
+  geofenceLng?: number | null
+  geofenceRadiusM?: number | null
+  geofenceHasBypass?: boolean      // whether a bypass code exists (code itself stays server-side)
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useSessionStore } from '@/store/sessionStore'
 import FilmGrain from '@/components/FilmGrain'
+import GeofenceGate from '@/components/GeofenceGate'
 import type { WeddingConfig } from '@/types/session'
 import { isDemoId, DEMO_BASE_CONFIG } from '@/demo/demoConfig'
 
@@ -25,6 +26,7 @@ export default function LandingPage() {
   const { setWeddingConfig, weddingConfig } = useSessionStore()
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<'notfound' | 'network' | null>(null)
+  const [gateOpen, setGateOpen] = useState(false)
 
   useEffect(() => {
     const id = weddingId ?? 'demo'
@@ -78,7 +80,14 @@ export default function LandingPage() {
     return () => { cancelled = true }
   }, [weddingId, weddingConfig, setWeddingConfig])
 
+  const geofenceActive = !!(
+    weddingConfig?.geofenceEnabled &&
+    weddingConfig.geofenceLat != null &&
+    weddingConfig.geofenceLng != null
+  )
+
   const handleOpen = () => {
+    if (geofenceActive) { setGateOpen(true); return }
     const id = weddingId ?? 'demo'
     navigate(`/w/${id}/camera`)
   }
@@ -90,6 +99,16 @@ export default function LandingPage() {
 
   return (
     <div className="relative flex flex-col min-h-dvh bg-ink px-6 overflow-hidden safe-top safe-bottom">
+
+      {/* Location fence — gate before the camera when the event has one set */}
+      {gateOpen && (
+        <GeofenceGate
+          config={weddingConfig}
+          weddingId={weddingId ?? ''}
+          onPass={() => navigate(`/w/${weddingId ?? 'demo'}/camera`)}
+          onClose={() => setGateOpen(false)}
+        />
+      )}
 
       {/* Animated film grain — nearly subconscious */}
       <FilmGrain opacity={0.038} />

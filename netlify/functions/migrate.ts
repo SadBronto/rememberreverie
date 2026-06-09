@@ -24,8 +24,18 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
       `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS qr_settings JSONB NULL`,
     ],
   },
+  {
+    id: 'v4_geofence',
+    sql: [
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS geofence_enabled BOOLEAN NOT NULL DEFAULT FALSE`,
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS geofence_lat DOUBLE PRECISION NULL`,
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS geofence_lng DOUBLE PRECISION NULL`,
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS geofence_radius_m INTEGER NULL`,
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS geofence_bypass_code TEXT NULL`,
+    ],
+  },
   // Future migrations go here:
-  // { id: 'v4_...', sql: [`ALTER TABLE ...`] },
+  // { id: 'v5_...', sql: [`ALTER TABLE ...`] },
 ]
 
 async function run(sql: string, token: string): Promise<unknown> {

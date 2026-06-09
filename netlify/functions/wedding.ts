@@ -43,6 +43,12 @@ export const handler: Handler = async (event) => {
     photoCap:             data.photo_cap ?? undefined,
     isDemoMode:           data.is_demo_mode,
     isEvent:              data.is_event ?? false,
+    // Location fence — public fields only (bypass code stays server-side)
+    geofenceEnabled:      data.geofence_enabled ?? false,
+    geofenceLat:          data.geofence_lat ?? null,
+    geofenceLng:          data.geofence_lng ?? null,
+    geofenceRadiusM:      data.geofence_radius_m ?? null,
+    geofenceHasBypass:    !!data.geofence_bypass_code,
   }
 
   return {

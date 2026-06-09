@@ -94,7 +94,9 @@ export const handler: Handler = async (event) => {
                      'allowed_modes', 'annotation_mode', 'timestamp_enabled', 'timestamp_style',
                      'photo_cap', 'status', 'slideshow_enabled', 'slug',
                      'is_event', 'event_end_date', 'couple_review_enabled', 'qr_settings',
-                     'slideshow_qr_slide', 'slideshow_slides']
+                     'slideshow_qr_slide', 'slideshow_slides',
+                     'geofence_enabled', 'geofence_lat', 'geofence_lng', 'geofence_radius_m',
+                     'geofence_bypass_code']
     const update: Record<string, unknown> = {}
     for (const key of allowed) {
       if (key in body) update[key] = body[key] ?? null

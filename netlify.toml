@@ -93,6 +93,11 @@
   to   = "/.netlify/functions/moderate"
   status = 200
 
+[[redirects]]
+  from = "/api/geofence/verify"
+  to   = "/.netlify/functions/geofence-verify"
+  status = 200
+
 # SPA catch-all — handles all React Router routes
 [[redirects]]
   from = "/*"
