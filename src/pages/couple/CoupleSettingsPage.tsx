@@ -11,6 +11,7 @@ interface WeddingSettings {
   welcome_message:   string
   allowed_modes:     string[]
   annotation_mode:   string
+  selfie_enabled:    boolean
   timestamp_enabled: boolean
   timestamp_style:   string
   slug:              string | null
@@ -45,6 +46,7 @@ export default function CoupleSettingsPage() {
         welcome_message:   demoConfig.welcomeMessage,
         allowed_modes:     demoConfig.allowedModes,
         annotation_mode:   demoConfig.annotationMode,
+        selfie_enabled:    demoConfig.selfieEnabled ?? true,
         timestamp_enabled: demoConfig.timestampEnabled,
         timestamp_style:   demoConfig.timestampStyle,
         slug:              null,
@@ -71,6 +73,7 @@ export default function CoupleSettingsPage() {
         welcome_message:   data.welcome_message    ?? '',
         allowed_modes:     data.allowed_modes      ?? ['disposable'],
         annotation_mode:   data.annotation_mode    ?? 'signature',
+        selfie_enabled:    data.selfie_enabled     ?? true,
         timestamp_enabled: data.timestamp_enabled  ?? true,
         timestamp_style:   data.timestamp_style    ?? 'classic',
         slug:              data.slug               ?? null,
@@ -116,6 +119,7 @@ export default function CoupleSettingsPage() {
         welcomeMessage:   form.welcome_message,
         allowedModes:     form.allowed_modes as CameraModeName[],
         annotationMode:   form.annotation_mode as WeddingConfig['annotationMode'],
+        selfieEnabled:    form.selfie_enabled,
         timestampEnabled: form.timestamp_enabled,
         timestampStyle:   form.timestamp_style as WeddingConfig['timestampStyle'],
       }
@@ -142,6 +146,7 @@ export default function CoupleSettingsPage() {
         annotationMode:   form.annotation_mode,
         timestampEnabled: form.timestamp_enabled,
         timestampStyle:   form.timestamp_style,
+        selfieEnabled:    form.selfie_enabled,
         slug:             form.slug || null,
       }),
     })
@@ -253,6 +258,19 @@ export default function CoupleSettingsPage() {
               </button>
             ))}
           </div>
+        </Section>
+
+        {/* Selfie / front camera */}
+        <Section label="Selfie">
+          <div className="flex items-center gap-3">
+            <Toggle value={form.selfie_enabled} onChange={v => setField('selfie_enabled', v)} />
+            <span className="text-sans text-cream/50 text-sm">
+              {form.selfie_enabled ? 'Front camera on' : 'Rear camera only'}
+            </span>
+          </div>
+          <p className="text-mono text-cream/25 text-[10px] leading-relaxed">
+            Lets guests flip to the front camera for selfies — same no-retake rule and film look as the rear camera.
+          </p>
         </Section>
 
         {/* Annotation */}

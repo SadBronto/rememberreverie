@@ -49,6 +49,7 @@ export const handler: Handler = async (event) => {
     geofenceLng:          data.geofence_lng ?? null,
     geofenceRadiusM:      data.geofence_radius_m ?? null,
     geofenceHasBypass:    !!data.geofence_bypass_code,
+    selfieEnabled:        data.selfie_enabled ?? true,
   }
 
   return {

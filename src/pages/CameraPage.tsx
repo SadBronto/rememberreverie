@@ -30,6 +30,10 @@ export default function CameraPage() {
   const [pendingCount, setPendingCount] = useState(0)
   // Disposable can be shot landscape OR portrait (guest's choice, this mode only)
   const [dispOrientation, setDispOrientation] = useState<'landscape' | 'portrait'>('landscape')
+  // Which camera the guest is using. 'user' = front (selfie). The preview is
+  // mirrored for a natural feel, but the SAVED photo is un-mirrored (we draw from
+  // the raw video frames, which CSS transforms don't touch) — like a real photo.
+  const [facing, setFacing] = useState<'environment' | 'user'>('environment')
 
   const modeConfig = CAMERA_MODES[selectedMode]
   // Disposable portrait flips the aspect ratio; everything else uses its own config.
@@ -47,14 +51,17 @@ export default function CameraPage() {
   const atPhotoLimit = photoCap !== undefined && photosTaken >= photoCap
   const prompt = isDemo ? (DEMO_PROMPTS[currentPromptIndex] ?? null) : null
   const allowedModes = weddingConfig?.allowedModes ?? ['disposable']
+  // Front-camera flip is allowed unless the event explicitly turned it off.
+  const selfieAllowed = weddingConfig?.selfieEnabled !== false
 
   useEffect(() => {
     startCamera()
     return () => stopCamera()
-  // Only restart the camera when the MODE changes — not on orientation toggle,
-  // which must not re-zoom the feed (the overlay + capture handle orientation).
+  // Restart the camera when the MODE or the FACING (front/rear) changes — but NOT
+  // on orientation toggle, which must not re-zoom the feed (the overlay + capture
+  // handle orientation).
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMode])
+  }, [selectedMode, facing])
 
   // Retry any photos that didn't finish uploading on a previous visit, and keep a
   // live count so the guest can SEE that stranded photos are still being handled
@@ -88,8 +95,12 @@ export default function CameraPage() {
       height: { ideal: 1440 },
     }
 
-    // Try rear camera first, fall back to front camera / webcam
-    for (const facingMode of ['environment', 'user'] as const) {
+    // Open the requested camera first, then fall back to the other (e.g. a device
+    // with no front camera, or a desktop webcam).
+    const order: Array<'environment' | 'user'> =
+      facing === 'user' ? ['user', 'environment'] : ['environment', 'user']
+
+    for (const facingMode of order) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { ...videoConstraints, facingMode },
@@ -97,6 +108,8 @@ export default function CameraPage() {
         })
         streamRef.current = stream
         if (videoRef.current) videoRef.current.srcObject = stream
+        // Reflect the camera that actually opened, so the mirror matches reality.
+        if (facingMode !== facing) setFacing(facingMode)
         return
       } catch (err) {
         const name = (err as DOMException).name
@@ -115,6 +128,13 @@ export default function CameraPage() {
   function stopCamera() {
     streamRef.current?.getTracks().forEach((t) => t.stop())
     streamRef.current = null
+  }
+
+  // Flip between rear and front cameras (the effect restarts the stream).
+  function flipCamera() {
+    if (phase !== 'ready') return
+    navigator.vibrate?.(10)
+    setFacing((f) => (f === 'environment' ? 'user' : 'environment'))
   }
 
   const capturePhoto = useCallback(async () => {
@@ -240,6 +260,7 @@ export default function CameraPage() {
           playsInline
           muted
           className="w-full h-full object-cover"
+          style={facing === 'user' ? { transform: 'scaleX(-1)' } : undefined}
         />
         <ViewfinderOverlay mode={selectedMode} phase={phase} aspectRatio={captureConfig.aspectRatio} signatureMode={signatureMode} />
       </div>
@@ -259,13 +280,27 @@ export default function CameraPage() {
           {modeConfig.label}
         </span>
 
-        {/* Demo photo counter */}
-        {isDemo && photoCap && (
-          <span className="text-mono text-cream/35 text-xs tracking-widest">
-            {photosTaken}/{photoCap}
-          </span>
-        )}
-        {!isDemo && <div className="w-9 h-9" />}
+        {/* Right controls: demo counter + camera flip */}
+        <div className="flex items-center gap-2">
+          {isDemo && photoCap && (
+            <span className="text-mono text-cream/35 text-xs tracking-widest">
+              {photosTaken}/{photoCap}
+            </span>
+          )}
+          {selfieAllowed && !cameraError ? (
+            <button
+              onClick={flipCamera}
+              disabled={phase !== 'ready'}
+              aria-label="Flip camera"
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-black/30 backdrop-blur-sm touch-manipulation transition-opacity disabled:opacity-40"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M4 9a8 8 0 0 1 13.5-3.2L20 8M20 4.5V8h-3.5" stroke="#f5f0e8" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M20 15a8 8 0 0 1-13.5 3.2L4 16M4 19.5V16h3.5" stroke="#f5f0e8" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          ) : (!isDemo && <div className="w-9 h-9" />)}
+        </div>
       </div>
 
       {/* Pending-upload indicator — stranded photos retry automatically */}

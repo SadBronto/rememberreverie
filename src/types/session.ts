@@ -44,6 +44,9 @@ export interface WeddingConfig {
   allowedModes: CameraModeName[]
   preferredOrientation: 'landscape' | 'portrait' | 'any'
   annotationMode: 'disabled' | 'signature' | 'doodle'
+  // Front-camera (selfie) flip in the camera UI. Default on; same no-retake +
+  // film treatment as the rear lens. Couples/admin can disable per event.
+  selfieEnabled?: boolean
   slideshowEnabled: boolean
   timestampEnabled: boolean
   // Layout styles (not color — each style has its own position, font size, and colour)

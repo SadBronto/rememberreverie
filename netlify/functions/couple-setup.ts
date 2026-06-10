@@ -41,7 +41,7 @@ export const handler: Handler = async (event) => {
   }
 
   const { coupleNames, weddingDate, welcomeMessage, allowedModes, annotationMode,
-          timestampEnabled, timestampStyle, photoCap, slug } = body as Record<string, any>
+          timestampEnabled, timestampStyle, photoCap, slug, selfieEnabled } = body as Record<string, any>
 
   if (!coupleNames) {
     return { statusCode: 400, body: 'coupleNames is required' }
@@ -61,6 +61,10 @@ export const handler: Handler = async (event) => {
     photo_cap:         photoCap ? Number(photoCap) : null,
     slug:              slug ? String(slug).toLowerCase().replace(/[^a-z0-9-]/g, '').trim() || null : null,
   }
+
+  // Only persist the selfie toggle when the client actually sends it (settings
+  // page does; the initial setup POST doesn't — it relies on the DB default TRUE).
+  if (typeof selfieEnabled === 'boolean') update.selfie_enabled = selfieEnabled
 
   // Only POST activates the wedding
   if (method === 'POST') update.status = 'active'

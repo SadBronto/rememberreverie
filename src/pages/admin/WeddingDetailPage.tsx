@@ -19,6 +19,7 @@ interface WeddingDetail {
   welcome_message: string
   allowed_modes: string[]
   annotation_mode: string
+  selfie_enabled: boolean
   timestamp_enabled: boolean
   timestamp_style: string
   photo_cap: number | null
@@ -740,6 +741,18 @@ export default function WeddingDetailPage() {
               <option value="doodle">Doodle</option>
               <option value="disabled">Disabled</option>
             </AdminSelect>
+          </FormField>
+
+          <FormField label="Selfie / front camera">
+            <div className="flex items-center gap-3">
+              <AdminToggle value={form.selfie_enabled ?? true} onChange={v => setField('selfie_enabled', v)} />
+              <span className="text-sans text-cream/50 text-sm">
+                {(form.selfie_enabled ?? true) ? 'Guests can flip to the front camera' : 'Rear camera only'}
+              </span>
+            </div>
+            <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
+              Adds a flip button so guests can take selfies — same no-retake rule and film look as the rear camera. Off = pure point-and-shoot.
+            </p>
           </FormField>
 
           <FormField label="Let couple review flagged photos">
