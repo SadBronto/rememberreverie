@@ -30,6 +30,7 @@ interface SlideshowData {
   qrSettings: QRSettings | null
   qrSlideEnabled: boolean
   autoFullscreen: boolean
+  slowPoll: boolean
   photos: SlideshowPhoto[]
 }
 
@@ -53,6 +54,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   const [qrSettings, setQrSettings] = useState<QRSettings | null>(null)
   const [qrSlideEnabled, setQrSlideEnabled] = useState(false)
   const [autoFullscreen, setAutoFullscreen] = useState(false)
+  const [slowPoll, setSlowPoll] = useState(false)
   const [cursorHidden, setCursorHidden] = useState(false)
   const [photos, setPhotos]           = useState<SlideshowPhoto[]>([])
   const [index, setIndex]             = useState(0)
@@ -109,6 +111,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       setQrSettings(data.qrSettings ?? null)
       setQrSlideEnabled(data.qrSlideEnabled ?? false)
       setAutoFullscreen(data.autoFullscreen ?? false)
+      setSlowPoll(data.slowPoll ?? false)
 
       setPhotos(prev => {
         const prevById = new Map(prev.map(p => [p.id, p]))
@@ -132,12 +135,16 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     }
   }, [weddingId, demoConfig])
 
-  // Initial load + polling
+  // Initial load (once)
+  useEffect(() => { fetchPhotos(true) }, [fetchPhotos])
+
+  // Poll for new photos at the admin-configured cadence: 30s (reception) or 5 min
+  // (lobby / 24-7 — far fewer server hits). The interval swaps when the config loads.
+  const pollMs = slowPoll ? 300_000 : POLL_INTERVAL_MS
   useEffect(() => {
-    fetchPhotos(true)
-    const poll = setInterval(() => fetchPhotos(false), POLL_INTERVAL_MS)
+    const poll = setInterval(() => fetchPhotos(false), pollMs)
     return () => clearInterval(poll)
-  }, [fetchPhotos])
+  }, [fetchPhotos, pollMs])
 
   // Clear "new photos" indicator after 4 seconds
   useEffect(() => {

@@ -95,6 +95,7 @@ export const handler: Handler = async (event) => {
                      'photo_cap', 'status', 'slideshow_enabled', 'slug',
                      'is_event', 'event_end_date', 'couple_review_enabled', 'qr_settings',
                      'slideshow_qr_slide', 'slideshow_slides', 'slideshow_auto_fullscreen',
+                     'slideshow_slow_poll',
                      'geofence_enabled', 'geofence_lat', 'geofence_lng', 'geofence_radius_m',
                      'geofence_bypass_code', 'selfie_enabled']
     const update: Record<string, unknown> = {}

@@ -29,6 +29,7 @@ interface WeddingDetail {
   qr_settings: QRSettings | null
   slideshow_qr_slide: boolean
   slideshow_auto_fullscreen: boolean
+  slideshow_slow_poll: boolean
   geofence_enabled: boolean
   geofence_lat: number | null
   geofence_lng: number | null
@@ -802,6 +803,18 @@ export default function WeddingDetailPage() {
             </div>
             <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
               On a laptop/desktop, the first click or key press makes the slideshow fill the screen — no hunting for the button. (On a TV stick the browser is already fullscreen, so this has no effect there.)
+            </p>
+          </FormField>
+
+          <FormField label="Slideshow refresh rate">
+            <div className="flex items-center gap-3">
+              <AdminToggle value={form.slideshow_slow_poll ?? false} onChange={v => setField('slideshow_slow_poll', v)} />
+              <span className="text-sans text-cream/50 text-sm">
+                {(form.slideshow_slow_poll ?? false) ? 'Every 5 min (lobby / 24-7)' : 'Every 30 sec (reception)'}
+              </span>
+            </div>
+            <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
+              How often the display checks for new photos. 30s feels live at a reception; 5 min is much gentler on the server for a display left running for days.
             </p>
           </FormField>
 

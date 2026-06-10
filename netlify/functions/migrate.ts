@@ -46,8 +46,14 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
       `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS slideshow_auto_fullscreen BOOLEAN NOT NULL DEFAULT FALSE`,
     ],
   },
+  {
+    id: 'v7_slideshow_poll',
+    sql: [
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS slideshow_slow_poll BOOLEAN NOT NULL DEFAULT FALSE`,
+    ],
+  },
   // Future migrations go here:
-  // { id: 'v7_...', sql: [`ALTER TABLE ...`] },
+  // { id: 'v8_...', sql: [`ALTER TABLE ...`] },
 ]
 
 async function run(sql: string, token: string): Promise<unknown> {

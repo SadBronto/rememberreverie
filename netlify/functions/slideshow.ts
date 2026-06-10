@@ -44,15 +44,17 @@ export const handler: Handler = async (event) => {
   // (the QR slide just stays off until the migration runs).
   let qrSlideEnabled = false
   let autoFullscreen = false
+  let slowPoll = false
   {
     const { data: extra, error: extraErr } = await admin
       .from('weddings')
-      .select('slideshow_qr_slide, slideshow_auto_fullscreen')
+      .select('slideshow_qr_slide, slideshow_auto_fullscreen, slideshow_slow_poll')
       .eq('id', weddingId)
       .single()
     if (!extraErr && extra) {
       qrSlideEnabled = extra.slideshow_qr_slide ?? false
       autoFullscreen = extra.slideshow_auto_fullscreen ?? false
+      slowPoll = extra.slideshow_slow_poll ?? false
     }
   }
 
@@ -96,6 +98,7 @@ export const handler: Handler = async (event) => {
       qrSettings:       wedding.qr_settings ?? null,
       qrSlideEnabled:   qrSlideEnabled,
       autoFullscreen:   autoFullscreen,
+      slowPoll:         slowPoll,
       photos:           photos.filter(p => p.photoUrl),
     }),
   }
