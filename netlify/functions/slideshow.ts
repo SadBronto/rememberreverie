@@ -43,13 +43,17 @@ export const handler: Handler = async (event) => {
   // slideshow_qr_slide column hasn't been migrated yet, the slideshow still loads
   // (the QR slide just stays off until the migration runs).
   let qrSlideEnabled = false
+  let autoFullscreen = false
   {
     const { data: extra, error: extraErr } = await admin
       .from('weddings')
-      .select('slideshow_qr_slide')
+      .select('slideshow_qr_slide, slideshow_auto_fullscreen')
       .eq('id', weddingId)
       .single()
-    qrSlideEnabled = !extraErr && extra ? (extra.slideshow_qr_slide ?? false) : false
+    if (!extraErr && extra) {
+      qrSlideEnabled = extra.slideshow_qr_slide ?? false
+      autoFullscreen = extra.slideshow_auto_fullscreen ?? false
+    }
   }
 
   const { data: sessions, error } = await admin
@@ -91,6 +95,7 @@ export const handler: Handler = async (event) => {
       slug:             wedding.slug ?? null,
       qrSettings:       wedding.qr_settings ?? null,
       qrSlideEnabled:   qrSlideEnabled,
+      autoFullscreen:   autoFullscreen,
       photos:           photos.filter(p => p.photoUrl),
     }),
   }

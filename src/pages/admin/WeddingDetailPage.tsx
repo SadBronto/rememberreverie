@@ -28,6 +28,7 @@ interface WeddingDetail {
   couple_review_enabled: boolean
   qr_settings: QRSettings | null
   slideshow_qr_slide: boolean
+  slideshow_auto_fullscreen: boolean
   geofence_enabled: boolean
   geofence_lat: number | null
   geofence_lng: number | null
@@ -789,6 +790,18 @@ export default function WeddingDetailPage() {
             </div>
             <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
               Mixes a "Want to share YOUR memories? Scan to get started" slide (with your QR) into the slideshow every few photos.
+            </p>
+          </FormField>
+
+          <FormField label="Slideshow auto-fullscreen">
+            <div className="flex items-center gap-3">
+              <AdminToggle value={form.slideshow_auto_fullscreen ?? false} onChange={v => setField('slideshow_auto_fullscreen', v)} />
+              <span className="text-sans text-cream/50 text-sm">
+                {(form.slideshow_auto_fullscreen ?? false) ? 'On first tap/keypress' : 'Off'}
+              </span>
+            </div>
+            <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
+              On a laptop/desktop, the first click or key press makes the slideshow fill the screen — no hunting for the button. (On a TV stick the browser is already fullscreen, so this has no effect there.)
             </p>
           </FormField>
 

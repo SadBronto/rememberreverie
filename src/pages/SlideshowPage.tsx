@@ -29,6 +29,7 @@ interface SlideshowData {
   slug: string | null
   qrSettings: QRSettings | null
   qrSlideEnabled: boolean
+  autoFullscreen: boolean
   photos: SlideshowPhoto[]
 }
 
@@ -51,6 +52,8 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   const [slug, setSlug] = useState<string | null>(null)
   const [qrSettings, setQrSettings] = useState<QRSettings | null>(null)
   const [qrSlideEnabled, setQrSlideEnabled] = useState(false)
+  const [autoFullscreen, setAutoFullscreen] = useState(false)
+  const [cursorHidden, setCursorHidden] = useState(false)
   const [photos, setPhotos]           = useState<SlideshowPhoto[]>([])
   const [index, setIndex]             = useState(0)
   const [incoming, setIncoming]       = useState<number | null>(null) // index crossfading in on top
@@ -88,7 +91,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       setQrSettings(null)
       setQrSlideEnabled(true)
       setPhotos(mapped)
-      if (isInitial) setLoadError(false)
+      setLoadError(false)
       return
     }
 
@@ -105,6 +108,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       setSlug(data.slug ?? null)
       setQrSettings(data.qrSettings ?? null)
       setQrSlideEnabled(data.qrSlideEnabled ?? false)
+      setAutoFullscreen(data.autoFullscreen ?? false)
 
       setPhotos(prev => {
         const prevById = new Map(prev.map(p => [p.id, p]))
@@ -119,7 +123,10 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
         return reconciled
       })
 
-      if (isInitial) setLoadError(false)
+      // Clear any prior error on ANY successful fetch — so a display that booted
+      // before the lobby Wi-Fi was up self-heals the moment the network returns,
+      // instead of sitting on the error screen until someone reloads it.
+      setLoadError(false)
     } catch {
       if (isInitial) setLoadError(true)
     }
@@ -232,6 +239,73 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     return () => document.removeEventListener('fullscreenchange', onChange)
   }, [])
 
+  // ── Kiosk durability (lobby display running unattended) ───────
+
+  // Keep the screen awake (best-effort; works on Chromium-based TV browsers). The
+  // lock drops when the tab is backgrounded, so re-acquire on visibility. Where the
+  // API isn't supported, the device's own sleep settings are the primary defense.
+  useEffect(() => {
+    const wl = (navigator as { wakeLock?: { request: (t: string) => Promise<{ release: () => Promise<void> }> } }).wakeLock
+    if (!wl) return
+    let lock: { release: () => Promise<void> } | null = null
+    let cancelled = false
+    const acquire = async () => {
+      try {
+        const l = await wl.request('screen')
+        if (cancelled) { void l.release(); return }
+        lock = l
+      } catch { /* denied / unsupported — rely on device sleep settings */ }
+    }
+    void acquire()
+    const onVis = () => { if (document.visibilityState === 'visible') void acquire() }
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      cancelled = true
+      document.removeEventListener('visibilitychange', onVis)
+      lock?.release().catch(() => {})
+    }
+  }, [])
+
+  // Long-running hygiene: fully reload every 6h to clear accumulated memory and
+  // re-establish a clean baseline (a kiosk may run for weeks). Skipped in demo.
+  useEffect(() => {
+    if (weddingId && isDemoId(weddingId)) return
+    const t = window.setTimeout(() => window.location.reload(), 6 * 60 * 60 * 1000)
+    return () => clearTimeout(t)
+  }, [weddingId])
+
+  // Hide the mouse cursor after a few seconds of stillness (keeps a stray pointer
+  // off a lobby screen). Any movement brings it back.
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout>
+    const wake = () => {
+      setCursorHidden(false)
+      clearTimeout(t)
+      t = setTimeout(() => setCursorHidden(true), 3500)
+    }
+    wake()
+    window.addEventListener('mousemove', wake)
+    return () => { clearTimeout(t); window.removeEventListener('mousemove', wake) }
+  }, [])
+
+  // Auto-fullscreen (admin opt-in). The Fullscreen API requires a user gesture, so
+  // a pure timer can't trigger it — we fullscreen on the FIRST interaction (one
+  // click / key / remote OK). Moot on a TV stick, which is already fullscreen.
+  useEffect(() => {
+    if (!autoFullscreen) return
+    const go = () => {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {})
+      window.removeEventListener('pointerdown', go)
+      window.removeEventListener('keydown', go)
+    }
+    window.addEventListener('pointerdown', go)
+    window.addEventListener('keydown', go)
+    return () => {
+      window.removeEventListener('pointerdown', go)
+      window.removeEventListener('keydown', go)
+    }
+  }, [autoFullscreen])
+
   function toggleFullscreen() {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => null)
@@ -302,6 +376,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   return (
     <div
       className="relative min-h-dvh bg-black flex items-center justify-center overflow-hidden select-none cursor-pointer"
+      style={{ cursor: cursorHidden ? 'none' : undefined }}
       onClick={() => advance(1)}
     >
       {/* Base layer — current slide, always fully opaque */}
@@ -414,12 +489,16 @@ function SlideLayer({
       style={{ opacity, transition: transitionMs ? `opacity ${transitionMs}ms ease-in-out` : undefined }}
     >
       {slide.kind === 'photo' ? (
-        <div className="relative">
+        // Both layers fill the viewport with object-contain, so the photo scales
+        // UP to fill the screen at any resolution (not just down) — fixes "small
+        // image with big black borders" on a 4K display — while the signature
+        // overlay stays perfectly aligned (identical contain box).
+        <div className="relative w-full h-full">
           <img
             src={slide.photo.photoUrl}
             alt=""
             draggable={false}
-            className="max-w-full max-h-dvh object-contain"
+            className="absolute inset-0 w-full h-full object-contain"
           />
           {slide.photo.annotationUrl && (
             <img
