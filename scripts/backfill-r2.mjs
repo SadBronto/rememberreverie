@@ -53,6 +53,17 @@ async function existsInR2(Key) {
   }
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+async function copyOne(path) {
+  if (await existsInR2(path)) return 'skip'
+  const { data: blob, error } = await supabase.storage.from(SUPABASE_BUCKET).download(path)
+  if (error || !blob) throw new Error(`download failed: ${error?.message ?? 'no data'}`)
+  const body = Buffer.from(await blob.arrayBuffer())
+  await s3.send(new PutObjectCommand({ Bucket: R2_BUCKET, Key: path, Body: body, ContentType: contentType(path) }))
+  return 'copied'
+}
+
 async function main() {
   // Collect every storage path referenced by a non-deleted session.
   const paths = []
@@ -78,17 +89,16 @@ async function main() {
   for (let i = 0; i < paths.length; i++) {
     const path = paths[i]
     const tag = `[${i + 1}/${paths.length}] ${path}`
-    try {
-      if (await existsInR2(path)) { skipped++; continue }
-      const { data: blob, error } = await supabase.storage.from(SUPABASE_BUCKET).download(path)
-      if (error || !blob) { console.warn(`${tag} — download failed: ${error?.message ?? 'no data'}`); failed++; continue }
-      const body = Buffer.from(await blob.arrayBuffer())
-      await s3.send(new PutObjectCommand({ Bucket: R2_BUCKET, Key: path, Body: body, ContentType: contentType(path) }))
-      copied++
-      if (copied % 25 === 0) console.log(`  …${copied} copied`)
-    } catch (err) {
-      console.warn(`${tag} — error: ${err.message}`); failed++
+    // Retry transient network/TLS blips (e.g. "bad record mac") a few times.
+    let outcome = null, lastErr = null
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      try { outcome = await copyOne(path); lastErr = null; break }
+      catch (err) { lastErr = err; await sleep(500 * attempt) }
     }
+    if (lastErr) { console.warn(`${tag} — failed after retries: ${lastErr.message}`); failed++; continue }
+    if (outcome === 'skip') { skipped++; continue }
+    copied++
+    if (copied % 25 === 0) console.log(`  …${copied} copied`)
   }
 
   console.log(`\nDone. Copied ${copied}, skipped ${skipped} (already present), failed ${failed}.`)
