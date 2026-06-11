@@ -9,7 +9,7 @@
 //   $env:R2_ACCOUNT_ID="<account id>"
 //   $env:R2_ACCESS_KEY_ID="<r2 access key>"
 //   $env:R2_SECRET_ACCESS_KEY="<r2 secret>"
-//   $env:R2_BUCKET="reverie-photos"
+//   $env:R2_BUCKET="<bucket name>"
 //   node scripts/backfill-r2.mjs
 
 import { createClient } from '@supabase/supabase-js'
