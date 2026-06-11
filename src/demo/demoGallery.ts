@@ -66,6 +66,13 @@ export async function buildDemoGallery(
     .filter((s): s is SessionRecord => s !== null)
     .reverse()
 
+  // Surface the prospect's own captures immediately as the first batch, so they
+  // appear at the top of the gallery right away (callers that pass onProgress build
+  // the gallery from these batches; the returned array is for non-streaming callers).
+  if (onProgress && guests.length > 0) {
+    onProgress(guests, 0, DEMO_PHOTOS.length)
+  }
+
   let manifest: SessionRecord[]
 
   if (manifestCache) {
