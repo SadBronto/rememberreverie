@@ -268,7 +268,7 @@ export default function CoupleSetupPage() {
 
       {/* Step content (extra bottom space in demo so the persistent menu bar
           never covers the Continue button) */}
-      <main className={`flex-1 flex flex-col justify-center px-8 ${demo ? 'pb-28' : ''}`}>
+      <main className={`flex-1 w-full max-w-md mx-auto flex flex-col justify-center px-8 ${demo ? 'pb-28' : ''}`}>
 
         {/* NAMES */}
         {step === 'names' && (
