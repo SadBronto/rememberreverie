@@ -1,5 +1,6 @@
 import type { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
+import { deletePhotos } from '../lib/storage'
 
 const admin = createClient(
   process.env.SUPABASE_URL!,
@@ -128,10 +129,7 @@ export const handler: Handler = async () => {
         if (s.annotation_path) paths.push(s.annotation_path)
       }
 
-      for (let i = 0; i < paths.length; i += 100) {
-        const { error: storageErr } = await admin.storage.from('photos').remove(paths.slice(i, i + 100))
-        if (storageErr) console.error(`cleanup: storage delete error for ${project.id}`, storageErr)
-      }
+      await deletePhotos(paths)
 
       if ((sessions ?? []).length > 0) {
         await admin.from('sessions').update({ status: 'deleted' }).eq('wedding_id', project.id).neq('status', 'deleted')

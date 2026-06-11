@@ -1,5 +1,6 @@
 import type { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
+import { getUploadUrl, deletePhotos } from '../lib/storage'
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -96,35 +97,25 @@ export const handler: Handler = async (event) => {
         .limit(over)
 
       for (const old of oldest ?? []) {
-        const paths = [old.output_path, old.annotation_path].filter(Boolean) as string[]
-        if (paths.length) await supabase.storage.from('photos').remove(paths)
+        await deletePhotos([old.output_path, old.annotation_path])
         await supabase.from('sessions').update({ status: 'deleted' }).eq('id', old.id)
       }
     }
   }
 
-  // Create signed upload URL — client will PUT the photo blob here directly.
-  // upsert:true so a recovered/retried upload of an already-stored photo re-issues
-  // the URL (and overwrites the identical blob) instead of failing with a 409
-  // "resource already exists" — which used to leave the retry stuck in the queue.
+  // Upload URL — client PUTs the photo blob here directly. On R2 this is a
+  // presigned PUT; on Supabase a signed upload URL (upsert, so a recovered/retried
+  // upload of an already-stored photo re-issues the URL instead of 409-ing).
   const outputPath = `${weddingId}/${sessionId}/output.jpg`
-  const { data: signedData, error: signedError } = await supabase.storage
-    .from('photos')
-    .createSignedUploadUrl(outputPath, { upsert: true })
-
-  if (signedError || !signedData) {
-    console.error('Signed URL error:', signedError)
+  const uploadUrl = await getUploadUrl(outputPath)
+  if (!uploadUrl) {
     return { statusCode: 500, body: JSON.stringify({ error: 'Failed to create upload URL' }) }
   }
 
-  // If there's an annotation, create a second signed URL for it
-  let annotationUploadUrl: string | undefined
+  // If there's an annotation, create a second upload URL for it
+  let annotationUploadUrl: string | null = null
   if (hasAnnotation) {
-    const annotPath = `${weddingId}/${sessionId}/annotation.png`
-    const { data: annotData } = await supabase.storage
-      .from('photos')
-      .createSignedUploadUrl(annotPath, { upsert: true })
-    annotationUploadUrl = annotData?.signedUrl
+    annotationUploadUrl = await getUploadUrl(`${weddingId}/${sessionId}/annotation.png`)
   }
 
   return {
@@ -133,8 +124,8 @@ export const handler: Handler = async (event) => {
     body: JSON.stringify({
       sessionId,
       memoryNumber,
-      uploadUrl:           signedData.signedUrl,
-      annotationUploadUrl: annotationUploadUrl ?? null,
+      uploadUrl,
+      annotationUploadUrl,
     }),
   }
 }

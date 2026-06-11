@@ -1,23 +1,11 @@
 import type { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
+import { getPhotoUrls } from '../lib/storage'
 
 const admin = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_KEY!
 )
-
-// Batch-sign storage paths in ONE request. Returns a path → signed-URL map.
-// Far cheaper than calling createSignedUrl once per photo, which matters because
-// the slideshow re-signs every photo on each 30s poll.
-async function signPaths(paths: string[], expiry: number): Promise<Map<string, string>> {
-  const map = new Map<string, string>()
-  if (paths.length === 0) return map
-  const { data } = await admin.storage.from('photos').createSignedUrls(paths, expiry)
-  for (const item of data ?? []) {
-    if (item.signedUrl && !item.error && item.path) map.set(item.path, item.signedUrl)
-  }
-  return map
-}
 
 // GET /api/slideshow?weddingId=xxx
 // No auth required — the weddingId (UUID) acts as the access key,
@@ -70,8 +58,8 @@ export const handler: Handler = async (event) => {
 
   // 2-hour signed URLs — slideshow polls every 30s so they never actually expire.
   // Sign every photo + annotation in a SINGLE batch request (not one call each).
-  const EXPIRY = 86400  // 24h — URLs stay stable for the event so the slideshow caches images instead of re-downloading every poll
-  const urlMap = await signPaths(
+  const EXPIRY = 86400  // 24h — Supabase fallback only; R2 URLs are stable/public
+  const urlMap = await getPhotoUrls(
     (sessions ?? []).flatMap(s => [s.output_path, s.annotation_path].filter(Boolean) as string[]),
     EXPIRY,
   )

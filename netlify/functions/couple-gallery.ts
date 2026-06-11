@@ -1,21 +1,11 @@
 import type { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
+import { getPhotoUrls } from '../lib/storage'
 
 const admin = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_KEY!
 )
-
-// Batch-sign storage paths in ONE request. Returns a path → signed-URL map.
-async function signPaths(paths: string[], expiry: number): Promise<Map<string, string>> {
-  const map = new Map<string, string>()
-  if (paths.length === 0) return map
-  const { data } = await admin.storage.from('photos').createSignedUrls(paths, expiry)
-  for (const item of data ?? []) {
-    if (item.signedUrl && !item.error && item.path) map.set(item.path, item.signedUrl)
-  }
-  return map
-}
 
 // GET /api/couple/gallery?weddingId=xxx
 // Requires: Authorization: Bearer <supabase-access-token>
@@ -71,7 +61,7 @@ export const handler: Handler = async (event) => {
 
   // Batch-sign every photo + annotation in ONE request (1-hour URLs).
   const EXPIRY = 3600
-  const urlMap = await signPaths(
+  const urlMap = await getPhotoUrls(
     (sessions ?? []).flatMap(s => [s.output_path, s.annotation_path].filter(Boolean) as string[]),
     EXPIRY,
   )

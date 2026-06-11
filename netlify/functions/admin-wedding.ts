@@ -1,5 +1,6 @@
 import type { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
+import { getPhotoUrls, deletePhotos } from '../lib/storage'
 
 const admin = createClient(
   process.env.SUPABASE_URL!,
@@ -13,17 +14,6 @@ async function verifyAdmin(authHeader: string | undefined) {
   if (!user?.email) return null
   const adminEmails = (process.env.ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase())
   return adminEmails.includes(user.email.toLowerCase()) ? user : null
-}
-
-// Batch-sign storage paths in ONE request. Returns a path → signed-URL map.
-async function signPaths(paths: string[], expiry: number): Promise<Map<string, string>> {
-  const map = new Map<string, string>()
-  if (paths.length === 0) return map
-  const { data } = await admin.storage.from('photos').createSignedUrls(paths, expiry)
-  for (const item of data ?? []) {
-    if (item.signedUrl && !item.error && item.path) map.set(item.path, item.signedUrl)
-  }
-  return map
 }
 
 // GET  /api/admin/wedding?id=xxx  — wedding detail + recent sessions with signed photo URLs
@@ -56,7 +46,7 @@ export const handler: Handler = async (event) => {
 
     // Generate signed URLs for the 12 most recent active photos (one batch request)
     const recent = (sessions ?? []).filter(s => s.status === 'active').slice(0, 12)
-    const urlMap = await signPaths(
+    const urlMap = await getPhotoUrls(
       recent.flatMap(s => [s.output_path, s.annotation_path].filter(Boolean) as string[]),
       3600,
     )
@@ -125,9 +115,7 @@ export const handler: Handler = async (event) => {
       const paths = (sess ?? []).flatMap(s =>
         [s.output_path, s.annotation_path].filter(Boolean) as string[]
       )
-      for (let i = 0; i < paths.length; i += 100) {
-        await admin.storage.from('photos').remove(paths.slice(i, i + 100))
-      }
+      await deletePhotos(paths)
       const { error } = await admin.from('weddings').delete().eq('id', id)
       if (error) return { statusCode: 500, body: 'Failed to delete wedding' }
       return { statusCode: 200, body: JSON.stringify({ ok: true, deleted: true }) }
