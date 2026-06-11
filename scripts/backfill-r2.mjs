@@ -15,6 +15,10 @@
 import { createClient } from '@supabase/supabase-js'
 import { S3Client, PutObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3'
 
+// Load a local .env if present, so `node scripts/backfill-r2.mjs` works without
+// exporting vars by hand. (No-op if there's no .env — shell env still works.)
+try { process.loadEnvFile() } catch { /* no .env file; rely on shell env */ }
+
 const {
   SUPABASE_URL, SUPABASE_SERVICE_KEY,
   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET,
