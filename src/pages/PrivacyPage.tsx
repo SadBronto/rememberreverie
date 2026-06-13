@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 
 const CONTACT_URL  = 'https://www.thirddegreeentertainment.com/contact'
-const LAST_UPDATED = 'June 9, 2026'
+const LAST_UPDATED = 'June 11, 2026'
 
 // Privacy policy — also serves as a legitimacy signal for the domain (a real
 // business with a clear data policy + contact, not a phishing throwaway).
@@ -67,7 +67,17 @@ export default function PrivacyPage() {
             <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer" className="text-cream underline underline-offset-2">
               Unsplash
             </a>
-            {' '}— they are not real customer photos.
+            {' '}— they are not real customer photos. With thanks to the photographers:
+          </p>
+          <p className="text-sans text-cream/45 text-xs leading-relaxed">
+            Alena Plotnikova, Allef Vinícius, Alvaro Cvg, Andreas Rønningen, Andrii Olishevskyi,
+            Arion Reyvonputra, Aurela Redenica, Ben Atkins, Carlo Buttinoni, Carson Vara,
+            Chris Dickens, Clem Onojeghuo, David Santoyo, Dillon Groves, Elisabeth Arnold,
+            Flavio Anibal, Jakob Owens, Jennifer Kalenberg, Jonathan Borba, Judeus Samson,
+            Kari Bjorn Photography, Leonardo Miranda, Lori DeJong, Mitchell Orr, Omar Lopez,
+            Ozkan Guner, Pedro Pulido, Samuel Cruz, Sarah Nöltner, Susanne Neumair,
+            Taylor Harding, Vasily Koloda, Victoria Priessnitz, Wesley Tingey, Zoriana Stakhniv,
+            and Jarvis Couture Bridal &amp; Prom.
           </p>
         </Section>
 
