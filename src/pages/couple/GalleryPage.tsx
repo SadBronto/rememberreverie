@@ -213,12 +213,25 @@ export default function CoupleGalleryPage() {
       const { default: JSZip } = await import('jszip')
       const zip = new JSZip()
 
+      let added = 0
+      let failed = 0
       for (let i = 0; i < photos.length; i++) {
         const s = photos[i]!
-        const blob = await flattenPhoto(s.photoUrl!, s.annotationUrl)
-        const num = String(s.memoryNumber ?? i + 1).padStart(3, '0')
-        zip.file(`memory-${num}.jpg`, blob)
+        try {
+          const blob = await flattenPhoto(s.photoUrl!, s.annotationUrl)
+          const num = String(s.memoryNumber ?? i + 1).padStart(3, '0')
+          zip.file(`memory-${num}.jpg`, blob)
+          added++
+        } catch {
+          // One unreachable photo must not abort the whole download — skip it.
+          failed++
+        }
         setZipProgress({ current: i + 1, total: photos.length })
+      }
+
+      if (added === 0) {
+        alert("Couldn't retrieve the photos to download. Check your connection and try again.")
+        return
       }
 
       const zipBlob = await zip.generateAsync({ type: 'blob' })
@@ -230,6 +243,9 @@ export default function CoupleGalleryPage() {
       a.download = `${slug}-${date}.zip`
       a.click()
       URL.revokeObjectURL(a.href)
+      if (failed > 0) {
+        alert(`Downloaded ${added} of ${photos.length} photos. ${failed} couldn't be retrieved — click Download all again to grab the rest.`)
+      }
     } finally {
       setZipProgress(null)
     }
@@ -707,9 +723,18 @@ function Lightbox({
 // copy and be blocked by CORS; cache:'reload' forces a fresh CORS request that
 // gets the header. (R2 egress is free, so re-fetching costs nothing.)
 async function fetchPhotoBlob(url: string): Promise<Blob> {
-  const res = await fetch(url, { cache: 'reload' })
-  if (!res.ok) throw new Error(`fetch failed: ${res.status}`)
-  return res.blob()
+  let lastErr: unknown
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(url, { cache: 'reload' })
+      if (!res.ok) throw new Error(`fetch failed: ${res.status}`)
+      return await res.blob()
+    } catch (err) {
+      lastErr = err
+      await new Promise(r => setTimeout(r, 400 * (attempt + 1))) // brief backoff
+    }
+  }
+  throw lastErr
 }
 
 // JPEG blob of the photo with the signature composited on top (matching the
