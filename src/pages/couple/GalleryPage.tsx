@@ -213,8 +213,8 @@ export default function CoupleGalleryPage() {
       const { default: JSZip } = await import('jszip')
       const zip = new JSZip()
 
+      const failures: { label: string; url: string | null; reason: string }[] = []
       let added = 0
-      let failed = 0
       for (let i = 0; i < photos.length; i++) {
         const s = photos[i]!
         try {
@@ -222,15 +222,28 @@ export default function CoupleGalleryPage() {
           const num = String(s.memoryNumber ?? i + 1).padStart(3, '0')
           zip.file(`memory-${num}.jpg`, blob)
           added++
-        } catch {
-          // One unreachable photo must not abort the whole download — skip it.
-          failed++
+        } catch (err) {
+          // One unreachable photo must not abort the whole download — skip it,
+          // but record which one (and exactly why) so it's diagnosable.
+          failures.push({
+            label: s.memoryNumber != null ? `#${s.memoryNumber}` : s.id,
+            url: s.photoUrl,
+            reason: err instanceof Error ? err.message : String(err),
+          })
         }
         setZipProgress({ current: i + 1, total: photos.length })
       }
 
+      // Full per-photo detail (which, its URL, and the exact error) for diagnosis.
+      if (failures.length > 0) console.error('Reverie — photos that failed to download:', failures)
+
       if (added === 0) {
-        alert("Couldn't retrieve the photos to download. Check your connection and try again.")
+        const reasons = [...new Set(failures.map(f => f.reason))].join('; ') || 'unknown'
+        alert(
+          "Couldn't retrieve any of the photos.\n\n" +
+          `Reason: ${reasons}\n\n` +
+          'Check your connection and try again. Full details are in the browser console (F12).'
+        )
         return
       }
 
@@ -243,8 +256,17 @@ export default function CoupleGalleryPage() {
       a.download = `${slug}-${date}.zip`
       a.click()
       URL.revokeObjectURL(a.href)
-      if (failed > 0) {
-        alert(`Downloaded ${added} of ${photos.length} photos. ${failed} couldn't be retrieved — click Download all again to grab the rest.`)
+      if (failures.length > 0) {
+        const labels = failures.map(f => f.label)
+        const shown = labels.slice(0, 25).join(', ')
+        const more = labels.length > 25 ? ` …and ${labels.length - 25} more` : ''
+        const reasons = [...new Set(failures.map(f => f.reason))].join('; ')
+        alert(
+          `Downloaded ${added} of ${photos.length} photos.\n\n` +
+          `Couldn't retrieve ${failures.length}: ${shown}${more}\n` +
+          `Reason: ${reasons}\n\n` +
+          'The full list (with links) is in the browser console (F12). Click Download all again to retry the rest.'
+        )
       }
     } finally {
       setZipProgress(null)
