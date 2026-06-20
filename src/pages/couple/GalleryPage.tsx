@@ -700,26 +700,31 @@ function Lightbox({
 
 // ── Download helpers ────────────────────────────────────────────
 
-function loadCorsImage(url: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => resolve(img)
-    img.onerror = reject
-    img.src = url
-  })
+// Fetch an image as a blob with a forced-fresh CORS request. The gallery shows
+// each photo via a plain <img> (no Origin header), and R2/Cloudflare only return
+// the CORS header (Access-Control-Allow-Origin) when the request carries an Origin
+// — so the browser caches a header-less copy. A normal fetch() would reuse that
+// copy and be blocked by CORS; cache:'reload' forces a fresh CORS request that
+// gets the header. (R2 egress is free, so re-fetching costs nothing.)
+async function fetchPhotoBlob(url: string): Promise<Blob> {
+  const res = await fetch(url, { cache: 'reload' })
+  if (!res.ok) throw new Error(`fetch failed: ${res.status}`)
+  return res.blob()
 }
 
 // JPEG blob of the photo with the signature composited on top (matching the
-// on-screen multiply blend). Falls back to the raw photo if compositing fails
-// (e.g. a cross-origin taint), so a download always works.
+// on-screen multiply blend). Composites from decoded blobs — not <img crossorigin>
+// — so the canvas can never be tainted; falls back to the raw photo if anything
+// fails, so a download always works.
 async function flattenPhoto(photoUrl: string, annotationUrl: string | null): Promise<Blob> {
-  if (!annotationUrl) return (await fetch(photoUrl)).blob()
+  const photoBlob = await fetchPhotoBlob(photoUrl)
+  if (!annotationUrl) return photoBlob
   try {
-    const [photo, annot] = await Promise.all([loadCorsImage(photoUrl), loadCorsImage(annotationUrl)])
+    const annotBlob = await fetchPhotoBlob(annotationUrl)
+    const [photo, annot] = await Promise.all([createImageBitmap(photoBlob), createImageBitmap(annotBlob)])
     const canvas = document.createElement('canvas')
-    canvas.width  = photo.naturalWidth
-    canvas.height = photo.naturalHeight
+    canvas.width  = photo.width
+    canvas.height = photo.height
     const ctx = canvas.getContext('2d')!
     ctx.drawImage(photo, 0, 0)
     ctx.globalCompositeOperation = 'multiply'
@@ -729,7 +734,7 @@ async function flattenPhoto(photoUrl: string, annotationUrl: string | null): Pro
       canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/jpeg', 0.95)
     )
   } catch {
-    return (await fetch(photoUrl)).blob()
+    return photoBlob
   }
 }
 
