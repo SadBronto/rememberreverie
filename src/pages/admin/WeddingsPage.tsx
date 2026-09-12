@@ -85,12 +85,20 @@ export default function WeddingsPage() {
           <p className="text-mono text-cream/25 text-[9px] tracking-[0.35em] uppercase">Reverie · Admin</p>
           <h1 className="text-serif text-cream text-lg font-normal mt-0.5">Weddings</h1>
         </div>
-        <button
-          onClick={() => navigate('/admin/weddings/new')}
-          className="px-4 py-2 rounded-full bg-cream text-ink text-sans text-xs font-medium tracking-widest uppercase active:scale-95 transition-transform touch-manipulation"
-        >
-          + New
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/admin/login')}
+            className="text-sans text-cream/30 text-[11px] tracking-widest uppercase hover:text-cream/50 transition-colors touch-manipulation"
+          >
+            Set password
+          </button>
+          <button
+            onClick={() => navigate('/admin/weddings/new')}
+            className="px-4 py-2 rounded-full bg-cream text-ink text-sans text-xs font-medium tracking-widest uppercase active:scale-95 transition-transform touch-manipulation"
+          >
+            + New
+          </button>
+        </div>
       </div>
 
       <div className="px-5 py-4 flex flex-col gap-1">
