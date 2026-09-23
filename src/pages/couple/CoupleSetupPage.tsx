@@ -154,7 +154,7 @@ export default function CoupleSetupPage() {
         timestampStyle,
       }
       applySetup(overrides)
-      navigate(`/couple/${DEMO_WEDDING_ID}`)
+      navigate(`/host/${DEMO_WEDDING_ID}`)
       return
     }
 

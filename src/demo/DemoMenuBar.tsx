@@ -26,17 +26,18 @@ export default function DemoMenuBar() {
   if (immersive) return null
 
   // Visible whenever the demo is engaged OR the URL is a demo surface (so the bar
-  // survives navigation into the real /w/demo- and /couple/demo- screens).
+  // survives navigation into the real /w/demo- and /host/demo- screens).
   const onDemoPath =
     path.startsWith('/demo') ||
     path.startsWith('/w/demo-') ||
-    path.startsWith('/couple/demo-')
+    path.startsWith('/host/demo-') ||
+    path.startsWith('/couple/demo-')  // legacy alias
   if (!active && !onDemoPath) return null
 
   const current: Persona | null =
     path.startsWith('/w/demo-')                                          ? 'guest'
-    : path.startsWith('/couple/demo-')                                   ? 'client'
-    : path.startsWith('/demo/setup') || path.startsWith('/couple/setup') ? 'setup'
+    : path.startsWith('/host/demo-') || path.startsWith('/couple/demo-') ? 'client'
+    : path.startsWith('/demo/setup') || path.startsWith('/host/setup') || path.startsWith('/couple/setup') ? 'setup'
     : path === '/demo' || path === '/demo/'                              ? 'home'
     : null
 
@@ -51,7 +52,7 @@ export default function DemoMenuBar() {
   // Seed the demo config into the session store so the real guest screens render it
   // instead of trying to fetch /api/weddings/demo-reverie (which 404s in prod).
   const goGuest  = () => go('guest',  `/w/${config.id}`,      () => setWeddingConfig(config))
-  const goClient = () => go('client', `/couple/${config.id}`)
+  const goClient = () => go('client', `/host/${config.id}`)
   const goSetup  = () => go('setup',  '/demo/setup')
 
   return (

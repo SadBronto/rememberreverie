@@ -25,7 +25,7 @@ export default function DemoHome() {
     else requestSplash(persona, path)
   }
   const goGuest  = () => go('guest',  `/w/${config.id}`,      () => setWeddingConfig(config))
-  const goClient = () => go('client', `/couple/${config.id}`)
+  const goClient = () => go('client', `/host/${config.id}`)
   const goSetup  = () => go('setup',  '/demo/setup')
 
   return (
