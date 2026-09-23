@@ -72,7 +72,7 @@ export default function LoginPage() {
           <div className="text-center mb-2">
             <h1 className="text-serif text-cream text-2xl font-normal">Your gallery</h1>
             <p className="text-sans text-cream/40 text-sm mt-2 leading-relaxed">
-              Enter the email you used when setting up your wedding.
+              Enter the email you used when setting up your event.
             </p>
           </div>
 
@@ -88,7 +88,7 @@ export default function LoginPage() {
 
           {phase === 'not-found' && (
             <p className="text-sans text-[11px] text-red-400/80 text-center -mt-1">
-              No wedding found for that email address.
+              No event found for that email address.
             </p>
           )}
 

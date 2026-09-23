@@ -89,7 +89,7 @@ export default function CoupleSetupPage() {
         return
       }
       if (!res.ok) {
-        setErrorMsg('Could not load your wedding. Please try again.')
+        setErrorMsg('Could not load your event. Please try again.')
         setStep('error')
         return
       }
@@ -212,7 +212,7 @@ export default function CoupleSetupPage() {
             <div key={i} className="w-1.5 h-1.5 rounded-full bg-cream/40 animate-pulse" style={{ animationDelay: `${i * 180}ms` }} />
           ))}
         </div>
-        <p className="text-serif text-cream text-2xl font-normal">Setting up your wedding…</p>
+        <p className="text-serif text-cream text-2xl font-normal">Setting up your event…</p>
         <p className="text-sans text-cream/40 text-sm font-light max-w-[220px] leading-relaxed">
           Your Reverie is almost ready.
         </p>
@@ -493,7 +493,7 @@ export default function CoupleSetupPage() {
             <ContinueButton
               onClick={handleFinish}
               disabled={false}
-              label="Create Our Wedding"
+              label="Create Our Event"
             />
           </StepWrapper>
         )}

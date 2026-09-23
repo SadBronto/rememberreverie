@@ -208,7 +208,7 @@ export default function CoupleSettingsPage() {
         )}
 
         {/* Names & date */}
-        <Section label="Your wedding">
+        <Section label="Your event">
           <Field label="Names">
             <Input
               value={form.couple_names}

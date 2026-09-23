@@ -12,9 +12,9 @@ export default function NoWeddingPage() {
 
   return (
     <div className="min-h-dvh bg-ink flex flex-col items-center justify-center px-6 text-center gap-4">
-      <p className="text-serif text-cream text-xl">No wedding found</p>
+      <p className="text-serif text-cream text-xl">No event found</p>
       <p className="text-sans text-cream/40 text-sm max-w-xs leading-relaxed">
-        We couldn't find a wedding linked to your email. Make sure you're using
+        We couldn't find an event linked to your email. Make sure you're using
         the email you registered with.
       </p>
       <button
