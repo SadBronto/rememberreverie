@@ -9,62 +9,74 @@ const admin = createClient(
 
 // Runs daily at 3 AM UTC.
 //
-// WEDDINGS: delete photos for any wedding whose wedding_date was > 90 days ago.
-//
-// EVENTS (is_event=true): use event_end_date instead of wedding_date.
-//   - 7 days before event_end_date: send warning email to couple_email, set cleanup_warning_sent=true.
-//   - On/after event_end_date: delete photos and expire the project.
+// RETENTION (unified across weddings + events): every active project has an
+// effective deletion date — retention_until, else capture_end + 90d, else the
+// legacy (event_end_date | wedding_date) + 90d fallback.
+//   - 7 days before: send warning email to couple_email, set cleanup_warning_sent=true.
+//   - On/after that date: delete photos AND release the slug, then expire the project.
 //
 // ALL PROJECTS with a photo_cap: send a warning email at 80% capacity.
 //   - cap_warning_sent resets to false when admin changes photo_cap, so it re-fires after an increase.
 export const handler: Handler = async () => {
-  const today = new Date()
+  const todayMs = Date.now()
+  const warnMs  = todayMs + 7 * 24 * 60 * 60 * 1000  // warn 7 days before deletion
 
-  // ── Weddings: 90-day rule (unchanged) ────────────────────────
-  const cutoff = new Date()
-  cutoff.setDate(cutoff.getDate() - 90)
-  const cutoffDate = cutoff.toISOString().slice(0, 10)
+  const addDays = (d: Date, n: number) => { const r = new Date(d); r.setDate(r.getDate() + n); return r }
+  // DATE columns ('YYYY-MM-DD') are parsed at local noon to avoid TZ edge slips.
+  const parseDate = (s: string | null) => (s ? new Date(s + 'T12:00:00') : null)
 
-  const { data: weddingsToClean, error: wErr } = await admin
+  // ── Unified retention ─────────────────────────────────────────
+  // Effective deletion date for every active project, in priority order:
+  //   1. retention_until   — explicit override (e.g. the "Keep" add-on)
+  //   2. capture_end + 90  — v2 events with a capture window
+  //   3. (event_end_date | wedding_date) + 90 — legacy fallback
+  // On/after that date: photos deleted AND slug released. 7 days before: one
+  // warning email (cleanup_warning_sent guards against repeats).
+  const { data: rows, error: rErr } = await admin
     .from('weddings')
-    .select('id, couple_names, wedding_date')
-    .eq('is_event', false)
-    .lt('wedding_date', cutoffDate)
+    .select('id, couple_names, couple_email, is_event, wedding_date, event_end_date, capture_end, retention_until, cleanup_warning_sent')
     .not('status', 'in', '("expired","archived")')
 
-  if (wErr) {
-    console.error('cleanup: failed to query weddings', wErr)
+  if (rErr) {
+    console.error('cleanup: failed to query weddings', rErr)
     return { statusCode: 500, body: 'Query failed' }
   }
 
-  // ── Events: warning + expiry based on event_end_date ─────────
-  const { data: allEvents } = await admin
-    .from('weddings')
-    .select('id, couple_names, couple_email, event_end_date, cleanup_warning_sent')
-    .eq('is_event', true)
-    .not('status', 'in', '("expired","archived")')
-    .not('event_end_date', 'is', null)
+  const effectiveRetention = (r: {
+    is_event: boolean | null
+    wedding_date: string | null
+    event_end_date: string | null
+    capture_end: string | null
+    retention_until: string | null
+  }): Date | null => {
+    if (r.retention_until) return parseDate(r.retention_until)
+    if (r.capture_end)     return addDays(parseDate(r.capture_end)!, 90)
+    if (r.is_event && r.event_end_date) return addDays(parseDate(r.event_end_date)!, 90)
+    if (!r.is_event && r.wedding_date)  return addDays(parseDate(r.wedding_date)!, 90)
+    return null
+  }
 
-  const warnDate = new Date(today)
-  warnDate.setDate(warnDate.getDate() + 7)  // warn when end_date is within 7 days
+  type WarnItem = { id: string; couple_names: string; couple_email: string | null; deleteDate: Date }
+  const toWarn: WarnItem[] = []
+  const toDelete: { id: string; couple_names: string }[] = []
 
-  const eventsToWarn  = (allEvents ?? []).filter(e => {
-    if (e.cleanup_warning_sent) return false
-    const end = new Date(e.event_end_date + 'T12:00:00')
-    return end > today && end <= warnDate
-  })
-
-  const eventsToClean = (allEvents ?? []).filter(e => {
-    const end = new Date(e.event_end_date + 'T12:00:00')
-    return end <= today
-  })
+  for (const r of rows ?? []) {
+    const ret = effectiveRetention(r)
+    if (!ret) continue
+    const retMs = ret.getTime()
+    if (retMs <= todayMs) {
+      toDelete.push({ id: r.id, couple_names: r.couple_names })
+    } else if (!r.cleanup_warning_sent && retMs <= warnMs) {
+      toWarn.push({ id: r.id, couple_names: r.couple_names, couple_email: r.couple_email, deleteDate: ret })
+    }
+  }
 
   // ── Send warning emails ───────────────────────────────────────
-  for (const event of eventsToWarn) {
+  for (const item of toWarn) {
     try {
-      if (!event.couple_email) continue
+      if (!item.couple_email) continue
 
-      const endFormatted = new Date(event.event_end_date + 'T12:00:00')
+      const endFormatted = item.deleteDate
         .toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 
       await fetch('https://api.resend.com/emails', {
@@ -75,14 +87,14 @@ export const handler: Handler = async () => {
         },
         body: JSON.stringify({
           from: 'Reverie <hello@rememberreverie.com>',
-          to: [event.couple_email],
+          to: [item.couple_email],
           subject: 'Your Reverie photos will be deleted soon',
           html: `
             <div style="background:#1a1612;color:#f5f0e8;font-family:Georgia,serif;padding:40px;max-width:520px;margin:0 auto;border-radius:12px">
               <p style="font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:#c8a882;margin:0 0 8px">Remember Reverie</p>
               <h1 style="font-size:22px;font-weight:normal;margin:0 0 24px">Your photos expire in 7 days</h1>
               <p style="color:#b0a898;font-size:14px;line-height:1.6;margin:0 0 16px">
-                The photos for <strong style="color:#f5f0e8">${event.couple_names}</strong> are scheduled for deletion on <strong style="color:#f5f0e8">${endFormatted}</strong>.
+                The photos for <strong style="color:#f5f0e8">${item.couple_names}</strong> are scheduled for deletion on <strong style="color:#f5f0e8">${endFormatted}</strong>.
               </p>
               <p style="color:#b0a898;font-size:14px;line-height:1.6;margin:0 0 32px">
                 Sign in to your gallery to download all photos before they're permanently removed.
@@ -101,17 +113,15 @@ export const handler: Handler = async () => {
       await admin
         .from('weddings')
         .update({ cleanup_warning_sent: true })
-        .eq('id', event.id)
+        .eq('id', item.id)
 
-      console.log(`cleanup: warning email sent for event ${event.id} (${event.couple_names})`)
+      console.log(`cleanup: warning email sent for ${item.id} (${item.couple_names})`)
     } catch (err) {
-      console.error(`cleanup: failed to send warning for ${event.id}`, err)
+      console.error(`cleanup: failed to send warning for ${item.id}`, err)
     }
   }
 
-  // ── Delete expired projects (weddings + events) ───────────────
-  const toDelete = [...(weddingsToClean ?? []), ...eventsToClean]
-
+  // ── Delete expired projects (photos + slug) ───────────────────
   let cleaned = 0
   const errors: string[] = []
 
@@ -135,7 +145,9 @@ export const handler: Handler = async () => {
         await admin.from('sessions').update({ status: 'deleted' }).eq('wedding_id', project.id).neq('status', 'deleted')
       }
 
-      await admin.from('weddings').update({ status: 'expired' }).eq('id', project.id)
+      // Expire AND release the slug — the unique index ignores status, so nulling
+      // the slug frees it for reuse (matches the admin archive behavior).
+      await admin.from('weddings').update({ status: 'expired', slug: null }).eq('id', project.id)
 
       console.log(`cleanup: expired ${project.id} (${project.couple_names})`)
       cleaned++
@@ -216,6 +228,6 @@ export const handler: Handler = async () => {
 
   return {
     statusCode: 200,
-    body: JSON.stringify({ cleaned, warned: eventsToWarn.length, capWarned, errors }),
+    body: JSON.stringify({ cleaned, warned: toWarn.length, capWarned, errors }),
   }
 }

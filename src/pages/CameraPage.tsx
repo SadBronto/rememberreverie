@@ -7,6 +7,7 @@ import { CAMERA_MODES, type CameraModeConfig } from '@/config/modes'
 import { processSession } from '@/lib/imageProcessor'
 import { playShutterSound } from '@/lib/sound'
 import { flushPendingUploads, countRecovery } from '@/lib/recovery'
+import { captureWindowStatus } from '@/lib/captureWindow'
 import type { CameraModeName } from '@/types/session'
 import ModeSelector from '@/components/ModeSelector'
 import ShutterButton from '@/components/ShutterButton'
@@ -54,14 +55,27 @@ export default function CameraPage() {
   // Front-camera flip is allowed unless the event explicitly turned it off.
   const selfieAllowed = weddingConfig?.selfieEnabled !== false
 
+  // Capture window closed (not yet open, or already ended). The landing is the
+  // primary gate; this handles direct navigation and tabs left open past the
+  // window. Demo/ungated events return 'none' → never closed.
+  const windowClosed = (() => {
+    const s = captureWindowStatus(weddingConfig)
+    return s === 'before' || s === 'ended'
+  })()
+
   useEffect(() => {
+    if (windowClosed) navigate(`/w/${weddingId ?? 'demo'}`, { replace: true })
+  }, [windowClosed, weddingId, navigate])
+
+  useEffect(() => {
+    if (windowClosed) return  // don't acquire the camera outside the window
     startCamera()
     return () => stopCamera()
   // Restart the camera when the MODE or the FACING (front/rear) changes — but NOT
   // on orientation toggle, which must not re-zoom the feed (the overlay + capture
   // handle orientation).
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMode, facing])
+  }, [selectedMode, facing, windowClosed])
 
   // Retry any photos that didn't finish uploading on a previous visit, and keep a
   // live count so the guest can SEE that stranded photos are still being handled

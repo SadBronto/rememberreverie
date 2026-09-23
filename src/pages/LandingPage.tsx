@@ -5,6 +5,7 @@ import FilmGrain from '@/components/FilmGrain'
 import GeofenceGate from '@/components/GeofenceGate'
 import type { WeddingConfig } from '@/types/session'
 import { isDemoId, DEMO_BASE_CONFIG } from '@/demo/demoConfig'
+import { captureWindowStatus, formatWindowDate } from '@/lib/captureWindow'
 
 // Fallback used in dev when the API isn't available (no Supabase credentials yet)
 const DEV_FALLBACK: WeddingConfig = {
@@ -95,6 +96,13 @@ export default function LandingPage() {
   if (loadError) return <LandingMessage variant={loadError} />
   if (loading || !weddingConfig) return <LandingLoading />
 
+  // Capture window — gate the camera when the event hasn't opened yet or has
+  // already closed. Fail-open (status 'none') keeps ungated events untouched.
+  const windowStatus = captureWindowStatus(weddingConfig)
+  if (windowStatus === 'before' || windowStatus === 'ended') {
+    return <CaptureWindowScreen status={windowStatus} config={weddingConfig} />
+  }
+
   const formattedDate = weddingConfig.weddingDate ? formatDate(weddingConfig.weddingDate) : null
 
   return (
@@ -184,6 +192,49 @@ function LandingLoading() {
   return (
     <div className="min-h-dvh bg-ink flex flex-col items-center justify-center gap-4">
       <div className="w-8 h-8 rounded-full border-2 border-cream/20 border-t-cream/70 animate-spin" />
+    </div>
+  )
+}
+
+function CaptureWindowScreen({
+  status,
+  config,
+}: {
+  status: 'before' | 'ended'
+  config: WeddingConfig
+}) {
+  const isBefore = status === 'before'
+  const date = formatWindowDate(isBefore ? config.captureStart : config.captureEnd)
+
+  const title = isBefore ? 'This gallery opens soon' : 'This event has wrapped'
+  const body = isBefore
+    ? date
+      ? `The camera opens ${date}. Check back then to leave a memory.`
+      : 'The camera opens soon. Check back then to leave a memory.'
+    : date
+      ? `The camera closed ${date}. Thank you for being part of it.`
+      : 'The camera has closed. Thank you for being part of it.'
+
+  return (
+    <div className="relative flex flex-col min-h-dvh bg-ink overflow-hidden safe-top safe-bottom px-8">
+      <FilmGrain opacity={0.038} />
+      <header className="relative z-10 flex flex-col items-center pt-12">
+        <p className="text-mono text-[10px] tracking-[0.3em] text-cream/30 uppercase">a memory from</p>
+        <h1 className="text-serif text-cream text-3xl font-normal tracking-wide mt-1">Reverie</h1>
+      </header>
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-5 text-center pb-[12vh]">
+        <div className="w-10 h-px bg-cream/20" />
+        {config.coupleNames && (
+          <p className="text-mono text-amber-film/70 text-xs tracking-[0.2em] uppercase">
+            {config.coupleNames}
+          </p>
+        )}
+        <h2 className="text-serif text-cream text-2xl font-normal">{title}</h2>
+        <p className="text-sans text-cream/55 text-sm leading-relaxed max-w-[260px] font-light">
+          {body}
+        </p>
+        <div className="w-10 h-px bg-cream/20" />
+      </div>
     </div>
   )
 }
