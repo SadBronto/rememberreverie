@@ -1,5 +1,6 @@
 import type { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
+import { getPhotoUrls } from '../lib/storage'
 
 const admin = createClient(
   process.env.SUPABASE_URL!,
@@ -7,6 +8,11 @@ const admin = createClient(
 )
 
 const VISION_KEY = process.env.GOOGLE_VISION_API_KEY
+
+// Global daily ceiling on Vision calls — an app-level hard backstop against runaway
+// cost, on TOP of the Google Cloud budget alert + API quota. SafeSearch is ~$1.50 /
+// 1,000, so 3,000/day ≈ $4.50/day worst case even under abuse.
+const DAILY_VISION_CAP = 3000
 
 // Google's SafeSearch likelihood ladder, weakest → strongest
 const LIKELIHOOD = ['UNKNOWN', 'VERY_UNLIKELY', 'UNLIKELY', 'POSSIBLE', 'LIKELY', 'VERY_LIKELY']
@@ -19,13 +25,17 @@ const atLeast = (level: string, threshold: string) =>
 // explicit, the session is set to 'flagged' — which removes it from the slideshow
 // and couple gallery and surfaces it for admin review.
 //
-// Thresholds are deliberately conservative so we don't hide innocent wedding
-// photos (a low-cut dress or a dance-floor dip should NOT vanish). 'racy' alone
-// only flags at VERY_LIKELY (Vision's top confidence bucket).
+// Reverie Live only: moderation is a paid-tier feature, so it runs solely for
+// plan='live' events. That also confines the per-image Vision cost to events that
+// paid for it.
 //
-// Fail-OPEN: any error (no key, download fail, Vision down) leaves the photo
-// visible. Losing a real memory to an API hiccup is worse than a rare miss, and
-// the admin can always hide manually.
+// Thresholds are deliberately conservative so we don't hide innocent photos (a
+// low-cut dress or a dance-floor dip should NOT vanish). 'racy' alone only flags at
+// VERY_LIKELY (Vision's top confidence bucket).
+//
+// Fail-OPEN: any error (no key, fetch fail, Vision down) leaves the photo visible.
+// Losing a real memory to an API hiccup is worse than a rare miss, and the admin
+// can always hide manually.
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' }
   if (!VISION_KEY) return { statusCode: 200, body: JSON.stringify({ skipped: 'no-key' }) }
@@ -37,7 +47,7 @@ export const handler: Handler = async (event) => {
 
   const { data: session } = await admin
     .from('sessions')
-    .select('id, output_path, status')
+    .select('id, output_path, status, wedding_id')
     .eq('id', sessionId)
     .single()
 
@@ -45,13 +55,40 @@ export const handler: Handler = async (event) => {
     return { statusCode: 200, body: JSON.stringify({ skipped: 'no-photo' }) }
   }
 
-  // Download the photo with the service role, send it to Vision as base64.
-  const { data: blob, error: dlErr } = await admin.storage.from('photos').download(session.output_path)
-  if (dlErr || !blob) {
-    console.error('moderate: download failed', dlErr)
-    return { statusCode: 200, body: JSON.stringify({ moderated: false, error: 'download' }) }
+  // Reverie Live only — skip moderation (and its cost) for basic-plan events.
+  const { data: wedding } = await admin
+    .from('weddings')
+    .select('plan')
+    .eq('id', session.wedding_id)
+    .single()
+  if ((wedding?.plan ?? 'basic') !== 'live') {
+    return { statusCode: 200, body: JSON.stringify({ skipped: 'not-live' }) }
   }
-  const base64 = Buffer.from(await blob.arrayBuffer()).toString('base64')
+
+  // Global daily Vision ceiling — cost backstop (counts photos already moderated today).
+  const startOfDay = new Date()
+  startOfDay.setUTCHours(0, 0, 0, 0)
+  const { count } = await admin
+    .from('sessions')
+    .select('id', { count: 'exact', head: true })
+    .gte('moderated_at', startOfDay.toISOString())
+  if ((count ?? 0) >= DAILY_VISION_CAP) {
+    console.warn('moderate: daily Vision cap reached, skipping', { cap: DAILY_VISION_CAP })
+    return { statusCode: 200, body: JSON.stringify({ skipped: 'daily-cap' }) }
+  }
+
+  // Resolve the photo URL from the active store (R2 public CDN or Supabase signed).
+  // Vision fetches it directly by URI — this replaces the old Supabase-only download
+  // that broke silently once photos moved to R2.
+  const urls = await getPhotoUrls([session.output_path])
+  const imageUri = urls.get(session.output_path)
+  if (!imageUri) {
+    console.error('moderate: could not resolve photo URL')
+    return { statusCode: 200, body: JSON.stringify({ moderated: false, error: 'no-url' }) }
+  }
+
+  // Mark it moderated up front so concurrent uploads count toward the daily cap.
+  await admin.from('sessions').update({ moderated_at: new Date().toISOString() }).eq('id', sessionId)
 
   let safe: Record<string, string> | null = null
   try {
@@ -59,7 +96,7 @@ export const handler: Handler = async (event) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        requests: [{ image: { content: base64 }, features: [{ type: 'SAFE_SEARCH_DETECTION' }] }],
+        requests: [{ image: { source: { imageUri } }, features: [{ type: 'SAFE_SEARCH_DETECTION' }] }],
       }),
     })
     if (!res.ok) console.error('moderate: vision HTTP error', res.status)
@@ -88,9 +125,8 @@ export const handler: Handler = async (event) => {
       .update({ status: 'flagged', moderation_labels: JSON.stringify({ adult, violence, racy }) })
       .eq('id', sessionId)
     if (flagErr) {
-      // The migration may not be applied yet (no 'flagged' status / no labels
-      // column). Fall back to 'hidden' so the explicit photo is STILL removed from
-      // the slideshow and main gallery — better a couple-hidden than fully public.
+      // Fallback: if the flagged status/labels column isn't available, still remove
+      // the explicit photo from the slideshow + gallery by hiding it.
       console.error('moderate: flagged update failed, falling back to hidden', flagErr)
       await admin.from('sessions').update({ status: 'hidden' }).eq('id', sessionId)
     }

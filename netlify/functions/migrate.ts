@@ -52,8 +52,26 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
       `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS slideshow_slow_poll BOOLEAN NOT NULL DEFAULT FALSE`,
     ],
   },
+  {
+    id: 'v8_v2_foundation',
+    sql: [
+      // Tier: 'basic' (Reverie) | 'live' (Reverie Live). Drives slideshow + moderation.
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS plan TEXT NOT NULL DEFAULT 'basic'`,
+      // Unified capture window (mandatory end date; timezone for correct date-gating).
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS capture_start DATE NULL`,
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS capture_end DATE NULL`,
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS event_timezone TEXT NULL`,
+      // Unified retention: photos + slug deleted after this date (base = capture_end + 90d).
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS retention_until DATE NULL`,
+      // Paid add-ons.
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS addon_unlimited BOOLEAN NOT NULL DEFAULT FALSE`,
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS addon_geofence BOOLEAN NOT NULL DEFAULT FALSE`,
+      // When a photo was run through Vision — powers the global daily cost ceiling.
+      `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS moderated_at TIMESTAMPTZ NULL`,
+    ],
+  },
   // Future migrations go here:
-  // { id: 'v8_...', sql: [`ALTER TABLE ...`] },
+  // { id: 'v9_...', sql: [`ALTER TABLE ...`] },
 ]
 
 async function run(sql: string, token: string): Promise<unknown> {
