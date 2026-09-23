@@ -47,6 +47,11 @@ export interface WeddingConfig {
   // Front-camera (selfie) flip in the camera UI. Default on; same no-retake +
   // film treatment as the rear lens. Couples/admin can disable per event.
   selfieEnabled?: boolean
+  // v2: tier + capture window (dates evaluated in eventTimezone)
+  plan?: 'basic' | 'live'
+  captureStart?: string | null
+  captureEnd?: string | null
+  eventTimezone?: string | null
   slideshowEnabled: boolean
   timestampEnabled: boolean
   // Layout styles (not color — each style has its own position, font size, and colour)

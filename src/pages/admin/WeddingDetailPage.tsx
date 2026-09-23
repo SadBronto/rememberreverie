@@ -35,6 +35,12 @@ interface WeddingDetail {
   geofence_lng: number | null
   geofence_radius_m: number | null
   geofence_bypass_code: string | null
+  plan: string
+  capture_start: string | null
+  capture_end: string | null
+  event_timezone: string | null
+  addon_unlimited: boolean
+  addon_geofence: boolean
 }
 
 interface Counts { disposable: number; polaroid: number; super8: number; total: number }
@@ -684,6 +690,16 @@ export default function WeddingDetailPage() {
             </AdminSelect>
           </FormField>
 
+          <FormField label="Plan">
+            <AdminSelect value={form.plan ?? 'basic'} onChange={v => setField('plan', v)}>
+              <option value="basic">Reverie (Basic)</option>
+              <option value="live">Reverie Live (slideshow + moderation)</option>
+            </AdminSelect>
+            <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
+              Live enables the reception slideshow and automatic content moderation.
+            </p>
+          </FormField>
+
           <FormField label="Project type">
             <div className="flex items-center gap-3">
               <AdminToggle value={form.is_event ?? false} onChange={v => setField('is_event', v)} />
@@ -716,6 +732,43 @@ export default function WeddingDetailPage() {
               </p>
             </FormField>
           )}
+
+          <FormField label="Capture window">
+            <div className="flex items-center gap-2">
+              <AdminInput type="date" value={form.capture_start ?? ''} onChange={v => setField('capture_start', v || null)} />
+              <span className="text-cream/30 text-sm shrink-0">→</span>
+              <AdminInput type="date" value={form.capture_end ?? ''} onChange={v => setField('capture_end', v || null)} />
+            </div>
+            <div className="mt-2">
+              <AdminSelect value={form.event_timezone ?? 'America/Los_Angeles'} onChange={v => setField('event_timezone', v)}>
+                <option value="America/Los_Angeles">Pacific — America/Los_Angeles</option>
+                <option value="America/Denver">Mountain — America/Denver</option>
+                <option value="America/Phoenix">Arizona — America/Phoenix</option>
+                <option value="America/Chicago">Central — America/Chicago</option>
+                <option value="America/New_York">Eastern — America/New_York</option>
+                <option value="America/Anchorage">Alaska — America/Anchorage</option>
+                <option value="Pacific/Honolulu">Hawaii — Pacific/Honolulu</option>
+              </AdminSelect>
+            </div>
+            <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
+              Guests can add photos only within this window (judged in the event's timezone). Photos + custom link are kept 90 days after it ends, then deleted.
+            </p>
+          </FormField>
+
+          <FormField label="Add-ons">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-3">
+                <AdminToggle value={form.addon_unlimited ?? false} onChange={v => setField('addon_unlimited', v)} />
+                <span className="text-sans text-cream/50 text-sm">
+                  Unlimited photos{(form.addon_unlimited ?? false) ? '' : ` (cap ${form.photo_cap ?? 500})`}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <AdminToggle value={form.addon_geofence ?? false} onChange={v => setField('addon_geofence', v)} />
+                <span className="text-sans text-cream/50 text-sm">Geofence purchased</span>
+              </div>
+            </div>
+          </FormField>
 
           <FormField label="Welcome message">
             <AdminInput value={form.welcome_message ?? ''} onChange={v => setField('welcome_message', v)} />
