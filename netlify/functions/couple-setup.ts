@@ -40,7 +40,8 @@ export const handler: Handler = async (event) => {
     return { statusCode: 400, body: 'Invalid JSON' }
   }
 
-  const { coupleNames, weddingDate, welcomeMessage, allowedModes, annotationMode,
+  const { coupleNames, weddingDate, captureStart, captureEnd, eventTimezone,
+          welcomeMessage, allowedModes, annotationMode,
           timestampEnabled, timestampStyle, photoCap, slug, selfieEnabled } = body as Record<string, any>
 
   if (!coupleNames) {
@@ -65,6 +66,13 @@ export const handler: Handler = async (event) => {
   // Only persist the selfie toggle when the client actually sends it (settings
   // page does; the initial setup POST doesn't — it relies on the DB default TRUE).
   if (typeof selfieEnabled === 'boolean') update.selfie_enabled = selfieEnabled
+
+  // Capture window — only touch these columns when the client sends them, so a
+  // partial PATCH (e.g. the settings page) never blanks an existing window.
+  // retention_until is left null: cleanup derives capture_end + 90d automatically.
+  if (captureStart  !== undefined) update.capture_start  = captureStart  || null
+  if (captureEnd    !== undefined) update.capture_end    = captureEnd    || null
+  if (eventTimezone !== undefined) update.event_timezone = eventTimezone || null
 
   // Only POST activates the wedding
   if (method === 'POST') update.status = 'active'

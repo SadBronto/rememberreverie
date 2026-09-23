@@ -7,7 +7,7 @@ import StylePreviewThumb from '@/components/StylePreviewThumb'
 import { useDemoStore } from '@/store/demoStore'
 import { DEMO_WEDDING_ID } from '@/demo/demoConfig'
 
-type Step = 'loading' | 'names' | 'date' | 'style' | 'annotation' | 'timestamp' | 'welcome' | 'saving' | 'error'
+type Step = 'loading' | 'names' | 'date' | 'window' | 'style' | 'annotation' | 'timestamp' | 'welcome' | 'saving' | 'error'
 
 const TIMESTAMP_STYLES: { value: 'classic' | 'vertical' | 'elegant'; label: string; detail: string }[] = [
   { value: 'classic',  label: 'Classic',  detail: 'Orange · bottom-right · MM DD YY + time' },
@@ -32,7 +32,35 @@ const ANNOTATION_OPTIONS = [
   { value: 'disabled',  label: 'Off',       detail: 'No signing or drawing on photos.' },
 ]
 
-const STEPS_ORDERED: Step[] = ['names', 'date', 'style', 'annotation', 'timestamp', 'welcome']
+const STEPS_ORDERED: Step[] = ['names', 'date', 'window', 'style', 'annotation', 'timestamp', 'welcome']
+
+const US_TIMEZONES: { value: string; label: string }[] = [
+  { value: 'America/New_York',    label: 'Eastern (ET)' },
+  { value: 'America/Chicago',     label: 'Central (CT)' },
+  { value: 'America/Denver',      label: 'Mountain (MT)' },
+  { value: 'America/Phoenix',     label: 'Arizona (MST)' },
+  { value: 'America/Los_Angeles', label: 'Pacific (PT)' },
+  { value: 'America/Anchorage',   label: 'Alaska (AKT)' },
+  { value: 'Pacific/Honolulu',    label: 'Hawaii (HT)' },
+]
+
+// Best-guess default: the setup device's own timezone (usually the event's).
+function detectTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Los_Angeles'
+  } catch {
+    return 'America/Los_Angeles'
+  }
+}
+
+function prettyDate(iso: string): string {
+  if (!iso) return ''
+  try {
+    return new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  } catch {
+    return iso
+  }
+}
 
 export default function CoupleSetupPage() {
   const navigate = useNavigate()
@@ -54,6 +82,17 @@ export default function CoupleSetupPage() {
   const [timestampEnabled, setTimestampEnabled] = useState(true)
   const [timestampStyle, setTimestampStyle]   = useState<'classic' | 'vertical' | 'elegant'>('classic')
   const [welcomeMessage, setWelcomeMessage]   = useState('Leave us a memory.')
+
+  // Capture window — when guests may shoot. Dates are interpreted in eventTimezone
+  // and drive both the guest date-gate and retention (capture_end + 90d).
+  // Single-day derives from the event date; multi-day is entered explicitly.
+  const [multiDay, setMultiDay]               = useState(false)
+  const [captureStart, setCaptureStart]       = useState('')
+  const [captureEnd, setCaptureEnd]           = useState('')
+  const [eventTimezone, setEventTimezone]     = useState<string>(detectTimezone)
+
+  // The window step is skipped for ongoing / no-date events.
+  const orderedSteps: Step[] = noDate ? STEPS_ORDERED.filter(s => s !== 'window') : STEPS_ORDERED
 
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
 
@@ -108,6 +147,12 @@ export default function CoupleSetupPage() {
       if (data.wedding_date) setWeddingDate(data.wedding_date)
       else if (data.is_event) setNoDate(true)
 
+      // Pre-fill any capture window the admin may have set
+      if (data.capture_start) setCaptureStart(data.capture_start)
+      if (data.capture_end) setCaptureEnd(data.capture_end)
+      if (data.capture_start && data.capture_end && data.capture_start !== data.capture_end) setMultiDay(true)
+      if (data.event_timezone) setEventTimezone(data.event_timezone)
+
       setStep('names')
     }
     load()
@@ -132,9 +177,9 @@ export default function CoupleSetupPage() {
   }
 
   function goBack() {
-    const idx = STEPS_ORDERED.indexOf(step as Step)
+    const idx = orderedSteps.indexOf(step as Step)
     if (idx <= 0) return
-    setStep(STEPS_ORDERED[idx - 1]!)
+    setStep(orderedSteps[idx - 1]!)
   }
 
   function goNext(next: Step) {
@@ -170,6 +215,9 @@ export default function CoupleSetupPage() {
       body: JSON.stringify({
         coupleNames: coupleNames.trim(),
         weddingDate: noDate ? null : weddingDate,
+        captureStart: noDate ? null : (multiDay ? captureStart : weddingDate),
+        captureEnd:   noDate ? null : (multiDay ? captureEnd : weddingDate),
+        eventTimezone: noDate ? null : eventTimezone,
         welcomeMessage: welcomeMessage.trim() || 'Leave us a memory.',
         allowedModes: selectedModes,
         annotationMode,
@@ -193,7 +241,11 @@ export default function CoupleSetupPage() {
   const canContinueNames  = coupleNames.trim().length > 0
   const canContinueDate   = noDate || weddingDate.length > 0
   const canContinueStyle  = selectedModes.length > 0
-  const stepIndex         = STEPS_ORDERED.indexOf(step as Step)
+  const stepIndex         = orderedSteps.indexOf(step as Step)
+  const canContinueWindow = noDate || !multiDay || (!!captureStart && !!captureEnd && captureEnd >= captureStart)
+  const tzOptions         = US_TIMEZONES.some(t => t.value === eventTimezone)
+    ? US_TIMEZONES
+    : [{ value: eventTimezone, label: eventTimezone.replace(/_/g, ' ') }, ...US_TIMEZONES]
 
   // ── Loading / saving / error screens ────────────────────────────────────────
   if (step === 'loading') {
@@ -251,7 +303,7 @@ export default function CoupleSetupPage() {
 
         {/* Step dots */}
         <div className="flex gap-1.5">
-          {STEPS_ORDERED.map((s, i) => (
+          {orderedSteps.map((s, i) => (
             <div
               key={s}
               className="rounded-full transition-all duration-300"
@@ -316,7 +368,79 @@ export default function CoupleSetupPage() {
                 No set date / ongoing event
               </span>
             </button>
-            <ContinueButton onClick={() => goNext('style')} disabled={!canContinueDate} />
+            <ContinueButton onClick={() => goNext(noDate ? 'style' : 'window')} disabled={!canContinueDate} />
+          </StepWrapper>
+        )}
+
+        {/* CAPTURE WINDOW */}
+        {step === 'window' && (
+          <StepWrapper visible={visible}>
+            <StepLabel>Good to know.</StepLabel>
+            <StepQuestion>When can guests take photos?</StepQuestion>
+            <p className="text-sans text-cream/35 text-xs mt-2">
+              The camera opens and closes on its own — guests can only take photos during your event.
+            </p>
+
+            <div className="mt-8 flex flex-col gap-3">
+              <WindowChoice
+                label="Just my event day"
+                detail={weddingDate ? prettyDate(weddingDate) : 'A single day'}
+                selected={!multiDay}
+                onClick={() => setMultiDay(false)}
+              />
+              <WindowChoice
+                label="Multiple days"
+                detail="Rehearsal, day-of, next-morning brunch…"
+                selected={multiDay}
+                onClick={() => {
+                  setMultiDay(true)
+                  if (!captureStart) setCaptureStart(weddingDate)
+                  if (!captureEnd) setCaptureEnd(weddingDate)
+                }}
+              />
+            </div>
+
+            {multiDay && (
+              <div className="mt-5 grid grid-cols-2 gap-4">
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-mono text-cream/40 text-[10px] tracking-wide uppercase">First day</span>
+                  <input
+                    type="date"
+                    value={captureStart}
+                    onChange={e => setCaptureStart(e.target.value)}
+                    className="w-full bg-transparent border-b border-cream/20 focus:border-cream/60 outline-none text-cream text-sans text-base pb-2 transition-colors [color-scheme:dark]"
+                  />
+                </label>
+                <label className="flex flex-col gap-1.5">
+                  <span className="text-mono text-cream/40 text-[10px] tracking-wide uppercase">Last day</span>
+                  <input
+                    type="date"
+                    value={captureEnd}
+                    min={captureStart || undefined}
+                    onChange={e => setCaptureEnd(e.target.value)}
+                    className="w-full bg-transparent border-b border-cream/20 focus:border-cream/60 outline-none text-cream text-sans text-base pb-2 transition-colors [color-scheme:dark]"
+                  />
+                </label>
+              </div>
+            )}
+
+            {multiDay && captureStart && captureEnd && captureEnd < captureStart && (
+              <p className="text-sans text-[11px] text-red-400/80 mt-3">The last day can't be before the first day.</p>
+            )}
+
+            <label className="mt-8 flex flex-col gap-1.5">
+              <span className="text-mono text-cream/40 text-[10px] tracking-wide uppercase">Event time zone</span>
+              <select
+                value={eventTimezone}
+                onChange={e => setEventTimezone(e.target.value)}
+                className="w-full bg-ink-light border border-cream/15 rounded-xl px-4 py-3 text-cream text-sans text-sm outline-none focus:border-cream/40 [color-scheme:dark]"
+              >
+                {tzOptions.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
+              <span className="text-sans text-cream/30 text-[11px] mt-1">So the camera opens and closes at the right local time.</span>
+            </label>
+
+            <ContinueButton onClick={() => goNext('style')} disabled={!canContinueWindow} />
           </StepWrapper>
         )}
 
@@ -537,6 +661,25 @@ function ContinueButton({ onClick, disabled, label = 'Continue' }: { onClick: ()
       className={`mt-10 w-full py-4 rounded-full text-sans text-sm font-medium tracking-widest uppercase transition-all duration-300 touch-manipulation ${disabled ? 'bg-cream/10 text-cream/25 cursor-default' : 'bg-cream text-ink active:scale-[0.97]'}`}
     >
       {label}
+    </button>
+  )
+}
+
+function WindowChoice({ label, detail, selected, onClick }: { label: string; detail: string; selected: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full text-left rounded-2xl px-5 py-4 border transition-all duration-200 touch-manipulation ${selected ? 'border-cream/50 bg-cream/[0.06]' : 'border-cream/10'}`}
+    >
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className={`text-sans text-sm font-medium ${selected ? 'text-cream' : 'text-cream/60'}`}>{label}</p>
+          <p className={`text-mono text-[10px] mt-1.5 tracking-wide ${selected ? 'text-amber-film/70' : 'text-cream/20'}`}>{detail}</p>
+        </div>
+        <div className={`w-4 h-4 rounded-full border flex-shrink-0 flex items-center justify-center transition-all ${selected ? 'border-cream bg-cream' : 'border-cream/25'}`}>
+          {selected && <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1.5 4l2 2 3-3" stroke="#1a1612" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+        </div>
+      </div>
     </button>
   )
 }

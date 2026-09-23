@@ -20,7 +20,7 @@ export interface SessionRecord {
 }
 
 interface GalleryData {
-  wedding: { id: string; coupleNames: string; weddingDate: string; slug?: string | null; plan?: string }
+  wedding: { id: string; coupleNames: string; weddingDate: string; slug?: string | null; plan?: string; captureEnd?: string | null; retentionUntil?: string | null }
   coupleReviewEnabled?: boolean
   sessions: SessionRecord[]
 }
@@ -354,11 +354,20 @@ export default function CoupleGalleryPage() {
 
   const guestUrl = weddingId ? `https://rememberreverie.com/w/${weddingId}` : ''
 
-  // Retention: wedding_date + 90 days
+  // Effective deletion date — mirrors cleanup.ts: retention_until, else
+  // capture_end + 90d, else the legacy wedding_date + 90d.
   const retentionInfo = (() => {
-    if (!data?.wedding.weddingDate) return null
-    const del = new Date(data.wedding.weddingDate + 'T12:00:00')
-    del.setDate(del.getDate() + 90)
+    const w = data?.wedding
+    if (!w) return null
+    let del: Date | null = null
+    if (w.retentionUntil) {
+      del = new Date(w.retentionUntil + 'T12:00:00')
+    } else if (w.captureEnd) {
+      del = new Date(w.captureEnd + 'T12:00:00'); del.setDate(del.getDate() + 90)
+    } else if (w.weddingDate) {
+      del = new Date(w.weddingDate + 'T12:00:00'); del.setDate(del.getDate() + 90)
+    }
+    if (!del) return null
     const daysLeft = Math.ceil((del.getTime() - Date.now()) / 86400000)
     const formatted = del.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     return { daysLeft, formatted }

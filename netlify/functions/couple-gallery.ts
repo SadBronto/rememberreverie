@@ -29,7 +29,7 @@ export const handler: Handler = async (event) => {
   // Check the user's email matches this wedding's couple_email
   const { data: wedding, error: weddingError } = await admin
     .from('weddings')
-    .select('id, couple_names, wedding_date, couple_email, timestamp_enabled, timestamp_style, couple_review_enabled, slug, plan')
+    .select('id, couple_names, wedding_date, couple_email, timestamp_enabled, timestamp_style, couple_review_enabled, slug, plan, capture_end, retention_until')
     .eq('id', weddingId)
     .single()
 
@@ -87,6 +87,8 @@ export const handler: Handler = async (event) => {
         weddingDate:    wedding.wedding_date,
         slug:           wedding.slug ?? null,
         plan:           wedding.plan ?? 'basic',
+        captureEnd:     wedding.capture_end ?? null,
+        retentionUntil: wedding.retention_until ?? null,
       },
       coupleReviewEnabled: reviewEnabled,
       sessions: enriched,
