@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { portalBase } from '@/lib/portalNav'
 import { isDemoId } from '@/demo/demoConfig'
 import { useDemoStore } from '@/store/demoStore'
 import type { CameraModeName, WeddingConfig } from '@/types/session'
@@ -59,13 +60,13 @@ export default function CoupleSettingsPage() {
     async function load() {
       if (!supabase) return
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) { navigate('/couple/login', { replace: true }); return }
+      if (!session) { navigate(`${portalBase()}/login`, { replace: true }); return }
       tokenRef.current = session.access_token
 
       const res = await fetch('/api/couple/wedding', {
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
-      if (!res.ok) { navigate(`/couple/${weddingId}`, { replace: true }); return }
+      if (!res.ok) { navigate(`${portalBase()}/${weddingId}`, { replace: true }); return }
       const data = await res.json()
       setForm({
         couple_names:      data.couple_names      ?? '',
@@ -176,7 +177,7 @@ export default function CoupleSettingsPage() {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-ink/90 backdrop-blur-md border-b border-cream/5 px-5 py-4 flex items-center gap-3">
         <button
-          onClick={() => navigate(`/couple/${weddingId}`)}
+          onClick={() => navigate(`${portalBase()}/${weddingId}`)}
           className="text-cream/40 text-sans text-sm touch-manipulation"
         >
           ← Back

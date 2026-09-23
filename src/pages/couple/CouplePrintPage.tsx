@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { portalBase } from '@/lib/portalNav'
 import PrintSignSheet from '@/components/PrintSignSheet'
 import type { QRSettings } from '@/components/QRCreator'
 
@@ -21,9 +22,9 @@ export default function CouplePrintPage() {
 
   useEffect(() => {
     async function load() {
-      if (!supabase) { navigate('/couple/login', { replace: true }); return }
+      if (!supabase) { navigate(`${portalBase()}/login`, { replace: true }); return }
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) { navigate('/couple/login', { replace: true }); return }
+      if (!session) { navigate(`${portalBase()}/login`, { replace: true }); return }
       const res = await fetch('/api/couple/wedding', {
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
@@ -62,7 +63,7 @@ export default function CouplePrintPage() {
       dateStr={dateStr}
       guestUrl={guestUrl}
       qrSettings={wedding.qr_settings}
-      onBack={() => navigate(`/couple/${weddingId}`)}
+      onBack={() => navigate(`${portalBase()}/${weddingId}`)}
     />
   )
 }

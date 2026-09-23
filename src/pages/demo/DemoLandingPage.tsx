@@ -76,7 +76,7 @@ export default function DemoLandingPage() {
           style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(8px)' }}
         >
           <button
-            onClick={() => navigate('/couple/login')}
+            onClick={() => navigate('/host/login')}
             className="w-full py-4 rounded-full bg-cream text-ink text-sans text-sm font-medium tracking-widest uppercase active:scale-[0.97] transition-transform duration-100 touch-manipulation"
           >
             Client Portal

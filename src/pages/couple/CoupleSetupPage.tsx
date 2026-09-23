@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { portalBase } from '@/lib/portalNav'
 import type { CameraModeName, WeddingConfig } from '@/types/session'
 import StylePreviewThumb from '@/components/StylePreviewThumb'
 import { useDemoStore } from '@/store/demoStore'
@@ -76,7 +77,7 @@ export default function CoupleSetupPage() {
     async function load() {
       if (!supabase) { setErrorMsg('App not configured.'); setStep('error'); return }
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) { navigate('/couple/login', { replace: true }); return }
+      if (!session) { navigate(`${portalBase()}/login`, { replace: true }); return }
       tokenRef.current = session.access_token
 
       const res = await fetch('/api/couple/wedding', {
@@ -84,7 +85,7 @@ export default function CoupleSetupPage() {
       })
 
       if (res.status === 404) {
-        navigate('/couple/no-wedding', { replace: true })
+        navigate(`${portalBase()}/no-wedding`, { replace: true })
         return
       }
       if (!res.ok) {
@@ -98,7 +99,7 @@ export default function CoupleSetupPage() {
 
       // If already configured, skip setup entirely
       if (data.status !== 'pending_setup') {
-        navigate(`/couple/${data.id}`, { replace: true })
+        navigate(`${portalBase()}/${data.id}`, { replace: true })
         return
       }
 
@@ -185,7 +186,7 @@ export default function CoupleSetupPage() {
     }
 
     const data = await res.json()
-    navigate(`/couple/${data.weddingId}`, { replace: true })
+    navigate(`${portalBase()}/${data.weddingId}`, { replace: true })
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -225,7 +226,7 @@ export default function CoupleSetupPage() {
         <p className="text-serif text-cream text-xl">Something went wrong</p>
         <p className="text-sans text-cream/40 text-sm max-w-[260px]">{errorMsg}</p>
         <button
-          onClick={() => navigate('/couple/login')}
+          onClick={() => navigate(`${portalBase()}/login`)}
           className="px-6 py-3 rounded-full border border-cream/15 text-cream/60 text-sans text-xs tracking-widest uppercase touch-manipulation"
         >
           Back to login

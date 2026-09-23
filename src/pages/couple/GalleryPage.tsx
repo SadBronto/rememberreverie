@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { portalBase } from '@/lib/portalNav'
 import QRCreator, { type QRSettings } from '@/components/QRCreator'
 import { isDemoId } from '@/demo/demoConfig'
 import { useDemoStore } from '@/store/demoStore'
@@ -202,7 +203,7 @@ export default function CoupleGalleryPage() {
   async function signOut() {
     if (!supabase) return
     await supabase.auth.signOut()
-    navigate('/couple/login')
+    navigate(`${portalBase()}/login`)
   }
 
   async function downloadAll() {
@@ -281,7 +282,7 @@ export default function CoupleGalleryPage() {
       <div className="min-h-dvh bg-ink flex flex-col items-center justify-center px-6 text-center gap-4">
         <p className="text-serif text-cream text-xl">Sign in to view your gallery</p>
         <button
-          onClick={() => navigate('/couple/login')}
+          onClick={() => navigate(`${portalBase()}/login`)}
           className="px-6 py-3 rounded-full bg-cream text-ink text-sans text-sm font-medium tracking-widest uppercase touch-manipulation"
         >
           Sign in
@@ -386,14 +387,14 @@ export default function CoupleGalleryPage() {
           </button>
           {!demo && (
             <button
-              onClick={() => navigate(`/couple/${weddingId}/print`)}
+              onClick={() => navigate(`${portalBase()}/${weddingId}/print`)}
               className="px-3 py-1.5 rounded-full border border-cream/15 text-cream/50 text-sans text-[11px] tracking-widest uppercase touch-manipulation active:bg-cream/5 transition-colors"
             >
               Print
             </button>
           )}
           <button
-            onClick={() => navigate(`/couple/${weddingId}/settings`)}
+            onClick={() => navigate(`${portalBase()}/${weddingId}/settings`)}
             title="Settings"
             className="w-8 h-8 flex items-center justify-center rounded-full border border-cream/10 text-cream/30 touch-manipulation active:bg-cream/5 transition-colors"
           >
@@ -597,7 +598,7 @@ export default function CoupleGalleryPage() {
       {!demoProgress && allSessions.length === 0 && (
         <OnboardingPanel
           onCreateQR={() => setShowQR(true)}
-          onChooseLink={() => navigate(`/couple/${weddingId}/settings`)}
+          onChooseLink={() => navigate(`${portalBase()}/${weddingId}/settings`)}
         />
       )}
 

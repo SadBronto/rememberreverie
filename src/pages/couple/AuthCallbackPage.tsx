@@ -69,12 +69,12 @@ export default function AuthCallbackPage() {
       const wedding = weddings?.[0]
 
       if (!wedding) {
-        navigate('/couple/no-wedding', { replace: true })
+        navigate('/host/no-wedding', { replace: true })
       } else if (wedding.status === 'pending_setup') {
-        // Couple hasn't configured their wedding yet — send them to setup wizard
-        navigate('/couple/setup', { replace: true })
+        // Host hasn't configured their event yet — send them to the setup wizard
+        navigate('/host/setup', { replace: true })
       } else {
-        navigate(`/couple/${wedding.id}`, { replace: true })
+        navigate(`/host/${wedding.id}`, { replace: true })
       }
     }
 
@@ -87,7 +87,7 @@ export default function AuthCallbackPage() {
         <p className="text-serif text-cream text-xl mb-3">Something went wrong</p>
         <p className="text-sans text-cream/40 text-sm mb-8">{error}</p>
         <button
-          onClick={() => navigate('/couple/login')}
+          onClick={() => navigate('/host/login')}
           className="px-6 py-3 rounded-full border border-cream/15 text-cream/60 text-sans text-xs tracking-widest uppercase touch-manipulation"
         >
           Back to login

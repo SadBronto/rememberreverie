@@ -1,12 +1,13 @@
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { portalBase } from '@/lib/portalNav'
 
 export default function NoWeddingPage() {
   const navigate = useNavigate()
 
   async function signOut() {
     await supabase?.auth.signOut()
-    navigate('/couple/login')
+    navigate(`${portalBase()}/login`)
   }
 
   return (

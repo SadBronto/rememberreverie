@@ -99,7 +99,7 @@ export const handler: Handler = async () => {
               <p style="color:#b0a898;font-size:14px;line-height:1.6;margin:0 0 32px">
                 Sign in to your gallery to download all photos before they're permanently removed.
               </p>
-              <a href="https://rememberreverie.com/couple/login" style="display:inline-block;background:#f5f0e8;color:#1a1612;padding:14px 28px;border-radius:100px;font-family:sans-serif;font-size:12px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;text-decoration:none">
+              <a href="https://rememberreverie.com/host/login" style="display:inline-block;background:#f5f0e8;color:#1a1612;padding:14px 28px;border-radius:100px;font-family:sans-serif;font-size:12px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;text-decoration:none">
                 Sign In & Download
               </a>
               <p style="color:#4a4440;font-size:11px;margin:32px 0 0">
@@ -205,7 +205,7 @@ export const handler: Handler = async () => {
               <p style="color:#b0a898;font-size:14px;line-height:1.6;margin:0 0 32px">
                 Once you hit ${cap}, the earliest photos will automatically be removed to make room for new ones. Sign in to download your memories now, or reply to this email to increase your limit.
               </p>
-              <a href="https://rememberreverie.com/couple/login" style="display:inline-block;background:#f5f0e8;color:#1a1612;padding:14px 28px;border-radius:100px;font-family:sans-serif;font-size:12px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;text-decoration:none">
+              <a href="https://rememberreverie.com/host/login" style="display:inline-block;background:#f5f0e8;color:#1a1612;padding:14px 28px;border-radius:100px;font-family:sans-serif;font-size:12px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;text-decoration:none">
                 View Your Gallery
               </a>
               <p style="color:#4a4440;font-size:11px;margin:32px 0 0">RememberReverie.com</p>
