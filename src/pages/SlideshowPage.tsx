@@ -62,6 +62,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   const [incomingOpacity, setIncomingOpacity] = useState(0)
   const [newCount, setNewCount]       = useState(0)     // flash indicator on new arrivals
   const [loadError, setLoadError]     = useState(false)
+  const [planLocked, setPlanLocked]   = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
 
   const slidesRef        = useRef<Slide[]>([])
@@ -101,6 +102,9 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       const res = await fetch(`/api/slideshow?weddingId=${weddingId}`)
       if (!res.ok) { if (isInitial) setLoadError(true); return }
       const data: SlideshowData = await res.json()
+
+      // Basic-plan events don't include the live slideshow.
+      if ((data as { available?: boolean }).available === false) { setPlanLocked(true); return }
 
       setCoupleNames(data.coupleNames)
       setWeddingDate(data.weddingDate)
@@ -335,6 +339,15 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     : ''
 
   // ── Waiting / error states ────────────────────────────────────
+
+  if (planLocked) {
+    return (
+      <div className="min-h-dvh bg-black flex flex-col items-center justify-center gap-4 text-center px-8">
+        <p className="text-serif text-cream/40 text-xl italic">Live slideshow not available</p>
+        <p className="text-mono text-cream/20 text-xs tracking-widest">The live slideshow is a Reverie Live feature.</p>
+      </div>
+    )
+  }
 
   if (loadError) {
     return (

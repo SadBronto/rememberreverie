@@ -21,11 +21,20 @@ export const handler: Handler = async (event) => {
 
   const { data: wedding } = await admin
     .from('weddings')
-    .select('couple_names, wedding_date, welcome_message, timestamp_enabled, timestamp_style, slug, qr_settings')
+    .select('couple_names, wedding_date, welcome_message, timestamp_enabled, timestamp_style, slug, qr_settings, plan')
     .eq('id', weddingId)
     .single()
 
   if (!wedding) return { statusCode: 404, body: 'Wedding not found' }
+
+  // The live slideshow is a Reverie Live feature — not served on the basic plan.
+  if ((wedding.plan ?? 'basic') !== 'live') {
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      body: JSON.stringify({ available: false }),
+    }
+  }
 
   // QR-slide toggle is fetched separately and tolerantly: if the
   // slideshow_qr_slide column hasn't been migrated yet, the slideshow still loads

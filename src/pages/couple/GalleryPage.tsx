@@ -19,7 +19,7 @@ export interface SessionRecord {
 }
 
 interface GalleryData {
-  wedding: { id: string; coupleNames: string; weddingDate: string; slug?: string | null }
+  wedding: { id: string; coupleNames: string; weddingDate: string; slug?: string | null; plan?: string }
   coupleReviewEnabled?: boolean
   sessions: SessionRecord[]
 }
@@ -58,6 +58,7 @@ export default function CoupleGalleryPage() {
           coupleNames: demoConfig.coupleNames,
           weddingDate: demoConfig.weddingDate ?? '',
           slug: null,
+          plan: 'live', // demo shows the full experience incl. slideshow
         },
         coupleReviewEnabled: true, // surface the flagged-review section in the demo
         sessions: [],
@@ -470,7 +471,8 @@ export default function CoupleGalleryPage() {
         <RetentionNotice {...retentionInfo} onDownload={downloadAll} />
       )}
 
-      {/* Slideshow CTA */}
+      {/* Slideshow CTA — Reverie Live only */}
+      {data?.wedding.plan === 'live' && (
       <div className="px-4 pt-3 pb-1">
         <a
           href={data?.wedding.slug
@@ -497,6 +499,7 @@ export default function CoupleGalleryPage() {
           </svg>
         </a>
       </div>
+      )}
 
       {/* Controls + filters */}
       <div className="px-5 py-3 border-b border-cream/5 flex flex-col gap-3">
