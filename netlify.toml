@@ -98,6 +98,38 @@
   to   = "/.netlify/functions/geofence-verify"
   status = 200
 
+# Neutral /api/host/* aliases (canonical) → same functions. The /api/couple/*
+# routes above are kept so any still-cached old frontend bundle keeps working.
+[[redirects]]
+  from = "/api/host/gallery"
+  to   = "/.netlify/functions/couple-gallery"
+  status = 200
+
+[[redirects]]
+  from = "/api/host/session"
+  to   = "/.netlify/functions/couple-session"
+  status = 200
+
+[[redirects]]
+  from = "/api/host/wedding"
+  to   = "/.netlify/functions/couple-wedding"
+  status = 200
+
+[[redirects]]
+  from = "/api/host/setup"
+  to   = "/.netlify/functions/couple-setup"
+  status = 200
+
+[[redirects]]
+  from = "/api/host/check"
+  to   = "/.netlify/functions/couple-check"
+  status = 200
+
+[[redirects]]
+  from = "/api/host/qr"
+  to   = "/.netlify/functions/couple-qr"
+  status = 200
+
 # SPA catch-all — handles all React Router routes
 [[redirects]]
   from = "/*"

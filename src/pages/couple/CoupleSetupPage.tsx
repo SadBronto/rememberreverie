@@ -80,7 +80,7 @@ export default function CoupleSetupPage() {
       if (!session) { navigate(`${portalBase()}/login`, { replace: true }); return }
       tokenRef.current = session.access_token
 
-      const res = await fetch('/api/couple/wedding', {
+      const res = await fetch('/api/host/wedding', {
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
 
@@ -161,7 +161,7 @@ export default function CoupleSetupPage() {
     if (!tokenRef.current || !weddingId) return
     setStep('saving')
 
-    const res = await fetch('/api/couple/setup', {
+    const res = await fetch('/api/host/setup', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

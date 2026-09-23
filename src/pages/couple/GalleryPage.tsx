@@ -93,7 +93,7 @@ export default function CoupleGalleryPage() {
 
       tokenRef.current = session.access_token
 
-      const res = await fetch(`/api/couple/gallery?weddingId=${weddingId}`, {
+      const res = await fetch(`/api/host/gallery?weddingId=${weddingId}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
 
@@ -121,7 +121,7 @@ export default function CoupleGalleryPage() {
   useEffect(() => {
     if (!showQR || !tokenRef.current) return
     setQrSettings('loading')
-    fetch('/api/couple/wedding', {
+    fetch('/api/host/wedding', {
       headers: { Authorization: `Bearer ${tokenRef.current}` },
     })
       .then(r => r.ok ? r.json() : null)
@@ -131,7 +131,7 @@ export default function CoupleGalleryPage() {
 
   const saveQRSettings = useCallback(async (settings: QRSettings) => {
     if (!tokenRef.current) return
-    await fetch('/api/couple/qr', {
+    await fetch('/api/host/qr', {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -146,7 +146,7 @@ export default function CoupleGalleryPage() {
     setSessions(prev => prev.filter(s => s.id !== sessionId))
     if (demo) return // demo edits are local only
 
-    const res = await fetch(`/api/couple/session?sessionId=${sessionId}`, {
+    const res = await fetch(`/api/host/session?sessionId=${sessionId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${tokenRef.current}` },
     })
@@ -164,7 +164,7 @@ export default function CoupleGalleryPage() {
     setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, status: nextStatus } : s))
     if (demo) return // demo edits are local only
 
-    const res = await fetch(`/api/couple/session?sessionId=${sessionId}`, {
+    const res = await fetch(`/api/host/session?sessionId=${sessionId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -182,7 +182,7 @@ export default function CoupleGalleryPage() {
   async function restoreSession(sessionId: string) {
     setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, status: 'active' } : s))
     if (demo) return // demo edits are local only
-    const res = await fetch(`/api/couple/session?sessionId=${sessionId}`, {
+    const res = await fetch(`/api/host/session?sessionId=${sessionId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenRef.current}` },
       body: JSON.stringify({ status: 'active' }),

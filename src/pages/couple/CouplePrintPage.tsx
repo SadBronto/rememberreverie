@@ -25,7 +25,7 @@ export default function CouplePrintPage() {
       if (!supabase) { navigate(`${portalBase()}/login`, { replace: true }); return }
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { navigate(`${portalBase()}/login`, { replace: true }); return }
-      const res = await fetch('/api/couple/wedding', {
+      const res = await fetch('/api/host/wedding', {
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
       if (res.ok) setWedding(await res.json())

@@ -63,7 +63,7 @@ export default function CoupleSettingsPage() {
       if (!session) { navigate(`${portalBase()}/login`, { replace: true }); return }
       tokenRef.current = session.access_token
 
-      const res = await fetch('/api/couple/wedding', {
+      const res = await fetch('/api/host/wedding', {
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
       if (!res.ok) { navigate(`${portalBase()}/${weddingId}`, { replace: true }); return }
@@ -133,7 +133,7 @@ export default function CoupleSettingsPage() {
     setSaving(true)
     setSaveMsg(null)
 
-    const res = await fetch('/api/couple/setup', {
+    const res = await fetch('/api/host/setup', {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',

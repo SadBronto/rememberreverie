@@ -18,7 +18,7 @@ export default function LoginPage() {
 
     // Check whether this email has a wedding before burning a magic-link send.
     try {
-      const res = await fetch(`/api/couple/check?email=${encodeURIComponent(addr)}`)
+      const res = await fetch(`/api/host/check?email=${encodeURIComponent(addr)}`)
       const { exists } = await res.json() as { exists: boolean }
       if (!exists) {
         setLoading(false)
