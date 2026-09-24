@@ -99,6 +99,7 @@ async function applyFilters(source: HTMLCanvasElement, filter: FilterConfig): Pr
 
   // Warmth overlay color (amber tint)
   const warmR = 255, warmG = 180, warmB = 100
+  const tint = filter.tint
 
   for (let i = 0; i < data.length; i += 4) {
     let r = data[i]!
@@ -114,6 +115,13 @@ async function applyFilters(source: HTMLCanvasElement, filter: FilterConfig): Pr
     r = Math.round(r + (warmR - r) * filter.warmth)
     g = Math.round(g + (warmG - g) * filter.warmth * 0.5)
     b = Math.round(b + (warmB - b) * filter.warmth * 0.3)
+
+    // Arbitrary colour tint (sepia, cool cast, …)
+    if (tint) {
+      r = Math.round(r + (tint.r - r) * tint.strength)
+      g = Math.round(g + (tint.g - g) * tint.strength)
+      b = Math.round(b + (tint.b - b) * tint.strength)
+    }
 
     data[i] = Math.min(255, r)
     data[i + 1] = Math.min(255, g)
@@ -187,23 +195,34 @@ async function applyFrame(
   const ctx = canvas.getContext('2d')!
 
   if (frame.style === 'polaroid') {
-    // Warm vintage frame (Option B): cream gradient, faint paper tooth on the
-    // border only, gently aged corners, and a soft inner shadow so the photo
-    // reads as recessed into the frame.
+    // Warm vintage frame: cream gradient, faint paper tooth on the border only,
+    // gently aged corners, and a soft inner shadow so the photo reads as recessed.
+    // 'v2' is the stronger treatment — clearly cream (not white), more texture, a
+    // deeper recess and a faint gloss, so it reads unmistakably as a Polaroid.
+    const v2 = frame.weathering === 'v2'
+
     const grad = ctx.createLinearGradient(0, 0, 0, totalH)
-    grad.addColorStop(0, '#fbfaf7')
-    grad.addColorStop(1, '#f4f0e9')   // less yellow at the bottom
+    if (v2) { grad.addColorStop(0, '#f6f1e6'); grad.addColorStop(1, '#e9dfcc') }
+    else    { grad.addColorStop(0, '#fbfaf7'); grad.addColorStop(1, '#f4f0e9') }
     ctx.fillStyle = grad
     ctx.fillRect(0, 0, totalW, totalH)
 
     // Texture + aging are drawn BEFORE the photo, so the photo (painted next)
     // covers the centre and they only ever show on the border.
-    drawPaperGrain(ctx, totalW, totalH, 0.15)
-    drawAgedCorners(ctx, totalW, totalH, 0.05)
+    drawPaperGrain(ctx, totalW, totalH, v2 ? 0.24 : 0.15)
+    drawAgedCorners(ctx, totalW, totalH, v2 ? 0.09 : 0.05)
+    if (v2) drawPolaroidSheen(ctx, totalW, totalH)
 
     ctx.drawImage(source, bL, bT)
 
-    drawInnerShadow(ctx, bL, bT, source.width, source.height, 0.18)
+    drawInnerShadow(ctx, bL, bT, source.width, source.height, v2 ? 0.30 : 0.18)
+
+    if (v2) {
+      // Crisp outer edge so the print keeps definition against a light background.
+      ctx.strokeStyle = 'rgba(120,100,70,0.22)'
+      ctx.lineWidth = Math.max(1, Math.round(totalW * 0.0018))
+      ctx.strokeRect(0.5, 0.5, totalW - 1, totalH - 1)
+    }
   } else {
     // Flat border (disposable / super8 have zero borders; this is the default)
     ctx.fillStyle = frame.borderColor
@@ -257,6 +276,19 @@ function drawAgedCorners(ctx: CanvasRenderingContext2D, w: number, h: number, st
     ctx.fillStyle = g
     ctx.fillRect(0, 0, w, h)
   }
+  ctx.restore()
+}
+
+// Faint diagonal gloss across the border — the subtle sheen of a real Polaroid.
+// Drawn before the photo so it only shows on the frame, never washing the image.
+function drawPolaroidSheen(ctx: CanvasRenderingContext2D, w: number, h: number) {
+  const g = ctx.createLinearGradient(0, 0, w, h)
+  g.addColorStop(0,    'rgba(255,255,255,0.14)')
+  g.addColorStop(0.30, 'rgba(255,255,255,0.00)')
+  g.addColorStop(1,    'rgba(60,45,25,0.05)')
+  ctx.save()
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, w, h)
   ctx.restore()
 }
 

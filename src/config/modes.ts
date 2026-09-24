@@ -20,6 +20,9 @@ export interface FilterConfig {
   saturation: number       // CSS filter value e.g. 0.9
   liftedBlacks: number     // 0–1: how much to lift shadow floor (matte look)
   softness: number         // 0–1: subtle gaussian blur strength
+  // Optional arbitrary colour tint blended over the image (enables sepia, cool
+  // casts, etc.). Existing modes omit it; applied after warmth in the pixel loop.
+  tint?: { r: number; g: number; b: number; strength: number }
 }
 
 export interface FrameConfig {
@@ -31,6 +34,7 @@ export interface FrameConfig {
   showTimestamp: boolean
   timestampPosition: 'bottom-right' | 'bottom-left'
   style?: 'flat' | 'polaroid'  // 'polaroid' = textured cream border w/ inner shadow; default flat
+  weathering?: 'v1' | 'v2'     // polaroid only — 'v2' is the stronger, clearer print treatment
 }
 
 export const CAMERA_MODES: Record<CameraModeName, CameraModeConfig> = {
