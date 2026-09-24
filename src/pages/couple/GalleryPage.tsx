@@ -10,7 +10,7 @@ import { buildDemoGallery } from '@/demo/demoGallery'
 
 export interface SessionRecord {
   id: string
-  mode: 'disposable' | 'polaroid' | 'super8'
+  mode: 'disposable' | 'polaroid' | 'super8' | 'noir' | 'flash' | 'champagne'
   memoryNumber: number | null
   capturedAt: string | null
   uploadedAt: string
@@ -38,7 +38,7 @@ export default function CoupleGalleryPage() {
   const [data, setData] = useState<GalleryData | null>(null)
   const [sessions, setSessions] = useState<SessionRecord[]>([])
   const [demoProgress, setDemoProgress] = useState<{ current: number; total: number } | null>(null)
-  const [filter, setFilter] = useState<'all' | 'disposable' | 'polaroid' | 'super8' | 'hidden' | 'flagged'>('all')
+  const [filter, setFilter] = useState<'all' | 'disposable' | 'polaroid' | 'super8' | 'noir' | 'flash' | 'champagne' | 'hidden' | 'flagged'>('all')
   const [showQR, setShowQR] = useState(false)
   const [qrSettings, setQrSettings] = useState<QRSettings | null | 'loading'>(null)
   const [visible, setVisible] = useState(false)
@@ -547,6 +547,9 @@ export default function CoupleGalleryPage() {
           <FilterChip active={filter === 'disposable'} onClick={() => setFilter('disposable')}>Disposable</FilterChip>
           <FilterChip active={filter === 'polaroid'}   onClick={() => setFilter('polaroid')}>Polaroid</FilterChip>
           <FilterChip active={filter === 'super8'}     onClick={() => setFilter('super8')}>Super 8</FilterChip>
+          <FilterChip active={filter === 'noir'}       onClick={() => setFilter('noir')}>Noir</FilterChip>
+          <FilterChip active={filter === 'flash'}      onClick={() => setFilter('flash')}>Flash</FilterChip>
+          <FilterChip active={filter === 'champagne'}  onClick={() => setFilter('champagne')}>Champagne</FilterChip>
           {hiddenSessions.length > 0 && (
             <FilterChip active={filter === 'hidden'} onClick={() => setFilter('hidden')}>Hidden</FilterChip>
           )}

@@ -22,6 +22,9 @@ const MODES = [
   { id: 'disposable', label: 'Disposable' },
   { id: 'polaroid',   label: 'Polaroid'   },
   { id: 'super8',     label: 'Super 8'    },
+  { id: 'noir',       label: 'Noir'       },
+  { id: 'flash',      label: 'Flash'      },
+  { id: 'champagne',  label: 'Champagne'  },
 ]
 
 export default function CoupleSettingsPage() {

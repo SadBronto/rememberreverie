@@ -130,4 +130,56 @@ export const CAMERA_MODES: Record<CameraModeName, CameraModeConfig> = {
       timestampPosition: 'bottom-right',
     },
   },
+
+  noir: {
+    name: 'noir',
+    label: 'Noir',
+    captureCount: 1,
+    aspectRatio: 3 / 2,
+    orientation: 'landscape',
+    filter: {
+      // Dramatic black & white — deep shadows, punchy contrast
+      warmth: 0, grain: 0.14, vignette: 0.45, brightness: 0.98,
+      contrast: 1.28, saturation: 0, liftedBlacks: 0.0, softness: 0.1,
+    },
+    frame: {
+      borderTop: 0, borderBottom: 0, borderLeft: 0, borderRight: 0,
+      borderColor: '#ffffff', showTimestamp: true, timestampPosition: 'bottom-right',
+    },
+  },
+
+  flash: {
+    name: 'flash',
+    label: 'Flash',
+    captureCount: 1,
+    aspectRatio: 3 / 2,
+    orientation: 'landscape',
+    filter: {
+      // Direct on-camera flash — crisp, candid, reception energy
+      warmth: 0.02, grain: 0.1, vignette: 0.05, brightness: 1.1,
+      contrast: 1.12, saturation: 0.98, liftedBlacks: 0.02, softness: 0.05,
+    },
+    frame: {
+      borderTop: 0, borderBottom: 0, borderLeft: 0, borderRight: 0,
+      borderColor: '#ffffff', showTimestamp: true, timestampPosition: 'bottom-right',
+    },
+  },
+
+  champagne: {
+    name: 'champagne',
+    label: 'Champagne',
+    captureCount: 1,
+    aspectRatio: 3 / 2,
+    orientation: 'landscape',
+    filter: {
+      // Warm, bright, creamy tones — wedding-friendly
+      warmth: 0.14, grain: 0.06, vignette: 0.12, brightness: 1.1,
+      contrast: 0.9, saturation: 0.9, liftedBlacks: 0.14, softness: 0.3,
+      tint: { r: 255, g: 232, b: 205, strength: 0.1 },
+    },
+    frame: {
+      borderTop: 0, borderBottom: 0, borderLeft: 0, borderRight: 0,
+      borderColor: '#ffffff', showTimestamp: true, timestampPosition: 'bottom-right',
+    },
+  },
 }

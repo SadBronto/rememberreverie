@@ -57,6 +57,9 @@ const OUTPUT_ASPECT: Record<CameraModeName, string> = {
   disposable: '3 / 2',     // landscape 35mm, no borders
   polaroid:   '444 / 534', // 1:1 image + top/side 5.5% + bottom 28% borders
   super8:     '4 / 3',     // landscape, no borders
+  noir:       '3 / 2',
+  flash:      '3 / 2',
+  champagne:  '3 / 2',
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────

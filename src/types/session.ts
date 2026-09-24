@@ -3,7 +3,7 @@
 // Photo Booth will have captureCount=4 with sourceImages[].
 // Never assume sourceImages.length === 1 elsewhere in the codebase.
 
-export type CameraModeName = 'disposable' | 'polaroid' | 'super8'
+export type CameraModeName = 'disposable' | 'polaroid' | 'super8' | 'noir' | 'flash' | 'champagne'
 
 export type UploadStatus = 'idle' | 'pending' | 'uploading' | 'success' | 'failed'
 

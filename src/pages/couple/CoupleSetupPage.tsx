@@ -24,6 +24,9 @@ const STYLE_OPTIONS: {
   { mode: 'disposable', label: 'Disposable Camera', mood: 'Dance floor. Flash. You were there.',         detail: 'Landscape · flash contrast · party grain' },
   { mode: 'polaroid',   label: 'Polaroid',          mood: 'Personal keepsake energy.',                   detail: 'Portrait · white border · signing area' },
   { mode: 'super8',     label: 'Super 8',           mood: "Golden hour. I'll remember this forever.",    detail: 'Widescreen · film bloom · cinematic warmth' },
+  { mode: 'noir',       label: 'Noir',              mood: 'Dramatic black & white.',                     detail: 'Landscape · high contrast · deep shadows' },
+  { mode: 'flash',      label: 'Flash',             mood: 'Direct flash. Candid. Alive.',                detail: 'Landscape · crisp · reception energy' },
+  { mode: 'champagne',  label: 'Champagne',         mood: 'Warm, bright, creamy.',                        detail: 'Landscape · soft glow · wedding-warm' },
 ]
 
 const ANNOTATION_OPTIONS = [

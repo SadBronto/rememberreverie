@@ -32,6 +32,9 @@ const MODE_LABEL: Record<string, string> = {
   disposable: 'Disposable',
   polaroid:   'Polaroid',
   super8:     'Super 8',
+  noir:       'Noir',
+  flash:      'Flash',
+  champagne:  'Champagne',
 }
 
 export default function AdminGalleryPage() {
@@ -154,6 +157,9 @@ export default function AdminGalleryPage() {
         <FilterChip active={filterMode === 'disposable'} onClick={() => setFilterMode('disposable')}>Disposable</FilterChip>
         <FilterChip active={filterMode === 'polaroid'}   onClick={() => setFilterMode('polaroid')}>Polaroid</FilterChip>
         <FilterChip active={filterMode === 'super8'}     onClick={() => setFilterMode('super8')}>Super 8</FilterChip>
+        <FilterChip active={filterMode === 'noir'}       onClick={() => setFilterMode('noir')}>Noir</FilterChip>
+        <FilterChip active={filterMode === 'flash'}      onClick={() => setFilterMode('flash')}>Flash</FilterChip>
+        <FilterChip active={filterMode === 'champagne'}  onClick={() => setFilterMode('champagne')}>Champagne</FilterChip>
         <span className="text-cream/10">·</span>
         <FilterChip active={filterStatus === 'all'}     onClick={() => setFilterStatus('all')}>All</FilterChip>
         <FilterChip active={filterStatus === 'active'}  onClick={() => setFilterStatus('active')}>Visible</FilterChip>
