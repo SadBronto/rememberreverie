@@ -66,14 +66,23 @@ const photoFiles = all.filter(f => !/^sig\d/i.test(f))
 if (existsSync(OUT_DIR)) rmSync(OUT_DIR, { recursive: true, force: true })
 mkdirSync(OUT_DIR, { recursive: true })
 
-const counters = { disposable: 0, polaroid: 0, super8: 0 }
-const idPrefix = { disposable: 'd', polaroid: 'p', super8: 's' }
+const counters = { disposable: 0, polaroid: 0, super8: 0, noir: 0, flash: 0, champagne: 0 }
+const idPrefix = { disposable: 'd', polaroid: 'p', super8: 's', noir: 'n', flash: 'f', champagne: 'c' }
+
+// 3:2 landscape photos share an aspect across Disposable + the flat new looks
+// (Noir / Flash / Champagne). Rotate landscape photos across them so the demo
+// gallery showcases every landscape filter. Portrait 2:3 stays Disposable.
+const LANDSCAPE_MODES = ['disposable', 'noir', 'flash', 'champagne']
+let landscapeIdx = 0
 
 const photos = []
 for (const f of photoFiles.sort()) {
   const meta = await sharp(join(SRC_DIR, f)).metadata()
-  const mode = detectMode(meta.width, meta.height)
+  let mode = detectMode(meta.width, meta.height)
   if (!mode) { console.warn('  ! skipped (unrecognized aspect):', f, `${meta.width}x${meta.height}`); continue }
+  if (mode === 'disposable' && meta.width / meta.height >= 1.2) {
+    mode = LANDSCAPE_MODES[landscapeIdx++ % LANDSCAPE_MODES.length]
+  }
   const status = statusOf(f)
   const id = `${idPrefix[mode]}${String(++counters[mode]).padStart(2, '0')}`
   const out = `${id}.jpg`
@@ -107,13 +116,14 @@ for (let i = 0; i < chosen.length; i++) {
 }
 
 // ── synthesize capture order / memory numbers (interleave modes for a natural mix) ──
-const byMode = { disposable: [], polaroid: [], super8: [] }
+const MODE_ORDER = ['disposable', 'polaroid', 'super8', 'noir', 'flash', 'champagne']
+const byMode = Object.fromEntries(MODE_ORDER.map(m => [m, []]))
 for (const p of photos) byMode[p.mode].push(p)
 const ordered = []
 let added = true
 while (added) {
   added = false
-  for (const m of ['disposable', 'polaroid', 'super8']) {
+  for (const m of MODE_ORDER) {
     if (byMode[m].length) { ordered.push(byMode[m].shift()); added = true }
   }
 }

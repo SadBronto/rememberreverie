@@ -19,7 +19,7 @@ export const DEMO_BASE_CONFIG: WeddingConfig = {
   weddingDate: '2026-09-19',
   isEvent: false,
   welcomeMessage: 'Leave us a memory.',
-  allowedModes: ['disposable', 'polaroid', 'super8'],
+  allowedModes: ['disposable', 'polaroid', 'super8', 'noir', 'flash', 'champagne'],
   preferredOrientation: 'any',
   annotationMode: 'signature',
   slideshowEnabled: true,
