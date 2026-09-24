@@ -23,6 +23,10 @@ export interface FilterConfig {
   // Optional arbitrary colour tint blended over the image (enables sepia, cool
   // casts, etc.). Existing modes omit it; applied after warmth in the pixel loop.
   tint?: { r: number; g: number; b: number; strength: number }
+  // B&W everywhere EXCEPT pixels whose hue is within `range`° of `hue` (0–360).
+  selectiveColor?: { hue: number; range: number }
+  // Map luminance onto a two-colour ramp (shadow → highlight), overriding colour.
+  duotone?: { shadow: { r: number; g: number; b: number }; highlight: { r: number; g: number; b: number } }
 }
 
 export interface FrameConfig {

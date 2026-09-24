@@ -102,6 +102,8 @@ async function applyFilters(source: HTMLCanvasElement, filter: FilterConfig): Pr
   // Warmth overlay color (amber tint)
   const warmR = 255, warmG = 180, warmB = 100
   const tint = filter.tint
+  const sel = filter.selectiveColor
+  const duo = filter.duotone
 
   for (let i = 0; i < data.length; i += 4) {
     let r = data[i]!
@@ -123,6 +125,31 @@ async function applyFilters(source: HTMLCanvasElement, filter: FilterConfig): Pr
       r = Math.round(r + (tint.r - r) * tint.strength)
       g = Math.round(g + (tint.g - g) * tint.strength)
       b = Math.round(b + (tint.b - b) * tint.strength)
+    }
+
+    // Selective colour — desaturate everything except hues near the target
+    if (sel) {
+      const mx = Math.max(r, g, b), mn = Math.min(r, g, b), dd = mx - mn
+      let h = 0
+      if (dd !== 0) {
+        if (mx === r) h = 60 * ((((g - b) / dd) % 6 + 6) % 6)
+        else if (mx === g) h = 60 * ((b - r) / dd + 2)
+        else h = 60 * ((r - g) / dd + 4)
+      }
+      let dh = Math.abs(h - sel.hue); if (dh > 180) dh = 360 - dh
+      const s = mx === 0 ? 0 : dd / mx
+      if (dh > sel.range || s < 0.15) {
+        const luma = 0.299 * r + 0.587 * g + 0.114 * b
+        r = luma; g = luma; b = luma
+      }
+    }
+
+    // Duotone — map luminance onto a two-colour ramp
+    if (duo) {
+      const l = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+      r = duo.shadow.r + (duo.highlight.r - duo.shadow.r) * l
+      g = duo.shadow.g + (duo.highlight.g - duo.shadow.g) * l
+      b = duo.shadow.b + (duo.highlight.b - duo.shadow.b) * l
     }
 
     data[i] = Math.min(255, r)

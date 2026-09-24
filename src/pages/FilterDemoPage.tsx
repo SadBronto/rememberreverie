@@ -20,15 +20,36 @@ function mk(label: string, filter: FilterConfig): CameraModeConfig {
 
 interface Candidate { key: string; label: string; note: string; config: CameraModeConfig }
 
+const POLAROID_WINDOW = { left: 0.0714, top: 0.0474, right: 0.0714, bottom: 0.1632 }
+
 const CANDIDATES: Candidate[] = [
-  { key: 'disposable', label: 'Disposable',  note: 'current', config: CAMERA_MODES.disposable },
-  { key: 'polaroid',   label: 'Polaroid',    note: 'current frame', config: CAMERA_MODES.polaroid },
-  { key: 'polaroid2',  label: 'Polaroid',    note: 'real frame (SVG)', config: { ...CAMERA_MODES.polaroid, frame: { ...CAMERA_MODES.polaroid.frame, frameSrc: '/frames/polaroid.svg', window: { left: 0.0714, top: 0.0474, right: 0.0714, bottom: 0.1632 } } } },
-  { key: 'super8',     label: 'Super 8',     note: 'current', config: CAMERA_MODES.super8 },
-  { key: 'noir',       label: 'Noir B&W',    note: 'new candidate', config: mk('Noir B&W', { warmth: 0, grain: 0.16, vignette: 0.42, brightness: 1.0, contrast: 1.2, saturation: 0, liftedBlacks: 0.02, softness: 0.1 }) },
-  { key: 'sepia',      label: 'Antique Sepia', note: 'new candidate', config: mk('Antique Sepia', { warmth: 0, grain: 0.12, vignette: 0.4, brightness: 1.03, contrast: 0.95, saturation: 0, liftedBlacks: 0.14, softness: 0.2, tint: { r: 150, g: 120, b: 82, strength: 0.42 } }) },
-  { key: 'faded',      label: 'Faded Color', note: 'new candidate', config: mk('Faded Color', { warmth: 0.12, grain: 0.08, vignette: 0.22, brightness: 1.03, contrast: 0.96, saturation: 0.92, liftedBlacks: 0.16, softness: 0.2 }) },
-  { key: 'nineties',   label: "'90s Point-and-Shoot", note: 'new candidate', config: mk("'90s Point-and-Shoot", { warmth: 0, grain: 0.13, vignette: 0.14, brightness: 1.05, contrast: 1.08, saturation: 1.06, liftedBlacks: 0.04, softness: 0.08, tint: { r: 150, g: 170, b: 200, strength: 0.05 } }) },
+  // ── Current production looks (for reference) ──
+  { key: 'disposable', label: 'Disposable', note: 'current', config: CAMERA_MODES.disposable },
+  { key: 'super8',     label: 'Super 8',    note: 'current', config: CAMERA_MODES.super8 },
+  { key: 'polaroid',   label: 'Polaroid',   note: 'current frame', config: CAMERA_MODES.polaroid },
+  { key: 'polaroid2',  label: 'Polaroid',   note: 'new frame', config: { ...CAMERA_MODES.polaroid, frame: { ...CAMERA_MODES.polaroid.frame, frameSrc: '/frames/polaroid.svg', window: POLAROID_WINDOW } } },
+
+  // ── Black & white ──
+  { key: 'bw',    label: 'Black & White', note: 'b&w', config: mk('Black & White', { warmth: 0, grain: 0.06, vignette: 0.15, brightness: 1.0, contrast: 1.06, saturation: 0, liftedBlacks: 0.04, softness: 0.1 }) },
+  { key: 'noir',  label: 'Noir', note: 'b&w', config: mk('Noir', { warmth: 0, grain: 0.14, vignette: 0.45, brightness: 0.98, contrast: 1.28, saturation: 0, liftedBlacks: 0.0, softness: 0.1 }) },
+
+  // ── Warm / vintage ──
+  { key: 'sepia',       label: 'Sepia', note: 'vintage', config: mk('Sepia', { warmth: 0, grain: 0.1, vignette: 0.35, brightness: 1.03, contrast: 0.96, saturation: 0, liftedBlacks: 0.12, softness: 0.2, tint: { r: 150, g: 120, b: 82, strength: 0.45 } }) },
+  { key: 'warmfilm',    label: 'Warm Film', note: 'warm', config: mk('Warm Film', { warmth: 0.16, grain: 0.12, vignette: 0.2, brightness: 1.02, contrast: 0.98, saturation: 0.95, liftedBlacks: 0.08, softness: 0.25 }) },
+  { key: 'golden',      label: 'Golden Hour', note: 'warm', config: mk('Golden Hour', { warmth: 0.26, grain: 0.08, vignette: 0.25, brightness: 1.06, contrast: 0.95, saturation: 1.0, liftedBlacks: 0.12, softness: 0.4, tint: { r: 255, g: 190, b: 120, strength: 0.08 } }) },
+  { key: 'champagne',   label: 'Champagne', note: 'warm', config: mk('Champagne', { warmth: 0.14, grain: 0.06, vignette: 0.12, brightness: 1.1, contrast: 0.9, saturation: 0.9, liftedBlacks: 0.14, softness: 0.3, tint: { r: 255, g: 232, b: 205, strength: 0.1 } }) },
+  { key: 'fadedvintage', label: 'Faded Vintage', note: 'vintage', config: mk('Faded Vintage', { warmth: 0.1, grain: 0.1, vignette: 0.28, brightness: 1.03, contrast: 0.9, saturation: 0.72, liftedBlacks: 0.2, softness: 0.3 }) },
+
+  // ── Modern / clean ──
+  { key: 'softmatte',   label: 'Soft Matte', note: 'modern', config: mk('Soft Matte', { warmth: 0.03, grain: 0.05, vignette: 0.15, brightness: 1.02, contrast: 0.9, saturation: 0.9, liftedBlacks: 0.16, softness: 0.2 }) },
+  { key: 'classicfilm', label: 'Classic Film', note: 'modern', config: mk('Classic Film', { warmth: 0.06, grain: 0.08, vignette: 0.2, brightness: 1.02, contrast: 0.95, saturation: 0.95, liftedBlacks: 0.06, softness: 0.2 }) },
+  { key: 'editorial',   label: 'Editorial', note: 'cool', config: mk('Editorial', { warmth: 0, grain: 0.03, vignette: 0.1, brightness: 1.02, contrast: 1.1, saturation: 0.8, liftedBlacks: 0.02, softness: 0.05, tint: { r: 205, g: 216, b: 230, strength: 0.06 } }) },
+  { key: 'flash',       label: 'Flash', note: 'candid', config: mk('Flash', { warmth: 0.02, grain: 0.1, vignette: 0.05, brightness: 1.1, contrast: 1.12, saturation: 0.98, liftedBlacks: 0.02, softness: 0.05 }) },
+  { key: 'dustgrain',   label: 'Dust & Grain', note: 'texture', config: mk('Dust & Grain', { warmth: 0.08, grain: 0.26, vignette: 0.3, brightness: 1.0, contrast: 1.0, saturation: 0.85, liftedBlacks: 0.12, softness: 0.15 }) },
+
+  // ── Wild ──
+  { key: 'selective', label: 'Selective Color', note: 'wild', config: mk('Selective Color', { warmth: 0, grain: 0.08, vignette: 0.22, brightness: 1.0, contrast: 1.08, saturation: 1.12, liftedBlacks: 0.03, softness: 0.1, selectiveColor: { hue: 18, range: 40 } }) },
+  { key: 'duotone',   label: 'Duotone — Indigo & Blush', note: 'wild', config: mk('Duotone — Indigo & Blush', { warmth: 0, grain: 0.06, vignette: 0.26, brightness: 1.0, contrast: 1.05, saturation: 1.0, liftedBlacks: 0.0, softness: 0.1, duotone: { shadow: { r: 28, g: 30, b: 58 }, highlight: { r: 246, g: 224, b: 206 } } }) },
 ]
 
 const SAMPLES = [
@@ -156,7 +177,7 @@ export default function FilterDemoPage() {
               <div className={`grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 p-6 rounded-2xl ${BG_CLASS[bg]}`}>
                 {result.tiles.map(tile => {
                   const isPolaroid = tile.key.startsWith('polaroid')
-                  const isNew = tile.note.includes('new') || tile.note.includes('improved')
+                  const isNew = tile.note !== 'current'
                   return (
                     <button key={tile.key} type="button" onClick={() => setLightbox(tile.url)} className="block text-left w-full">
                       <div className="flex items-center justify-center">
