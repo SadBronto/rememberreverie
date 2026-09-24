@@ -29,7 +29,9 @@ export async function processSession(
   const composited = await compositeImages(sourceImages, config, outputWidth, options.sourceAlign ?? 'center')
   const filtered = await applyFilters(composited, config.filter)
   const framed = await applyFrame(filtered, config.frame, options)
-  return canvasToBlob(framed)
+  // Asset-framed modes (real Polaroid frame) keep a transparent margin for the
+  // frame's soft drop shadow, so they must emit PNG, not JPEG.
+  return canvasToBlob(framed, config.frame.frameSrc ? 'image/png' : 'image/jpeg')
 }
 
 // Composite source images into a single canvas at the correct aspect ratio.
@@ -181,6 +183,12 @@ async function applyFrame(
   frame: FrameConfig,
   options: ProcessOptions,
 ): Promise<HTMLCanvasElement> {
+  // Real frame asset (e.g. the Polaroid SVG): composite the photo into the frame's
+  // window and paint the designed frame on top. Bypasses the procedural borders.
+  if (frame.frameSrc && frame.window) {
+    return applyAssetFrame(source, frame.frameSrc, frame.window)
+  }
+
   const bT = Math.round(source.height * frame.borderTop)
   const bB = Math.round(source.height * frame.borderBottom)
   const bL = Math.round(source.width * frame.borderLeft)
@@ -236,6 +244,62 @@ async function applyFrame(
   }
 
   return canvas
+}
+
+// ── Real frame-asset compositing ────────────────────────────────────────────
+
+const frameImageCache = new Map<string, Promise<HTMLImageElement>>()
+function loadFrameImage(src: string): Promise<HTMLImageElement> {
+  let p = frameImageCache.get(src)
+  if (!p) {
+    p = new Promise((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => resolve(img)
+      img.onerror = () => reject(new Error(`Failed to load frame ${src}`))
+      img.src = src
+    })
+    frameImageCache.set(src, p)
+  }
+  return p
+}
+
+// Composite the (filtered) photo into the frame's transparent window, then paint
+// the frame on top. The output canvas keeps alpha so the caller can emit PNG.
+async function applyAssetFrame(
+  source: HTMLCanvasElement,
+  frameSrc: string,
+  win: { left: number; top: number; right: number; bottom: number },
+): Promise<HTMLCanvasElement> {
+  const frameImg = await loadFrameImage(frameSrc)
+  const winWFrac = 1 - win.left - win.right
+  const winHFrac = 1 - win.top - win.bottom
+  const frameW = Math.round(source.width / winWFrac)
+  const frameH = Math.round(frameW * (frameImg.naturalHeight / frameImg.naturalWidth))
+
+  const canvas = document.createElement('canvas')
+  canvas.width = frameW
+  canvas.height = frameH
+  const ctx = canvas.getContext('2d')!
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
+
+  drawCover(ctx, source, frameW * win.left, frameH * win.top, frameW * winWFrac, frameH * winHFrac)
+  ctx.drawImage(frameImg, 0, 0, frameW, frameH)
+  return canvas
+}
+
+// Cover-fit a source canvas into a destination rect (crop to fill, centered).
+function drawCover(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLCanvasElement,
+  dx: number, dy: number, dw: number, dh: number,
+) {
+  const sAspect = img.width / img.height
+  const dAspect = dw / dh
+  let sx = 0, sy = 0, sw = img.width, sh = img.height
+  if (sAspect > dAspect) { sw = img.height * dAspect; sx = (img.width - sw) / 2 }
+  else { sh = img.width / dAspect; sy = (img.height - sh) / 2 }
+  ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh)
 }
 
 // ── Polaroid frame helpers ─────────────────────────────────────────────────────
@@ -411,12 +475,12 @@ function blobToImage(blob: Blob): Promise<HTMLImageElement> {
   })
 }
 
-function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+function canvasToBlob(canvas: HTMLCanvasElement, type: 'image/jpeg' | 'image/png' = 'image/jpeg'): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => blob ? resolve(blob) : reject(new Error('Canvas toBlob returned null')),
-      'image/jpeg',
-      OUTPUT_QUALITY
+      type,
+      type === 'image/jpeg' ? OUTPUT_QUALITY : undefined
     )
   })
 }

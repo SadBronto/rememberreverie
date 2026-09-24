@@ -35,6 +35,11 @@ export interface FrameConfig {
   timestampPosition: 'bottom-right' | 'bottom-left'
   style?: 'flat' | 'polaroid'  // 'polaroid' = textured cream border w/ inner shadow; default flat
   weathering?: 'v1' | 'v2'     // polaroid only — 'v2' is the stronger, clearer print treatment
+  // Real frame asset (PNG/SVG). When set, the photo is composited into `window`
+  // (fractions of the frame image) and the asset is drawn on top; output is PNG so
+  // the frame's soft drop shadow keeps its transparency.
+  frameSrc?: string
+  window?: { left: number; top: number; right: number; bottom: number }
 }
 
 export const CAMERA_MODES: Record<CameraModeName, CameraModeConfig> = {

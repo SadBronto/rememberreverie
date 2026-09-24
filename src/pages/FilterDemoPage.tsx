@@ -23,7 +23,7 @@ interface Candidate { key: string; label: string; note: string; config: CameraMo
 const CANDIDATES: Candidate[] = [
   { key: 'disposable', label: 'Disposable',  note: 'current', config: CAMERA_MODES.disposable },
   { key: 'polaroid',   label: 'Polaroid',    note: 'current frame', config: CAMERA_MODES.polaroid },
-  { key: 'polaroid2',  label: 'Polaroid',    note: 'improved frame', config: { ...CAMERA_MODES.polaroid, frame: { ...CAMERA_MODES.polaroid.frame, weathering: 'v2' } } },
+  { key: 'polaroid2',  label: 'Polaroid',    note: 'real frame (SVG)', config: { ...CAMERA_MODES.polaroid, frame: { ...CAMERA_MODES.polaroid.frame, frameSrc: '/frames/polaroid.svg', window: { left: 0.0714, top: 0.0474, right: 0.0714, bottom: 0.1632 } } } },
   { key: 'super8',     label: 'Super 8',     note: 'current', config: CAMERA_MODES.super8 },
   { key: 'noir',       label: 'Noir B&W',    note: 'new candidate', config: mk('Noir B&W', { warmth: 0, grain: 0.16, vignette: 0.42, brightness: 1.0, contrast: 1.2, saturation: 0, liftedBlacks: 0.02, softness: 0.1 }) },
   { key: 'sepia',      label: 'Antique Sepia', note: 'new candidate', config: mk('Antique Sepia', { warmth: 0, grain: 0.12, vignette: 0.4, brightness: 1.03, contrast: 0.95, saturation: 0, liftedBlacks: 0.14, softness: 0.2, tint: { r: 150, g: 120, b: 82, strength: 0.42 } }) },
