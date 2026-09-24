@@ -3,9 +3,8 @@ import { CAMERA_MODES, type CameraModeConfig, type FilterConfig } from '@/config
 import { processSession } from '@/lib/imageProcessor'
 import type { SourceImage } from '@/types/session'
 
-// Internal tool (unlinked): upload photos and compare every filter — the current
-// three plus candidate new looks — side by side, so we can judge distinctiveness
-// and dial in the Polaroid frame. Not part of the product; just /filterdemos.
+// Internal tool (unlinked): upload a photo, then click any looks to compare them
+// LARGE, side by side. Not part of the product; just /filterdemos.
 
 const flatFrame = {
   borderTop: 0, borderBottom: 0, borderLeft: 0, borderRight: 0,
@@ -48,7 +47,9 @@ const CANDIDATES: Candidate[] = [
   { key: 'dustgrain',   label: 'Dust & Grain', note: 'texture', config: mk('Dust & Grain', { warmth: 0.08, grain: 0.26, vignette: 0.3, brightness: 1.0, contrast: 1.0, saturation: 0.85, liftedBlacks: 0.12, softness: 0.15 }) },
 
   // ── Wild ──
-  { key: 'selective', label: 'Selective Color', note: 'wild', config: mk('Selective Color', { warmth: 0, grain: 0.08, vignette: 0.22, brightness: 1.0, contrast: 1.08, saturation: 1.12, liftedBlacks: 0.03, softness: 0.1, selectiveColor: { hue: 18, range: 40 } }) },
+  { key: 'selred',    label: 'Selective — Red',    note: 'wild', config: mk('Selective — Red', { warmth: 0, grain: 0.06, vignette: 0.18, brightness: 1.0, contrast: 1.1, saturation: 1.1, liftedBlacks: 0.02, softness: 0.1, selectiveColor: { hue: 2, range: 28 } }) },
+  { key: 'selyellow', label: 'Selective — Yellow', note: 'wild', config: mk('Selective — Yellow', { warmth: 0, grain: 0.06, vignette: 0.18, brightness: 1.0, contrast: 1.1, saturation: 1.1, liftedBlacks: 0.02, softness: 0.1, selectiveColor: { hue: 52, range: 26 } }) },
+  { key: 'selblue',   label: 'Selective — Blue',   note: 'wild', config: mk('Selective — Blue', { warmth: 0, grain: 0.06, vignette: 0.18, brightness: 1.0, contrast: 1.1, saturation: 1.1, liftedBlacks: 0.02, softness: 0.1, selectiveColor: { hue: 212, range: 45 } }) },
   { key: 'duotone',   label: 'Duotone — Indigo & Blush', note: 'wild', config: mk('Duotone — Indigo & Blush', { warmth: 0, grain: 0.06, vignette: 0.26, brightness: 1.0, contrast: 1.05, saturation: 1.0, liftedBlacks: 0.0, softness: 0.1, duotone: { shadow: { r: 28, g: 30, b: 58 }, highlight: { r: 246, g: 224, b: 206 } } }) },
 ]
 
@@ -67,12 +68,15 @@ const BG_CLASS: Record<Bg, string> = {
   light: 'bg-[#f3efe8]',
 }
 
+const isPolaroid = (key: string) => key.startsWith('polaroid')
+
 export default function FilterDemoPage() {
   const [results, setResults] = useState<Result[]>([])
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [compare, setCompare] = useState<string[]>(['bw', 'golden'])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [bg, setBg] = useState<Bg>('gray')
-  const [lightbox, setLightbox] = useState<string | null>(null)
   const idRef = useRef(0)
 
   const runOne = useCallback(async (blob: Blob, name: string) => {
@@ -84,6 +88,7 @@ export default function FilterDemoPage() {
     }
     const result: Result = { id: `r${idRef.current++}`, name, originalUrl: URL.createObjectURL(blob), tiles }
     setResults(prev => [result, ...prev])
+    setActiveId(result.id)
   }, [])
 
   const handleFiles = useCallback(async (files: FileList | null) => {
@@ -111,16 +116,21 @@ export default function FilterDemoPage() {
     }
   }, [runOne])
 
+  const toggle = (key: string) =>
+    setCompare(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key])
+
+  const active = results.find(r => r.id === activeId) ?? results[0] ?? null
+  const compareTiles = active ? compare.map(k => active.tiles.find(t => t.key === k)).filter(Boolean) as Tile[] : []
+
   return (
     <div className="min-h-dvh bg-ink text-cream px-6 py-10">
       <div className="max-w-[1600px] mx-auto">
-        <header className="mb-8">
+        <header className="mb-6">
           <p className="text-mono text-cream/30 text-[10px] tracking-[0.3em] uppercase">Internal tool</p>
           <h1 className="text-serif text-cream text-3xl font-normal mt-1">Filter comparison</h1>
           <p className="text-sans text-cream/50 text-sm mt-2 max-w-2xl leading-relaxed">
-            Upload one or more photos (or load a sample) to run every look side by side — the current three,
-            the improved Polaroid frame, and four new candidates. Nothing is uploaded to a server; all
-            processing runs in your browser with the real filter pipeline.
+            Load a photo, then click any looks below to add them to the comparison — they render
+            large, side by side, up top. Click again to remove. All processing runs in your browser.
           </p>
         </header>
 
@@ -137,7 +147,6 @@ export default function FilterDemoPage() {
               {s.label}
             </button>
           ))}
-
           <div className="ml-auto flex items-center gap-2">
             <span className="text-mono text-cream/30 text-[10px] tracking-wide uppercase">Backdrop</span>
             {(['dark', 'gray', 'light'] as Bg[]).map(b => (
@@ -147,78 +156,82 @@ export default function FilterDemoPage() {
               </button>
             ))}
           </div>
-
-          {results.length > 0 && (
-            <button onClick={() => setResults([])}
-              className="px-4 py-3 rounded-full border border-cream/15 text-cream/40 text-sans text-xs tracking-widest uppercase">
-              Clear
-            </button>
-          )}
         </div>
 
         {busy && <p className="text-sans text-amber-film/70 text-sm mb-6">Processing…</p>}
         {error && <p className="text-sans text-red-400/80 text-sm mb-6">{error}</p>}
-        {results.length === 0 && !busy && (
-          <p className="text-sans text-cream/30 text-sm">No photos yet — upload some or load a sample above.</p>
+        {!active && !busy && (
+          <p className="text-sans text-cream/30 text-sm">No photo yet — upload one or load a sample above.</p>
         )}
 
-        {/* Results */}
-        <div className="flex flex-col gap-12">
-          {results.map(result => (
-            <section key={result.id}>
-              <div className="flex items-center gap-4 mb-4">
-                <img src={result.originalUrl} alt="original" className="w-24 h-24 object-cover rounded-lg border border-cream/10" />
-                <div>
-                  <p className="text-sans text-cream/80 text-sm">{result.name}</p>
-                  <p className="text-mono text-cream/30 text-[10px] tracking-wide uppercase mt-0.5">Original</p>
+        {active && (
+          <>
+            {/* Photo switcher (only when more than one loaded) */}
+            {results.length > 1 && (
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-mono text-cream/30 text-[10px] tracking-wide uppercase mr-1">Photo</span>
+                {results.map(r => (
+                  <button key={r.id} onClick={() => setActiveId(r.id)}
+                    className={`rounded-lg overflow-hidden border-2 transition-colors ${active.id === r.id ? 'border-amber-film' : 'border-transparent opacity-60'}`}>
+                    <img src={r.originalUrl} alt={r.name} className="w-12 h-12 object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* ── Side-by-side comparison ── */}
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-mono text-cream/40 text-[11px] tracking-[0.2em] uppercase">Comparing {compareTiles.length}</p>
+              {compare.length > 0 && (
+                <button onClick={() => setCompare([])} className="text-sans text-cream/40 text-xs tracking-wide uppercase">Clear</button>
+              )}
+            </div>
+            <div className={`rounded-2xl p-6 mb-10 min-h-[240px] ${BG_CLASS[bg]}`}>
+              {compareTiles.length === 0 ? (
+                <p className={`text-sans text-sm ${bg === 'light' ? 'text-ink/50' : 'text-cream/50'}`}>
+                  Click looks below to compare them here, side by side.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-6 items-start">
+                  {compareTiles.map(t => (
+                    <figure key={t.key} className="flex-1 min-w-[300px]">
+                      <img src={t.url} alt={t.label}
+                        className="w-full h-auto rounded-[2px]"
+                        style={isPolaroid(t.key) ? { boxShadow: '0 8px 24px rgba(0,0,0,0.4)' } : undefined} />
+                      <figcaption className="mt-3 flex items-center gap-2">
+                        <span className={`text-sans text-sm ${bg === 'light' ? 'text-ink/80' : 'text-cream/85'}`}>{t.label}</span>
+                        <span className={`text-mono text-[9px] tracking-wide uppercase ${bg === 'light' ? 'text-ink/40' : 'text-cream/35'}`}>{t.note}</span>
+                        <button onClick={() => toggle(t.key)}
+                          className={`ml-auto text-xs ${bg === 'light' ? 'text-ink/40' : 'text-cream/40'}`} aria-label={`Remove ${t.label}`}>remove</button>
+                      </figcaption>
+                    </figure>
+                  ))}
                 </div>
-              </div>
+              )}
+            </div>
 
-              <div className={`grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 p-6 rounded-2xl ${BG_CLASS[bg]}`}>
-                {result.tiles.map(tile => {
-                  const isPolaroid = tile.key.startsWith('polaroid')
-                  const isNew = tile.note !== 'current'
-                  return (
-                    <button key={tile.key} type="button" onClick={() => setLightbox(tile.url)} className="block text-left w-full">
-                      <div className="flex items-center justify-center">
-                        <img
-                          src={tile.url}
-                          alt={tile.label}
-                          className="max-w-full h-auto rounded-[2px]"
-                          style={isPolaroid ? { boxShadow: '0 6px 18px rgba(0,0,0,0.35)' } : undefined}
-                        />
-                      </div>
-                      <div className="mt-2 flex items-center gap-2">
-                        <span className={`text-sans text-xs ${bg === 'light' ? 'text-ink/80' : 'text-cream/80'}`}>{tile.label}</span>
-                        <span className={`text-mono text-[9px] tracking-wide uppercase px-1.5 py-0.5 rounded ${isNew ? 'bg-amber-film/20 text-amber-film' : (bg === 'light' ? 'text-ink/40' : 'text-cream/30')}`}>
-                          {tile.note}
-                        </span>
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-            </section>
-          ))}
-        </div>
+            {/* ── Picker: all looks ── */}
+            <p className="text-mono text-cream/40 text-[11px] tracking-[0.2em] uppercase mb-3">All looks — click to add / remove</p>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+              {active.tiles.map(t => {
+                const selected = compare.includes(t.key)
+                return (
+                  <button key={t.key} type="button" onClick={() => toggle(t.key)}
+                    className={`text-left rounded-lg overflow-hidden border-2 transition-all ${selected ? 'border-amber-film' : 'border-transparent hover:border-cream/20'}`}>
+                    <div className="bg-[#8a8580]">
+                      <img src={t.url} alt={t.label} className="w-full h-24 object-cover" />
+                    </div>
+                    <div className="px-2 py-1.5 bg-ink-light">
+                      <p className="text-sans text-cream/80 text-[11px] leading-tight truncate">{t.label}</p>
+                      <p className="text-mono text-cream/30 text-[9px] tracking-wide uppercase">{selected ? 'comparing' : t.note}</p>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </>
+        )}
       </div>
-
-      {lightbox && (
-        <div
-          className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-6 cursor-zoom-out"
-          onClick={() => setLightbox(null)}
-        >
-          <img src={lightbox} alt="enlarged" className="max-w-full max-h-full object-contain shadow-2xl" />
-          <button
-            type="button"
-            onClick={() => setLightbox(null)}
-            className="absolute top-4 right-6 text-cream/70 text-4xl leading-none"
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
-      )}
     </div>
   )
 }

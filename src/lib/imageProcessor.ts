@@ -138,9 +138,15 @@ async function applyFilters(source: HTMLCanvasElement, filter: FilterConfig): Pr
       }
       let dh = Math.abs(h - sel.hue); if (dh > 180) dh = 360 - dh
       const s = mx === 0 ? 0 : dd / mx
-      if (dh > sel.range || s < 0.15) {
-        const luma = 0.299 * r + 0.587 * g + 0.114 * b
+      const luma = 0.299 * r + 0.587 * g + 0.114 * b
+      if (dh > sel.range || s < 0.12) {
+        // Outside the kept hue → full grayscale.
         r = luma; g = luma; b = luma
+      } else {
+        // Kept hue → push saturation so the colour genuinely pops.
+        r = luma + (r - luma) * 1.5
+        g = luma + (g - luma) * 1.5
+        b = luma + (b - luma) * 1.5
       }
     }
 
