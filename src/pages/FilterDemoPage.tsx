@@ -51,6 +51,7 @@ export default function FilterDemoPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [bg, setBg] = useState<Bg>('gray')
+  const [lightbox, setLightbox] = useState<string | null>(null)
   const idRef = useRef(0)
 
   const runOne = useCallback(async (blob: Blob, name: string) => {
@@ -91,7 +92,7 @@ export default function FilterDemoPage() {
 
   return (
     <div className="min-h-dvh bg-ink text-cream px-6 py-10">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-[1600px] mx-auto">
         <header className="mb-8">
           <p className="text-mono text-cream/30 text-[10px] tracking-[0.3em] uppercase">Internal tool</p>
           <h1 className="text-serif text-cream text-3xl font-normal mt-1">Filter comparison</h1>
@@ -152,12 +153,12 @@ export default function FilterDemoPage() {
                 </div>
               </div>
 
-              <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4 rounded-2xl ${BG_CLASS[bg]}`}>
+              <div className={`grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 p-6 rounded-2xl ${BG_CLASS[bg]}`}>
                 {result.tiles.map(tile => {
                   const isPolaroid = tile.key.startsWith('polaroid')
                   const isNew = tile.note.includes('new') || tile.note.includes('improved')
                   return (
-                    <a key={tile.key} href={tile.url} target="_blank" rel="noopener noreferrer" className="block group">
+                    <button key={tile.key} type="button" onClick={() => setLightbox(tile.url)} className="block text-left w-full">
                       <div className="flex items-center justify-center">
                         <img
                           src={tile.url}
@@ -172,7 +173,7 @@ export default function FilterDemoPage() {
                           {tile.note}
                         </span>
                       </div>
-                    </a>
+                    </button>
                   )
                 })}
               </div>
@@ -180,6 +181,23 @@ export default function FilterDemoPage() {
           ))}
         </div>
       </div>
+
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-6 cursor-zoom-out"
+          onClick={() => setLightbox(null)}
+        >
+          <img src={lightbox} alt="enlarged" className="max-w-full max-h-full object-contain shadow-2xl" />
+          <button
+            type="button"
+            onClick={() => setLightbox(null)}
+            className="absolute top-4 right-6 text-cream/70 text-4xl leading-none"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+      )}
     </div>
   )
 }

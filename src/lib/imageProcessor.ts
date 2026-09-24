@@ -209,7 +209,6 @@ async function applyFrame(
 
     // Texture + aging are drawn BEFORE the photo, so the photo (painted next)
     // covers the centre and they only ever show on the border.
-    drawPaperGrain(ctx, totalW, totalH, v2 ? 0.24 : 0.15)
     drawAgedCorners(ctx, totalW, totalH, v2 ? 0.09 : 0.05)
     if (v2) drawPolaroidSheen(ctx, totalW, totalH)
 
@@ -240,30 +239,6 @@ async function applyFrame(
 }
 
 // ── Polaroid frame helpers ─────────────────────────────────────────────────────
-
-// Paper tooth across the frame. Drawn before the photo so it's border-only.
-// Generated at ~1/4 scale then upscaled, so the texture stays a visible "tooth"
-// on the full-size photo — 1px-per-pixel noise at full resolution is invisible.
-function drawPaperGrain(ctx: CanvasRenderingContext2D, w: number, h: number, alpha: number) {
-  const gw = Math.max(1, Math.round(w / 4))
-  const gh = Math.max(1, Math.round(h / 4))
-  const n = document.createElement('canvas')
-  n.width = gw
-  n.height = gh
-  const nc = n.getContext('2d')!
-  const id = nc.createImageData(gw, gh)
-  for (let i = 0; i < id.data.length; i += 4) {
-    const v = 165 + Math.random() * 90
-    id.data[i] = v; id.data[i + 1] = v; id.data[i + 2] = v; id.data[i + 3] = 255
-  }
-  nc.putImageData(id, 0, 0)
-  ctx.save()
-  ctx.globalAlpha = alpha
-  ctx.globalCompositeOperation = 'multiply'
-  ctx.imageSmoothingEnabled = true
-  ctx.drawImage(n, 0, 0, w, h)
-  ctx.restore()
-}
 
 // Subtle warm darkening from each corner — a hint of age, not a heavy vignette.
 function drawAgedCorners(ctx: CanvasRenderingContext2D, w: number, h: number, strength: number) {
