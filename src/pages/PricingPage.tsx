@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom'
 import { Link } from 'react-router-dom'
-import FilmGrain from '@/components/FilmGrain'
 
 // Public sales / pricing page. Restrained, editorial, event-neutral (works for a
 // wedding or a corporate night). Lives at /pricing for now; becomes the front
@@ -11,10 +10,15 @@ export default function PricingPage() {
 
   return (
     <div className="relative min-h-dvh bg-ink text-cream overflow-hidden safe-top safe-bottom">
-      <FilmGrain opacity={0.038} />
-      <div
-        className="absolute inset-0 pointer-events-none z-0"
-        style={{ background: 'radial-gradient(ellipse at 50% 0%, transparent 45%, rgba(0,0,0,0.4) 100%)' }}
+
+      {/* Subtle grain texture overlay (identical to the home page) */}
+      <div className="absolute inset-0 opacity-[0.035] pointer-events-none"
+        style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'200\' height=\'200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.85\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' opacity=\'1\'/%3E%3C/svg%3E")', backgroundSize: '200px 200px' }}
+      />
+
+      {/* Vignette */}
+      <div className="absolute inset-0 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.5) 100%)' }}
       />
 
       <div className="relative z-10 mx-auto w-full max-w-3xl px-6">
