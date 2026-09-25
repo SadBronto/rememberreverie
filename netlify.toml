@@ -130,6 +130,13 @@
   to   = "/.netlify/functions/couple-qr"
   status = 200
 
+# Lemon Squeezy purchase webhook → provisioning (dormant until LS is configured
+# with LEMONSQUEEZY_WEBHOOK_SECRET; rejects everything without a valid signature).
+[[redirects]]
+  from = "/api/webhooks/lemonsqueezy"
+  to   = "/.netlify/functions/provision"
+  status = 200
+
 # SPA catch-all — handles all React Router routes
 [[redirects]]
   from = "/*"

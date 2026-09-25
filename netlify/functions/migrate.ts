@@ -84,6 +84,18 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
       `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS timestamp_outline TEXT NOT NULL DEFAULT 'medium'`,
     ],
   },
+  {
+    id: 'v11_provisioning',
+    sql: [
+      // Self-serve provisioning: link a Lemon Squeezy order to its event (the
+      // unique index makes re-delivered webhooks idempotent), and record amount +
+      // time for the future escrow / refund readout.
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS ls_order_id TEXT NULL`,
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS order_amount INTEGER NULL`,
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS purchased_at TIMESTAMPTZ NULL`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS weddings_ls_order_id_key ON weddings (ls_order_id) WHERE ls_order_id IS NOT NULL`,
+    ],
+  },
   // Future migrations go here:
   // { id: 'v10_...', sql: [`ALTER TABLE ...`] },
 ]
