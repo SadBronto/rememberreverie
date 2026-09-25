@@ -33,6 +33,7 @@ const SlugPage           = lazy(() => import('@/pages/SlugPage'))
 const SignatureLabPage   = lazy(() => import('@/pages/SignatureLabPage'))
 const PrivacyPage        = lazy(() => import('@/pages/PrivacyPage'))
 const FilterDemoPage     = lazy(() => import('@/pages/FilterDemoPage'))
+const PricingPage        = lazy(() => import('@/pages/PricingPage'))
 
 function Loading() {
   return (
@@ -103,6 +104,7 @@ export default function App() {
         <Route path="/admin/weddings/:id/print" element={<PrintSignPage />} />
         <Route path="/admin/signature-lab" element={<SignatureLabPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
         <Route path="/filterdemos" element={<FilterDemoPage />} />
         {/* Vanity slug — must be last; only matches single-segment paths not caught above */}
         <Route path="/:slug" element={<SlugPage />} />
