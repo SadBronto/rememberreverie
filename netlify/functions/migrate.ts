@@ -77,6 +77,13 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
       `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS timestamp_size TEXT NOT NULL DEFAULT 'medium'`,
     ],
   },
+  {
+    id: 'v10_timestamp_outline',
+    sql: [
+      // Outline on the light "elegant" timestamp: 'off' | 'small' | 'medium' | 'large'.
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS timestamp_outline TEXT NOT NULL DEFAULT 'medium'`,
+    ],
+  },
   // Future migrations go here:
   // { id: 'v10_...', sql: [`ALTER TABLE ...`] },
 ]

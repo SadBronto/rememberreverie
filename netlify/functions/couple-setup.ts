@@ -42,7 +42,7 @@ export const handler: Handler = async (event) => {
 
   const { coupleNames, weddingDate, captureStart, captureEnd, eventTimezone,
           welcomeMessage, allowedModes, annotationMode,
-          timestampEnabled, timestampStyle, timestampSize, photoCap, slug, selfieEnabled } = body as Record<string, any>
+          timestampEnabled, timestampStyle, timestampSize, timestampOutline, photoCap, slug, selfieEnabled } = body as Record<string, any>
 
   if (!coupleNames) {
     return { statusCode: 400, body: 'coupleNames is required' }
@@ -74,8 +74,9 @@ export const handler: Handler = async (event) => {
   if (captureEnd    !== undefined) update.capture_end    = captureEnd    || null
   if (eventTimezone !== undefined) update.event_timezone = eventTimezone || null
 
-  // Timestamp size — only touch when sent (partial PATCH safety).
-  if (timestampSize !== undefined) update.timestamp_size = timestampSize
+  // Timestamp size + outline — only touch when sent (partial PATCH safety).
+  if (timestampSize    !== undefined) update.timestamp_size    = timestampSize
+  if (timestampOutline !== undefined) update.timestamp_outline = timestampOutline
 
   // Only POST activates the wedding
   if (method === 'POST') update.status = 'active'

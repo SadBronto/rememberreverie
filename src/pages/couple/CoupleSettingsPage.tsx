@@ -16,6 +16,7 @@ interface WeddingSettings {
   timestamp_enabled: boolean
   timestamp_style:   string
   timestamp_size:    string
+  timestamp_outline: string
   slug:              string | null
 }
 
@@ -55,6 +56,7 @@ export default function CoupleSettingsPage() {
         timestamp_enabled: demoConfig.timestampEnabled,
         timestamp_style:   demoConfig.timestampStyle,
         timestamp_size:    demoConfig.timestampSize ?? 'medium',
+        timestamp_outline: demoConfig.timestampOutline ?? 'medium',
         slug:              null,
       })
       setNoDate(!demoConfig.weddingDate)
@@ -83,6 +85,7 @@ export default function CoupleSettingsPage() {
         timestamp_enabled: data.timestamp_enabled  ?? true,
         timestamp_style:   data.timestamp_style    ?? 'classic',
         timestamp_size:    data.timestamp_size     ?? 'medium',
+        timestamp_outline: data.timestamp_outline  ?? 'medium',
         slug:              data.slug               ?? null,
       })
       setNoDate(!data.wedding_date)
@@ -130,6 +133,7 @@ export default function CoupleSettingsPage() {
         timestampEnabled: form.timestamp_enabled,
         timestampStyle:   form.timestamp_style as WeddingConfig['timestampStyle'],
         timestampSize:    form.timestamp_size as WeddingConfig['timestampSize'],
+        timestampOutline: form.timestamp_outline as WeddingConfig['timestampOutline'],
       }
       applySetup(overrides)
       setSaveMsg('saved')
@@ -155,6 +159,7 @@ export default function CoupleSettingsPage() {
         timestampEnabled: form.timestamp_enabled,
         timestampStyle:   form.timestamp_style,
         timestampSize:    form.timestamp_size,
+        timestampOutline: form.timestamp_outline,
         selfieEnabled:    form.selfie_enabled,
         slug:             form.slug || null,
       }),
@@ -351,6 +356,30 @@ export default function CoupleSettingsPage() {
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+          {form.timestamp_enabled && form.timestamp_style === 'elegant' && (
+            <div className="mt-3">
+              <p className="text-mono text-cream/40 text-[10px] tracking-wide uppercase mb-2">Outline (white stamp)</p>
+              <div className="flex gap-2">
+                {(['off', 'small', 'medium', 'large'] as const).map(o => (
+                  <button
+                    key={o}
+                    type="button"
+                    onClick={() => setField('timestamp_outline', o)}
+                    className={`px-3 py-2 rounded-lg border text-sans text-xs capitalize tracking-wide transition-colors touch-manipulation ${
+                      (form.timestamp_outline ?? 'medium') === o
+                        ? 'bg-cream text-ink border-cream'
+                        : 'text-cream/40 border-cream/15'
+                    }`}
+                  >
+                    {o}
+                  </button>
+                ))}
+              </div>
+              <p className="text-mono text-cream/25 text-[10px] mt-2 leading-relaxed">
+                Keeps the white “elegant” stamp legible on bright photos. Classic and Vertical stay raw (like a camera’s date stamp).
+              </p>
             </div>
           )}
         </Section>

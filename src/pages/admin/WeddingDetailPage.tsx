@@ -23,6 +23,7 @@ interface WeddingDetail {
   timestamp_enabled: boolean
   timestamp_style: string
   timestamp_size: string
+  timestamp_outline: string
   photo_cap: number | null
   slideshow_enabled: boolean
   slug: string | null
@@ -838,6 +839,14 @@ export default function WeddingDetailPage() {
                     <option value="medium">Medium</option>
                     <option value="large">Large</option>
                   </AdminSelect>
+                  {form.timestamp_style === 'elegant' && (
+                    <AdminSelect value={form.timestamp_outline ?? 'medium'} onChange={v => setField('timestamp_outline', v)}>
+                      <option value="off">Outline: off</option>
+                      <option value="small">Outline: small</option>
+                      <option value="medium">Outline: medium</option>
+                      <option value="large">Outline: large</option>
+                    </AdminSelect>
+                  )}
                 </>
               )}
             </div>

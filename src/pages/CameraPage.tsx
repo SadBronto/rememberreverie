@@ -200,6 +200,7 @@ export default function CameraPage() {
           timestampEnabled: weddingConfig.timestampEnabled,
           timestampStyle:   weddingConfig.timestampStyle,
           timestampSize:    weddingConfig.timestampSize,
+          timestampOutline: weddingConfig.timestampOutline,
           coupleNames:      weddingConfig.coupleNames,
         }
       )

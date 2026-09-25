@@ -61,6 +61,8 @@ export interface WeddingConfig {
   timestampStyle: 'classic' | 'vertical' | 'elegant'
   // Design customization (host-adjustable)
   timestampSize?: 'small' | 'medium' | 'large'
+  // Outline on the light "elegant" timestamp only (off | small | medium | large)
+  timestampOutline?: 'off' | 'small' | 'medium' | 'large'
   themeColor?: string
   heroImageUrl?: string
   // Demo mode: enables photo cap, guided prompts, seeded gallery

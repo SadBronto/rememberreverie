@@ -39,6 +39,7 @@ export const handler: Handler = async (event) => {
     timestampEnabled:     data.timestamp_enabled,
     timestampStyle:       data.timestamp_style,
     timestampSize:        data.timestamp_size ?? 'medium',
+    timestampOutline:     data.timestamp_outline ?? 'medium',
     themeColor:           data.theme_color ?? undefined,
     heroImageUrl:         data.hero_image_url ?? undefined,
     photoCap:             data.photo_cap ?? undefined,

@@ -5,6 +5,8 @@ const OUTPUT_QUALITY = 0.92   // JPEG quality — visually lossless
 
 // Per-event timestamp size scale (see ProcessOptions).
 const TS_SIZE_SCALE = { small: 0.82, medium: 1, large: 1.25 } as const
+// White ("elegant") timestamp outline weight (× font size); 'off' disables it.
+const TS_OUTLINE_WEIGHT = { off: 0, small: 0.06, medium: 0.10, large: 0.16 } as const
 
 export interface ProcessOptions {
   timestampEnabled: boolean
@@ -21,6 +23,8 @@ export interface ProcessOptions {
   sourceAlign?: 'left' | 'center'
   /** Timestamp size scale. Default 'medium'. */
   timestampSize?: 'small' | 'medium' | 'large'
+  /** Outline on the light "elegant" timestamp ONLY. 'off' | 'small' | 'medium' | 'large'. */
+  timestampOutline?: 'off' | 'small' | 'medium' | 'large'
 }
 
 // Main entry point: takes raw captured images + mode config, returns processed Blob.
@@ -419,7 +423,7 @@ function drawTimestamp(
   const scale = TS_SIZE_SCALE[options.timestampSize ?? 'medium'] ?? 1
   if (style === 'classic')  drawClassic(ctx, w, h, bB, bR, scale)
   if (style === 'vertical') drawVertical(ctx, w, h, bB, bL, scale)
-  if (style === 'elegant')  drawElegant(ctx, w, h, bB, options.coupleNames, scale)
+  if (style === 'elegant')  drawElegant(ctx, w, h, bB, options.coupleNames, scale, options.timestampOutline ?? 'medium')
 }
 
 /** Bottom-right, two lines, orange — `05 21 '26 / 21:52:43` */
@@ -477,43 +481,45 @@ function drawElegant(
   bB: number,
   coupleNames?: string,
   scale = 1,
+  outline: 'off' | 'small' | 'medium' | 'large' = 'medium',
 ) {
   const datePart = new Date().toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })
   const nameSize = Math.round(w * 0.024 * scale)
   const dateSize = Math.round(w * 0.013 * scale)
   const lineGap  = Math.round(nameSize * 0.45)
+  const outlineW = TS_OUTLINE_WEIGHT[outline] ?? 0
+  const hasOutline = outlineW > 0
 
   ctx.textAlign    = 'center'
   ctx.textBaseline = 'bottom'
-  // Dark outline so this light timestamp stays legible on white / blown-out areas
-  // (a bright sky, or the white Polaroid border). Stroke sits behind the fill.
   ctx.lineJoin     = 'round'
   ctx.strokeStyle  = 'rgba(0,0,0,0.5)'
 
   const bottomY = h - bB - Math.round(h * 0.028)
 
-  if (coupleNames) {
-    // Date — small mono at the very bottom
-    ctx.font      = `${dateSize}px "DM Mono", monospace`
-    ctx.lineWidth = Math.max(1, dateSize * 0.14)
-    ctx.strokeText(datePart, w / 2, bottomY)
-    ctx.fillStyle = 'rgba(255,248,235,0.6)'
-    ctx.fillText(datePart, w / 2, bottomY)
+  // Optional client-controlled outline keeps this light "editorial" stamp legible
+  // on white / blown-out areas; with it on, the fill is a touch brighter.
+  const draw = (text: string, x: number, y: number, fontPx: number) => {
+    if (hasOutline) {
+      ctx.lineWidth = Math.max(1, fontPx * outlineW)
+      ctx.strokeText(text, x, y)
+    }
+    ctx.fillText(text, x, y)
+  }
 
-    // Names — italic serif, above date
+  if (coupleNames) {
+    ctx.font      = `${dateSize}px "DM Mono", monospace`
+    ctx.fillStyle = hasOutline ? 'rgba(255,248,235,0.6)' : 'rgba(255,248,235,0.45)'
+    draw(datePart, w / 2, bottomY, dateSize)
+
     const nameY = bottomY - dateSize - lineGap
     ctx.font      = `italic ${nameSize}px "Playfair Display", serif`
-    ctx.lineWidth = Math.max(1, nameSize * 0.09)
-    ctx.strokeText(coupleNames, w / 2, nameY)
-    ctx.fillStyle = 'rgba(255,248,235,0.95)'
-    ctx.fillText(coupleNames, w / 2, nameY)
+    ctx.fillStyle = hasOutline ? 'rgba(255,248,235,0.95)' : 'rgba(255,248,235,0.88)'
+    draw(coupleNames, w / 2, nameY, nameSize)
   } else {
-    // No couple names — just date in italic serif
     ctx.font      = `italic ${nameSize}px "Playfair Display", serif`
-    ctx.lineWidth = Math.max(1, nameSize * 0.09)
-    ctx.strokeText(datePart, w / 2, bottomY)
-    ctx.fillStyle = 'rgba(255,248,235,0.9)'
-    ctx.fillText(datePart, w / 2, bottomY)
+    ctx.fillStyle = hasOutline ? 'rgba(255,248,235,0.9)' : 'rgba(255,248,235,0.80)'
+    draw(datePart, w / 2, bottomY, nameSize)
   }
 }
 
