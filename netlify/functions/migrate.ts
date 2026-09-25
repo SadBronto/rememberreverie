@@ -70,8 +70,16 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
       `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS moderated_at TIMESTAMPTZ NULL`,
     ],
   },
+  {
+    id: 'v9_timestamp_and_border',
+    sql: [
+      // Per-event design customization: timestamp size + Polaroid border width.
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS timestamp_size TEXT NOT NULL DEFAULT 'medium'`,
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS polaroid_border TEXT NOT NULL DEFAULT 'standard'`,
+    ],
+  },
   // Future migrations go here:
-  // { id: 'v9_...', sql: [`ALTER TABLE ...`] },
+  // { id: 'v10_...', sql: [`ALTER TABLE ...`] },
 ]
 
 async function run(sql: string, token: string): Promise<unknown> {

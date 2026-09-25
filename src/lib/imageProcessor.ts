@@ -3,6 +3,10 @@ import type { SourceImage } from '@/types/session'
 
 const OUTPUT_QUALITY = 0.92   // JPEG quality — visually lossless
 
+// Per-event customization scales (see ProcessOptions).
+const TS_SIZE_SCALE         = { small: 0.82, medium: 1, large: 1.25 } as const
+const POLAROID_BORDER_SCALE = { thin: 0.72, standard: 1, wide: 1.35 } as const
+
 export interface ProcessOptions {
   timestampEnabled: boolean
   /** Layout style — each has its own position, font size, and colour */
@@ -16,6 +20,10 @@ export interface ProcessOptions {
    * Default: 'center'.
    */
   sourceAlign?: 'left' | 'center'
+  /** Timestamp size scale. Default 'medium'. */
+  timestampSize?: 'small' | 'medium' | 'large'
+  /** Polaroid frame border width. Default 'standard'. */
+  polaroidBorder?: 'thin' | 'standard' | 'wide'
 }
 
 // Main entry point: takes raw captured images + mode config, returns processed Blob.
@@ -222,10 +230,14 @@ async function applyFrame(
     return applyAssetFrame(source, frame.frameSrc, frame.window)
   }
 
-  const bT = Math.round(source.height * frame.borderTop)
-  const bB = Math.round(source.height * frame.borderBottom)
-  const bL = Math.round(source.width * frame.borderLeft)
-  const bR = Math.round(source.width * frame.borderRight)
+  // Polaroid border width is host-adjustable; scale the procedural borders.
+  const bScale = frame.style === 'polaroid'
+    ? (POLAROID_BORDER_SCALE[options.polaroidBorder ?? 'standard'] ?? 1)
+    : 1
+  const bT = Math.round(source.height * frame.borderTop * bScale)
+  const bB = Math.round(source.height * frame.borderBottom * bScale)
+  const bL = Math.round(source.width * frame.borderLeft * bScale)
+  const bR = Math.round(source.width * frame.borderRight * bScale)
 
   const totalW = source.width + bL + bR
   const totalH = source.height + bT + bB
@@ -411,9 +423,10 @@ function drawTimestamp(
     options.timestampStyle as 'classic' | 'vertical' | 'elegant'
   ) ? options.timestampStyle : 'classic'
 
-  if (style === 'classic')  drawClassic(ctx, w, h, bB, bR)
-  if (style === 'vertical') drawVertical(ctx, w, h, bB, bL)
-  if (style === 'elegant')  drawElegant(ctx, w, h, bB, options.coupleNames)
+  const scale = TS_SIZE_SCALE[options.timestampSize ?? 'medium'] ?? 1
+  if (style === 'classic')  drawClassic(ctx, w, h, bB, bR, scale)
+  if (style === 'vertical') drawVertical(ctx, w, h, bB, bL, scale)
+  if (style === 'elegant')  drawElegant(ctx, w, h, bB, options.coupleNames, scale)
 }
 
 /** Bottom-right, two lines, orange — `05 21 '26 / 21:52:43` */
@@ -421,9 +434,10 @@ function drawClassic(
   ctx: CanvasRenderingContext2D,
   w: number, h: number,
   bB: number, bR: number,
+  scale = 1,
 ) {
   const t = now()
-  const fontSize = Math.round(w * 0.022)
+  const fontSize = Math.round(w * 0.022 * scale)
   ctx.font = `${fontSize}px "DM Mono", monospace`
   ctx.fillStyle = '#e8762a'
   ctx.textAlign = 'right'
@@ -441,10 +455,11 @@ function drawVertical(
   ctx: CanvasRenderingContext2D,
   w: number, h: number,
   bB: number, bL: number,
+  scale = 1,
 ) {
   const t = now()
   const text = `${t.mm} · ${t.dd} · '${t.yy}`
-  const fontSize = Math.round(w * 0.019)
+  const fontSize = Math.round(w * 0.019 * scale)
 
   ctx.font = `${fontSize}px "DM Mono", monospace`
   ctx.fillStyle = 'rgba(200,168,130,0.78)'
@@ -468,10 +483,11 @@ function drawElegant(
   w: number, h: number,
   bB: number,
   coupleNames?: string,
+  scale = 1,
 ) {
   const datePart = new Date().toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })
-  const nameSize = Math.round(w * 0.024)
-  const dateSize = Math.round(w * 0.013)
+  const nameSize = Math.round(w * 0.024 * scale)
+  const dateSize = Math.round(w * 0.013 * scale)
   const lineGap  = Math.round(nameSize * 0.45)
 
   ctx.textAlign    = 'center'

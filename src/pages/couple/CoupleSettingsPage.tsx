@@ -15,6 +15,8 @@ interface WeddingSettings {
   selfie_enabled:    boolean
   timestamp_enabled: boolean
   timestamp_style:   string
+  timestamp_size:    string
+  polaroid_border:   string
   slug:              string | null
 }
 
@@ -53,6 +55,8 @@ export default function CoupleSettingsPage() {
         selfie_enabled:    demoConfig.selfieEnabled ?? true,
         timestamp_enabled: demoConfig.timestampEnabled,
         timestamp_style:   demoConfig.timestampStyle,
+        timestamp_size:    demoConfig.timestampSize ?? 'medium',
+        polaroid_border:   demoConfig.polaroidBorder ?? 'standard',
         slug:              null,
       })
       setNoDate(!demoConfig.weddingDate)
@@ -80,6 +84,8 @@ export default function CoupleSettingsPage() {
         selfie_enabled:    data.selfie_enabled     ?? true,
         timestamp_enabled: data.timestamp_enabled  ?? true,
         timestamp_style:   data.timestamp_style    ?? 'classic',
+        timestamp_size:    data.timestamp_size     ?? 'medium',
+        polaroid_border:   data.polaroid_border    ?? 'standard',
         slug:              data.slug               ?? null,
       })
       setNoDate(!data.wedding_date)
@@ -126,6 +132,8 @@ export default function CoupleSettingsPage() {
         selfieEnabled:    form.selfie_enabled,
         timestampEnabled: form.timestamp_enabled,
         timestampStyle:   form.timestamp_style as WeddingConfig['timestampStyle'],
+        timestampSize:    form.timestamp_size as WeddingConfig['timestampSize'],
+        polaroidBorder:   form.polaroid_border as WeddingConfig['polaroidBorder'],
       }
       applySetup(overrides)
       setSaveMsg('saved')
@@ -150,6 +158,8 @@ export default function CoupleSettingsPage() {
         annotationMode:   form.annotation_mode,
         timestampEnabled: form.timestamp_enabled,
         timestampStyle:   form.timestamp_style,
+        timestampSize:    form.timestamp_size,
+        polaroidBorder:   form.polaroid_border,
         selfieEnabled:    form.selfie_enabled,
         slug:             form.slug || null,
       }),
@@ -327,6 +337,50 @@ export default function CoupleSettingsPage() {
               ))}
             </div>
           )}
+          {form.timestamp_enabled && (
+            <div className="mt-3">
+              <p className="text-mono text-cream/40 text-[10px] tracking-wide uppercase mb-2">Size</p>
+              <div className="flex gap-2">
+                {(['small', 'medium', 'large'] as const).map(sz => (
+                  <button
+                    key={sz}
+                    type="button"
+                    onClick={() => setField('timestamp_size', sz)}
+                    className={`px-3 py-2 rounded-lg border text-sans text-xs capitalize tracking-wide transition-colors touch-manipulation ${
+                      (form.timestamp_size ?? 'medium') === sz
+                        ? 'bg-cream text-ink border-cream'
+                        : 'text-cream/40 border-cream/15'
+                    }`}
+                  >
+                    {sz}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </Section>
+
+        {/* Polaroid border */}
+        <Section label="Polaroid border">
+          <div className="flex gap-2">
+            {(['thin', 'standard', 'wide'] as const).map(b => (
+              <button
+                key={b}
+                type="button"
+                onClick={() => setField('polaroid_border', b)}
+                className={`px-3 py-2 rounded-lg border text-sans text-xs capitalize tracking-wide transition-colors touch-manipulation ${
+                  (form.polaroid_border ?? 'standard') === b
+                    ? 'bg-cream text-ink border-cream'
+                    : 'text-cream/40 border-cream/15'
+                }`}
+              >
+                {b}
+              </button>
+            ))}
+          </div>
+          <p className="text-mono text-cream/25 text-[10px] mt-2 leading-relaxed">
+            Width of the white Polaroid border (the signing area).
+          </p>
         </Section>
 
         {/* Vanity URL */}

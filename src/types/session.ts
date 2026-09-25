@@ -59,6 +59,9 @@ export interface WeddingConfig {
   // vertical: bottom-left, rotated 90°, warm amber — date only
   // elegant:  top-left, small, off-white — couple name + date
   timestampStyle: 'classic' | 'vertical' | 'elegant'
+  // Design customization (host-adjustable)
+  timestampSize?: 'small' | 'medium' | 'large'
+  polaroidBorder?: 'thin' | 'standard' | 'wide'
   themeColor?: string
   heroImageUrl?: string
   // Demo mode: enables photo cap, guided prompts, seeded gallery

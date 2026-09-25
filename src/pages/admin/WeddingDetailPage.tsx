@@ -22,6 +22,8 @@ interface WeddingDetail {
   selfie_enabled: boolean
   timestamp_enabled: boolean
   timestamp_style: string
+  timestamp_size: string
+  polaroid_border: string
   photo_cap: number | null
   slideshow_enabled: boolean
   slug: string | null
@@ -826,13 +828,31 @@ export default function WeddingDetailPage() {
             <div className="flex items-center gap-3">
               <AdminToggle value={form.timestamp_enabled ?? true} onChange={v => setField('timestamp_enabled', v)} />
               {form.timestamp_enabled && (
-                <AdminSelect value={form.timestamp_style ?? 'classic'} onChange={v => setField('timestamp_style', v)}>
-                  <option value="classic">Classic</option>
-                  <option value="vertical">Vertical</option>
-                  <option value="elegant">Elegant</option>
-                </AdminSelect>
+                <>
+                  <AdminSelect value={form.timestamp_style ?? 'classic'} onChange={v => setField('timestamp_style', v)}>
+                    <option value="classic">Classic</option>
+                    <option value="vertical">Vertical</option>
+                    <option value="elegant">Elegant</option>
+                  </AdminSelect>
+                  <AdminSelect value={form.timestamp_size ?? 'medium'} onChange={v => setField('timestamp_size', v)}>
+                    <option value="small">Small</option>
+                    <option value="medium">Medium</option>
+                    <option value="large">Large</option>
+                  </AdminSelect>
+                </>
               )}
             </div>
+          </FormField>
+
+          <FormField label="Polaroid border">
+            <AdminSelect value={form.polaroid_border ?? 'standard'} onChange={v => setField('polaroid_border', v)}>
+              <option value="thin">Thin</option>
+              <option value="standard">Standard</option>
+              <option value="wide">Wide</option>
+            </AdminSelect>
+            <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
+              Width of the white Polaroid border (the signing area).
+            </p>
           </FormField>
 
           <FormField label="Slideshow “scan to share” slide">

@@ -199,6 +199,8 @@ export default function CameraPage() {
         {
           timestampEnabled: weddingConfig.timestampEnabled,
           timestampStyle:   weddingConfig.timestampStyle,
+          timestampSize:    weddingConfig.timestampSize,
+          polaroidBorder:   weddingConfig.polaroidBorder,
           coupleNames:      weddingConfig.coupleNames,
         }
       )

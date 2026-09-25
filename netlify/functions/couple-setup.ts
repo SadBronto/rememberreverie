@@ -42,7 +42,7 @@ export const handler: Handler = async (event) => {
 
   const { coupleNames, weddingDate, captureStart, captureEnd, eventTimezone,
           welcomeMessage, allowedModes, annotationMode,
-          timestampEnabled, timestampStyle, photoCap, slug, selfieEnabled } = body as Record<string, any>
+          timestampEnabled, timestampStyle, timestampSize, polaroidBorder, photoCap, slug, selfieEnabled } = body as Record<string, any>
 
   if (!coupleNames) {
     return { statusCode: 400, body: 'coupleNames is required' }
@@ -73,6 +73,10 @@ export const handler: Handler = async (event) => {
   if (captureStart  !== undefined) update.capture_start  = captureStart  || null
   if (captureEnd    !== undefined) update.capture_end    = captureEnd    || null
   if (eventTimezone !== undefined) update.event_timezone = eventTimezone || null
+
+  // Design customization — only touch when sent (partial PATCH safety).
+  if (timestampSize  !== undefined) update.timestamp_size  = timestampSize
+  if (polaroidBorder !== undefined) update.polaroid_border = polaroidBorder
 
   // Only POST activates the wedding
   if (method === 'POST') update.status = 'active'

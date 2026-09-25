@@ -33,6 +33,7 @@ interface Props {
   mode: CameraModeName
   timestampEnabled?: boolean
   timestampStyle?: 'classic' | 'vertical' | 'elegant'
+  timestampSize?: 'small' | 'medium' | 'large'
   /**
    * How the source image is cropped when compositing. 'left' anchors to the
    * left/top edge; 'center' (default) splits the crop evenly.
@@ -75,6 +76,7 @@ export default function StylePreviewThumb({
   mode,
   timestampEnabled = false,
   timestampStyle   = 'classic',
+  timestampSize    = 'medium',
   sourceAlign      = 'center',
   fit              = 'cover',
   maxHeight        = '50vh',
@@ -83,7 +85,7 @@ export default function StylePreviewThumb({
   // Only the 'elegant' timestamp renders names; fall back to a sample when empty.
   const names = (coupleNames ?? '').trim() || 'Sophia & James'
   const nameKey = timestampEnabled && timestampStyle === 'elegant' ? names : ''
-  const cacheKey = `${mode}-${timestampEnabled ? 't' : 'f'}-${timestampStyle}-${sourceAlign}-${nameKey}`
+  const cacheKey = `${mode}-${timestampEnabled ? 't' : 'f'}-${timestampStyle}-${timestampSize}-${sourceAlign}-${nameKey}`
 
   const [dataUrl, setDataUrl] = useState<string | null>(() => previewCache.get(cacheKey) ?? null)
   const [failed,  setFailed]  = useState(false)
@@ -102,7 +104,7 @@ export default function StylePreviewThumb({
         const out  = await processSession(
           [{ blob, capturedAt: new Date('2026-05-21T12:00:00'), index: 0 }],
           CAMERA_MODES[mode],
-          { timestampEnabled, timestampStyle, coupleNames: names, sourceAlign },
+          { timestampEnabled, timestampStyle, timestampSize, coupleNames: names, sourceAlign },
           400,
         )
         const url = await blobToDataUrl(out)

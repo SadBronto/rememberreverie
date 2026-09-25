@@ -81,7 +81,7 @@ export const handler: Handler = async (event) => {
 
     // Only allow known fields
     const allowed = ['couple_names', 'wedding_date', 'couple_email', 'welcome_message',
-                     'allowed_modes', 'annotation_mode', 'timestamp_enabled', 'timestamp_style',
+                     'allowed_modes', 'annotation_mode', 'timestamp_enabled', 'timestamp_style', 'timestamp_size', 'polaroid_border',
                      'photo_cap', 'status', 'slideshow_enabled', 'slug',
                      'is_event', 'event_end_date', 'couple_review_enabled', 'qr_settings',
                      'slideshow_qr_slide', 'slideshow_slides', 'slideshow_auto_fullscreen',
