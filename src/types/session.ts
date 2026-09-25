@@ -61,7 +61,6 @@ export interface WeddingConfig {
   timestampStyle: 'classic' | 'vertical' | 'elegant'
   // Design customization (host-adjustable)
   timestampSize?: 'small' | 'medium' | 'large'
-  polaroidBorder?: 'thin' | 'standard' | 'wide'
   themeColor?: string
   heroImageUrl?: string
   // Demo mode: enables photo cap, guided prompts, seeded gallery

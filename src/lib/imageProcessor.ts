@@ -3,9 +3,8 @@ import type { SourceImage } from '@/types/session'
 
 const OUTPUT_QUALITY = 0.92   // JPEG quality — visually lossless
 
-// Per-event customization scales (see ProcessOptions).
-const TS_SIZE_SCALE         = { small: 0.82, medium: 1, large: 1.25 } as const
-const POLAROID_BORDER_SCALE = { thin: 0.72, standard: 1, wide: 1.35 } as const
+// Per-event timestamp size scale (see ProcessOptions).
+const TS_SIZE_SCALE = { small: 0.82, medium: 1, large: 1.25 } as const
 
 export interface ProcessOptions {
   timestampEnabled: boolean
@@ -22,8 +21,6 @@ export interface ProcessOptions {
   sourceAlign?: 'left' | 'center'
   /** Timestamp size scale. Default 'medium'. */
   timestampSize?: 'small' | 'medium' | 'large'
-  /** Polaroid frame border width. Default 'standard'. */
-  polaroidBorder?: 'thin' | 'standard' | 'wide'
 }
 
 // Main entry point: takes raw captured images + mode config, returns processed Blob.
@@ -230,14 +227,10 @@ async function applyFrame(
     return applyAssetFrame(source, frame.frameSrc, frame.window)
   }
 
-  // Polaroid border width is host-adjustable; scale the procedural borders.
-  const bScale = frame.style === 'polaroid'
-    ? (POLAROID_BORDER_SCALE[options.polaroidBorder ?? 'standard'] ?? 1)
-    : 1
-  const bT = Math.round(source.height * frame.borderTop * bScale)
-  const bB = Math.round(source.height * frame.borderBottom * bScale)
-  const bL = Math.round(source.width * frame.borderLeft * bScale)
-  const bR = Math.round(source.width * frame.borderRight * bScale)
+  const bT = Math.round(source.height * frame.borderTop)
+  const bB = Math.round(source.height * frame.borderBottom)
+  const bL = Math.round(source.width * frame.borderLeft)
+  const bR = Math.round(source.width * frame.borderRight)
 
   const totalW = source.width + bL + bR
   const totalH = source.height + bT + bB
@@ -492,24 +485,34 @@ function drawElegant(
 
   ctx.textAlign    = 'center'
   ctx.textBaseline = 'bottom'
+  // Dark outline so this light timestamp stays legible on white / blown-out areas
+  // (a bright sky, or the white Polaroid border). Stroke sits behind the fill.
+  ctx.lineJoin     = 'round'
+  ctx.strokeStyle  = 'rgba(0,0,0,0.5)'
 
   const bottomY = h - bB - Math.round(h * 0.028)
 
   if (coupleNames) {
     // Date — small mono at the very bottom
     ctx.font      = `${dateSize}px "DM Mono", monospace`
-    ctx.fillStyle = 'rgba(255,248,235,0.45)'
+    ctx.lineWidth = Math.max(1, dateSize * 0.14)
+    ctx.strokeText(datePart, w / 2, bottomY)
+    ctx.fillStyle = 'rgba(255,248,235,0.6)'
     ctx.fillText(datePart, w / 2, bottomY)
 
     // Names — italic serif, above date
     const nameY = bottomY - dateSize - lineGap
     ctx.font      = `italic ${nameSize}px "Playfair Display", serif`
-    ctx.fillStyle = 'rgba(255,248,235,0.88)'
+    ctx.lineWidth = Math.max(1, nameSize * 0.09)
+    ctx.strokeText(coupleNames, w / 2, nameY)
+    ctx.fillStyle = 'rgba(255,248,235,0.95)'
     ctx.fillText(coupleNames, w / 2, nameY)
   } else {
     // No couple names — just date in italic serif
     ctx.font      = `italic ${nameSize}px "Playfair Display", serif`
-    ctx.fillStyle = 'rgba(255,248,235,0.80)'
+    ctx.lineWidth = Math.max(1, nameSize * 0.09)
+    ctx.strokeText(datePart, w / 2, bottomY)
+    ctx.fillStyle = 'rgba(255,248,235,0.9)'
     ctx.fillText(datePart, w / 2, bottomY)
   }
 }

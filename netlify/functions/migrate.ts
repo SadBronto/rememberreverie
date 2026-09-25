@@ -73,9 +73,8 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
   {
     id: 'v9_timestamp_and_border',
     sql: [
-      // Per-event design customization: timestamp size + Polaroid border width.
+      // Per-event timestamp size (small | medium | large).
       `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS timestamp_size TEXT NOT NULL DEFAULT 'medium'`,
-      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS polaroid_border TEXT NOT NULL DEFAULT 'standard'`,
     ],
   },
   // Future migrations go here:

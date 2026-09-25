@@ -23,7 +23,6 @@ interface WeddingDetail {
   timestamp_enabled: boolean
   timestamp_style: string
   timestamp_size: string
-  polaroid_border: string
   photo_cap: number | null
   slideshow_enabled: boolean
   slug: string | null
@@ -842,17 +841,6 @@ export default function WeddingDetailPage() {
                 </>
               )}
             </div>
-          </FormField>
-
-          <FormField label="Polaroid border">
-            <AdminSelect value={form.polaroid_border ?? 'standard'} onChange={v => setField('polaroid_border', v)}>
-              <option value="thin">Thin</option>
-              <option value="standard">Standard</option>
-              <option value="wide">Wide</option>
-            </AdminSelect>
-            <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
-              Width of the white Polaroid border (the signing area).
-            </p>
           </FormField>
 
           <FormField label="Slideshow “scan to share” slide">
