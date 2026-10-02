@@ -31,6 +31,7 @@ export default function CameraPage() {
   const [pendingCount, setPendingCount] = useState(0)
   const [pendingMenu, setPendingMenu] = useState(false)
   const [clearArmed, setClearArmed] = useState(false)
+  const [retrying, setRetrying] = useState(false)
   // Disposable can be shot landscape OR portrait (guest's choice, this mode only)
   const [dispOrientation, setDispOrientation] = useState<'landscape' | 'portrait'>('landscape')
   // Which camera the guest is using. 'user' = front (selfie). The preview is
@@ -338,10 +339,18 @@ export default function CameraPage() {
             {pendingMenu && (
               <div className="flex items-center gap-2 pt-0.5">
                 <button
-                  onClick={async () => { await flushPendingUploads(); setPendingCount(await countRecovery()) }}
-                  className="px-3 py-1 rounded-full border border-cream/25 text-cream/70 text-mono text-[9px] tracking-widest uppercase touch-manipulation active:scale-95"
+                  disabled={retrying}
+                  onClick={async () => {
+                    setRetrying(true)
+                    await flushPendingUploads()
+                    setPendingCount(await countRecovery())
+                    // brief visible beat so the tap always registers, even when a
+                    // background retry already held the lock and returned instantly
+                    setTimeout(() => setRetrying(false), 600)
+                  }}
+                  className="px-3 py-1 rounded-full border border-cream/25 text-cream/70 text-mono text-[9px] tracking-widest uppercase touch-manipulation active:scale-95 disabled:opacity-50"
                 >
-                  Retry now
+                  {retrying ? 'Retrying…' : 'Retry now'}
                 </button>
                 {!clearArmed ? (
                   <button

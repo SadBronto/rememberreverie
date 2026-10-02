@@ -200,20 +200,34 @@ export default function StaffPage() {
         </div>
       )}
 
-      {/* Lightbox + remove */}
+      {/* Lightbox + remove. Three ways out: the X, tapping the dark area, or Close. */}
       {open && (
         <div
-          className="fixed inset-0 z-50 bg-black/92 flex flex-col items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/92 flex flex-col p-4 safe-top safe-bottom"
           onClick={() => { setOpen(null); setConfirm(false) }}
         >
-          <div className="relative flex-1 w-full flex items-center justify-center min-h-0" onClick={e => e.stopPropagation()}>
-            <img src={open.photoUrl} alt="" draggable={false} className="max-w-full max-h-full object-contain" />
-            {open.annotationUrl && (
-              <img src={open.annotationUrl} alt="" draggable={false} className="absolute inset-0 w-full h-full object-contain pointer-events-none" style={{ mixBlendMode: 'multiply' }} />
-            )}
+          {/* Top bar with a clear close button */}
+          <div className="flex justify-end shrink-0">
+            <button
+              onClick={(e) => { e.stopPropagation(); setOpen(null); setConfirm(false) }}
+              aria-label="Close"
+              className="w-11 h-11 flex items-center justify-center rounded-full bg-ink/70 border border-cream/25 text-cream active:scale-95 touch-manipulation"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
           </div>
 
-          <div className="w-full max-w-sm flex flex-col gap-3 pt-4" onClick={e => e.stopPropagation()}>
+          {/* The photo itself ignores taps; the dark area around it closes. */}
+          <div className="flex-1 flex items-center justify-center min-h-0 py-3 pointer-events-none">
+            <div className="relative max-w-full max-h-full pointer-events-auto" onClick={e => e.stopPropagation()}>
+              <img src={open.photoUrl} alt="" draggable={false} className="block max-w-full max-h-full object-contain" />
+              {open.annotationUrl && (
+                <img src={open.annotationUrl} alt="" draggable={false} className="absolute inset-0 w-full h-full object-contain pointer-events-none" style={{ mixBlendMode: 'multiply' }} />
+              )}
+            </div>
+          </div>
+
+          <div className="w-full max-w-sm mx-auto flex flex-col gap-3 shrink-0" onClick={e => e.stopPropagation()}>
             {!confirm ? (
               <button
                 onClick={() => setConfirm(true)}
@@ -240,7 +254,7 @@ export default function StaffPage() {
             )}
             <button
               onClick={() => { setOpen(null); setConfirm(false) }}
-              className="w-full py-2 text-cream/40 text-sans text-xs tracking-widest uppercase touch-manipulation"
+              className="w-full py-2.5 rounded-full border border-cream/25 text-cream/70 text-sans text-xs tracking-widest uppercase touch-manipulation active:scale-95"
             >
               Close
             </button>
