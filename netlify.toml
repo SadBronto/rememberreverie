@@ -141,6 +141,11 @@
   to   = "/.netlify/functions/couple-qr"
   status = 200
 
+[[redirects]]
+  from = "/api/host/slides"
+  to   = "/.netlify/functions/host-slides"
+  status = 200
+
 # Lemon Squeezy purchase webhook → provisioning (dormant until LS is configured
 # with LEMONSQUEEZY_WEBHOOK_SECRET; rejects everything without a valid signature).
 [[redirects]]

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import QRCreator, { type QRSettings } from '@/components/QRCreator'
 import StyledQR from '@/components/StyledQR'
+import SlidesManager from '@/components/SlidesManager'
 
 // Leaflet-backed venue picker — lazy so the map library only loads for admins
 // who actually open the geofence editor (and never reaches the guest bundle).
@@ -987,6 +988,10 @@ export default function WeddingDetailPage() {
                 ? <>Lets venue staff remove a bad photo at <span className="text-cream/40">rememberreverie.com/staff/{form.slug}</span> with this password — no login. Removed photos move to the Hidden archive for review. Needs a custom URL slug set above.</>
                 : <>Set a custom URL slug above first — the staff page lives at <span className="text-cream/40">rememberreverie.com/staff/&lt;slug&gt;</span>. Staff enter this password to remove a bad photo; it then moves to the Hidden archive for review.</>}
             </p>
+          </FormField>
+
+          <FormField label="Reception slides (promo / logo)">
+            <SlidesManager weddingId={id!} getToken={() => tokenRef.current} />
           </FormField>
 
           <div className="flex items-center gap-3 pt-1">

@@ -21,6 +21,7 @@ interface SlideshowPhoto {
 type Slide =
   | { id: string; kind: 'photo'; photo: SlideshowPhoto }
   | { id: string; kind: 'qr' }
+  | { id: string; kind: 'custom'; url: string }
 
 interface SlideshowData {
   coupleNames: string
@@ -34,6 +35,7 @@ interface SlideshowData {
   autoFullscreen: boolean
   slowPoll: boolean
   photos: SlideshowPhoto[]
+  customSlides?: { id: string; url: string }[]
 }
 
 const SLIDE_DURATION   = 7500  // ms per slide
@@ -41,6 +43,7 @@ const TRANSITION_MS    = 1100  // crossfade duration (gentle)
 const POLL_INTERVAL_MS = 30000 // refresh for new photos
 const QR_EVERY         = 10    // insert a "scan to share" slide after every N photos
 const QR_DURATION      = 12000 // QR slide lingers longer than a photo
+const CUSTOM_EVERY     = 7     // insert a custom promo/logo slide after every N photos
 
 export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?: string } = {}) {
   const { weddingId: weddingIdParam } = useParams<{ weddingId: string }>()
@@ -59,6 +62,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   const [slowPoll, setSlowPoll] = useState(false)
   const [cursorHidden, setCursorHidden] = useState(false)
   const [photos, setPhotos]           = useState<SlideshowPhoto[]>([])
+  const [customSlides, setCustomSlides] = useState<{ id: string; url: string }[]>([])
   const [index, setIndex]             = useState(0)
   const [incoming, setIncoming]       = useState<number | null>(null) // index crossfading in on top
   const [incomingOpacity, setIncomingOpacity] = useState(0)
@@ -95,6 +99,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       setSlug(null)
       setQrSettings(null)
       setQrSlideEnabled(true)
+      setCustomSlides([])
       setPhotos(mapped)
       setLoadError(false)
       return
@@ -118,6 +123,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       setQrSlideEnabled(data.qrSlideEnabled ?? false)
       setAutoFullscreen(data.autoFullscreen ?? false)
       setSlowPoll(data.slowPoll ?? false)
+      setCustomSlides(data.customSlides ?? [])
 
       setPhotos(prev => {
         const prevById = new Map(prev.map(p => [p.id, p]))
@@ -183,14 +189,24 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
 
   const slides = useMemo<Slide[]>(() => {
     const out: Slide[] = []
+    let customIdx = 0
     photos.forEach((p, i) => {
       out.push({ id: p.id, kind: 'photo', photo: p })
       if (qrSlideEnabled && guestUrl && (i + 1) % QR_EVERY === 0) {
         out.push({ id: `qr-${i}`, kind: 'qr' })
       }
+      if (customSlides.length > 0 && (i + 1) % CUSTOM_EVERY === 0) {
+        const cs = customSlides[customIdx % customSlides.length]
+        customIdx++
+        out.push({ id: `custom-${cs.id}-${i}`, kind: 'custom', url: cs.url })
+      }
     })
+    // Custom slides but no photos yet: still show them (e.g. a venue logo pre-event).
+    if (photos.length === 0 && customSlides.length > 0) {
+      customSlides.forEach(cs => out.push({ id: `custom-${cs.id}`, kind: 'custom', url: cs.url }))
+    }
     return out
-  }, [photos, qrSlideEnabled, guestUrl])
+  }, [photos, qrSlideEnabled, guestUrl, customSlides])
 
   useEffect(() => { slidesRef.current = slides }, [slides])
 
@@ -229,7 +245,9 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
 
     // Preload the next image first (only photo slides have one).
     const nextSlide = list[next]
-    const url = nextSlide?.kind === 'photo' ? nextSlide.photo.photoUrl : null
+    const url = nextSlide?.kind === 'photo' ? nextSlide.photo.photoUrl
+      : nextSlide?.kind === 'custom' ? nextSlide.url
+      : null
     if (!url) { begin(); return }
     let started = false
     const once = () => { if (!started) { started = true; begin() } }
@@ -243,7 +261,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   useEffect(() => {
     if (slides.length === 0) return
     if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current)
-    const dur = slides[index]?.kind === 'qr' ? QR_DURATION : SLIDE_DURATION
+    const dur = (slides[index]?.kind === 'qr' || slides[index]?.kind === 'custom') ? QR_DURATION : SLIDE_DURATION
     advanceTimerRef.current = setTimeout(() => advance(1), dur)
     return () => {
       if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current)
@@ -548,6 +566,8 @@ function SlideLayer({
             />
           )}
         </div>
+      ) : slide.kind === 'custom' ? (
+        <img src={slide.url} alt="" draggable={false} className="absolute inset-0 w-full h-full object-contain" />
       ) : (
         <div className="flex flex-col items-center justify-center gap-8 px-8 text-center">
           <p

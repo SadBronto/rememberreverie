@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { portalBase } from '@/lib/portalNav'
 import { isDemoId } from '@/demo/demoConfig'
 import { useDemoStore } from '@/store/demoStore'
+import SlidesManager from '@/components/SlidesManager'
 import type { CameraModeName, WeddingConfig } from '@/types/session'
 
 interface WeddingSettings {
@@ -403,6 +404,12 @@ export default function CoupleSettingsPage() {
             )}
           </Field>
         </Section>
+
+        {!demo && weddingId && (
+          <Section label="Reception slides">
+            <SlidesManager weddingId={weddingId} getToken={() => tokenRef.current} />
+          </Section>
+        )}
 
         {/* Save button (bottom) */}
         <button

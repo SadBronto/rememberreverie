@@ -21,7 +21,7 @@ export const handler: Handler = async (event) => {
 
   const { data: wedding } = await admin
     .from('weddings')
-    .select('couple_names, wedding_date, welcome_message, timestamp_enabled, timestamp_style, slug, qr_settings, plan')
+    .select('couple_names, wedding_date, welcome_message, timestamp_enabled, timestamp_style, slug, qr_settings, plan, slideshow_slides')
     .eq('id', weddingId)
     .single()
 
@@ -82,6 +82,13 @@ export const handler: Handler = async (event) => {
     annotationUrl: s.annotation_path ? urlMap.get(s.annotation_path) ?? null : null,
   }))
 
+  // Custom promo / logo slides, interspersed into the rotation by the client.
+  const slideList = Array.isArray(wedding.slideshow_slides) ? wedding.slideshow_slides as { id: string; path: string }[] : []
+  const slideUrlMap = await getPhotoUrls(slideList.map(s => s.path), EXPIRY)
+  const customSlides = slideList
+    .map(s => ({ id: s.id, url: slideUrlMap.get(s.path) ?? null }))
+    .filter((s): s is { id: string; url: string } => !!s.url)
+
   return {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
@@ -97,6 +104,7 @@ export const handler: Handler = async (event) => {
       autoFullscreen:   autoFullscreen,
       slowPoll:         slowPoll,
       photos:           photos.filter(p => p.photoUrl),
+      customSlides,
     }),
   }
 }
