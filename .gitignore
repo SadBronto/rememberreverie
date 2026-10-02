@@ -32,3 +32,7 @@ Images/
 # Demo source drop-folder — raw inputs only; the processed assets in
 # public/demo-media/ (committed) are what the app actually serves.
 DEMO PHOTOS/
+
+# Internal planning / business strategy — keep local, never in the repo
+REVERIE_V2_PLAN.md
+HANDOFF.md

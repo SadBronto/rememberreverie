@@ -34,6 +34,7 @@ const SignatureLabPage   = lazy(() => import('@/pages/SignatureLabPage'))
 const PrivacyPage        = lazy(() => import('@/pages/PrivacyPage'))
 const FilterDemoPage     = lazy(() => import('@/pages/FilterDemoPage'))
 const PricingPage        = lazy(() => import('@/pages/PricingPage'))
+const StaffPage          = lazy(() => import('@/pages/StaffPage'))
 
 function Loading() {
   return (
@@ -106,6 +107,8 @@ export default function App() {
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/filterdemos" element={<FilterDemoPage />} />
+        {/* On-site staff moderation (password-gated, no login) */}
+        <Route path="/staff/:slug" element={<StaffPage />} />
         {/* Vanity slug — must be last; only matches single-segment paths not caught above */}
         <Route path="/:slug" element={<SlugPage />} />
       </Routes>

@@ -96,8 +96,19 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
       `CREATE UNIQUE INDEX IF NOT EXISTS weddings_ls_order_id_key ON weddings (ls_order_id) WHERE ls_order_id IS NOT NULL`,
     ],
   },
+  {
+    id: 'v12_staff_moderation',
+    sql: [
+      // Per-event shared password for the on-site staff moderation page
+      // (/staff/:slug) — lets bar/venue staff remove a bad photo without a login.
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS staff_code TEXT NULL`,
+      // Who removed a photo ('staff' | 'host' | 'admin' | NULL) so staff-removed
+      // photos are identifiable in the hidden archive for review.
+      `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS removed_by TEXT NULL`,
+    ],
+  },
   // Future migrations go here:
-  // { id: 'v10_...', sql: [`ALTER TABLE ...`] },
+  // { id: 'v13_...', sql: [`ALTER TABLE ...`] },
 ]
 
 async function run(sql: string, token: string): Promise<unknown> {

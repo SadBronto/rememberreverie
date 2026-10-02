@@ -43,6 +43,7 @@ interface WeddingDetail {
   event_timezone: string | null
   addon_unlimited: boolean
   addon_geofence: boolean
+  staff_code: string | null
 }
 
 interface Counts { disposable: number; polaroid: number; super8: number; total: number }
@@ -972,6 +973,20 @@ export default function WeddingDetailPage() {
                 </div>
               </div>
             )}
+          </FormField>
+
+          {/* Staff moderation code — powers the on-site /staff/:slug delete page */}
+          <FormField label="Staff moderation code (optional)">
+            <AdminInput
+              value={form.staff_code ?? ''}
+              onChange={v => setField('staff_code', v || null)}
+              placeholder="e.g. moosestaff2026"
+            />
+            <p className="text-mono text-cream/25 text-[10px] leading-relaxed">
+              {form.slug
+                ? <>Lets venue staff remove a bad photo at <span className="text-cream/40">rememberreverie.com/staff/{form.slug}</span> with this password — no login. Removed photos move to the Hidden archive for review. Needs a custom URL slug set above.</>
+                : <>Set a custom URL slug above first — the staff page lives at <span className="text-cream/40">rememberreverie.com/staff/&lt;slug&gt;</span>. Staff enter this password to remove a bad photo; it then moves to the Hidden archive for review.</>}
+            </p>
           </FormField>
 
           <div className="flex items-center gap-3 pt-1">

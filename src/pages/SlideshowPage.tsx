@@ -5,6 +5,8 @@ import type { QRSettings } from '@/components/QRCreator'
 import { isDemoId } from '@/demo/demoConfig'
 import { useDemoStore } from '@/store/demoStore'
 import { buildDemoGallery } from '@/demo/demoGallery'
+import { supabase } from '@/lib/supabase'
+import { slideshowChannel } from '@/lib/liveRefresh'
 
 interface SlideshowPhoto {
   id: string
@@ -149,6 +151,22 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     const poll = setInterval(() => fetchPhotos(false), pollMs)
     return () => clearInterval(poll)
   }, [fetchPhotos, pollMs])
+
+  // Instant refresh: when staff or the host removes a photo, they broadcast on this
+  // event's channel so it drops off the screen within ~1s — without waiting for the
+  // poll above (up to 5 min on a lobby display). This is PURELY ADDITIVE: the whole
+  // setup is wrapped so a realtime failure can never crash the running display, and
+  // the poll above remains the source of truth either way.
+  useEffect(() => {
+    if (!weddingId || isDemoId(weddingId) || !supabase) return
+    let ch: ReturnType<NonNullable<typeof supabase>['channel']> | null = null
+    try {
+      ch = supabase.channel(slideshowChannel(weddingId))
+      ch.on('broadcast', { event: 'refresh' }, () => { void fetchPhotos(false) })
+      ch.subscribe()
+    } catch { /* realtime unavailable — the 5-min poll stays as the fallback */ }
+    return () => { try { if (ch) supabase?.removeChannel(ch) } catch { /* noop */ } }
+  }, [weddingId, fetchPhotos])
 
   // Clear "new photos" indicator after 4 seconds
   useEffect(() => {

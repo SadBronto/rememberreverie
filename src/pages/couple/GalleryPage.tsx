@@ -7,6 +7,7 @@ import { isDemoId } from '@/demo/demoConfig'
 import { useDemoStore } from '@/store/demoStore'
 import { useSessionStore } from '@/store/sessionStore'
 import { buildDemoGallery } from '@/demo/demoGallery'
+import { pokeSlideshow } from '@/lib/liveRefresh'
 
 export interface SessionRecord {
   id: string
@@ -150,6 +151,7 @@ export default function CoupleGalleryPage() {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${tokenRef.current}` },
     })
+    if (res.ok) pokeSlideshow(weddingId) // drop it from any live slideshow now
 
     if (!res.ok) {
       // Revert — put it back (re-fetch would be cleaner but this avoids a round-trip)
@@ -176,6 +178,8 @@ export default function CoupleGalleryPage() {
     if (!res.ok) {
       // Revert on failure
       setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, status: currentStatus } : s))
+    } else {
+      pokeSlideshow(weddingId) // hiding/showing changes the live set — refresh the TV now
     }
   }
 

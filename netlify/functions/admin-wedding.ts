@@ -89,7 +89,7 @@ export const handler: Handler = async (event) => {
                      'plan', 'capture_start', 'capture_end', 'event_timezone', 'retention_until',
                      'addon_unlimited', 'addon_geofence',
                      'geofence_enabled', 'geofence_lat', 'geofence_lng', 'geofence_radius_m',
-                     'geofence_bypass_code', 'selfie_enabled']
+                     'geofence_bypass_code', 'selfie_enabled', 'staff_code']
     const update: Record<string, unknown> = {}
     for (const key of allowed) {
       if (key in body) update[key] = body[key] ?? null

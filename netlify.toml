@@ -98,6 +98,17 @@
   to   = "/.netlify/functions/geofence-verify"
   status = 200
 
+# On-site staff moderation page (/staff/:slug) — password-gated photo removal.
+[[redirects]]
+  from = "/api/staff/gallery"
+  to   = "/.netlify/functions/staff-gallery"
+  status = 200
+
+[[redirects]]
+  from = "/api/staff/session"
+  to   = "/.netlify/functions/staff-session"
+  status = 200
+
 # Neutral /api/host/* aliases (canonical) → same functions. The /api/couple/*
 # routes above are kept so any still-cached old frontend bundle keeps working.
 [[redirects]]
