@@ -107,8 +107,15 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
       `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS removed_by TEXT NULL`,
     ],
   },
+  {
+    id: 'v13_pinned_photos',
+    sql: [
+      // Pinned ("kept") photos are exempt from the rolling photo-cap deletion.
+      `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS pinned BOOLEAN NOT NULL DEFAULT FALSE`,
+    ],
+  },
   // Future migrations go here:
-  // { id: 'v13_...', sql: [`ALTER TABLE ...`] },
+  // { id: 'v14_...', sql: [`ALTER TABLE ...`] },
 ]
 
 async function run(sql: string, token: string): Promise<unknown> {

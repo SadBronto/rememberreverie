@@ -48,7 +48,7 @@ export const handler: Handler = async (event) => {
   // otherwise potentially explicit content never surfaces to the couple.
   let query = admin
     .from('sessions')
-    .select('id, mode, memory_number, captured_at, uploaded_at, status, output_path, annotation_path')
+    .select('id, mode, memory_number, captured_at, uploaded_at, status, pinned, output_path, annotation_path')
     .eq('wedding_id', weddingId)
     .neq('status', 'deleted')
   if (!reviewEnabled) query = query.neq('status', 'flagged')
@@ -73,6 +73,7 @@ export const handler: Handler = async (event) => {
     capturedAt:    s.captured_at,
     uploadedAt:    s.uploaded_at,
     status:        s.status,
+    pinned:        s.pinned ?? false,
     photoUrl:      s.output_path     ? urlMap.get(s.output_path)     ?? null : null,
     annotationUrl: s.annotation_path ? urlMap.get(s.annotation_path) ?? null : null,
   }))

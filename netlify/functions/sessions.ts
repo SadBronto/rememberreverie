@@ -96,6 +96,7 @@ export const handler: Handler = async (event) => {
         .select('id, output_path, annotation_path')
         .eq('wedding_id', weddingId)
         .neq('status', 'deleted')
+        .eq('pinned', false)        // never auto-delete a kept/pinned photo
         .neq('id', sessionId)
         .order('captured_at', { ascending: true })
         .limit(over)

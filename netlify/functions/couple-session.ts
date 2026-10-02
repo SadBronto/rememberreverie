@@ -53,22 +53,29 @@ export const handler: Handler = async (event) => {
     return { statusCode: 200, body: JSON.stringify({ ok: true }) }
   }
 
-  // PATCH → hide/show
-  let body: { status: string }
+  // PATCH → hide/show and/or pin/unpin
+  let body: { status?: string; pinned?: boolean }
   try {
     body = JSON.parse(event.body ?? '{}')
   } catch {
     return { statusCode: 400, body: 'Invalid JSON' }
   }
 
-  const { status } = body
-  if (status !== 'active' && status !== 'hidden') {
-    return { statusCode: 400, body: 'status must be "active" or "hidden"' }
+  const update: Record<string, unknown> = {}
+  if (body.status !== undefined) {
+    if (body.status !== 'active' && body.status !== 'hidden') {
+      return { statusCode: 400, body: 'status must be "active" or "hidden"' }
+    }
+    update.status = body.status
+  }
+  if (body.pinned !== undefined) update.pinned = !!body.pinned
+  if (Object.keys(update).length === 0) {
+    return { statusCode: 400, body: 'Nothing to update' }
   }
 
   const { error } = await admin
     .from('sessions')
-    .update({ status })
+    .update(update)
     .eq('id', sessionId)
 
   if (error) return { statusCode: 500, body: 'Failed to update session' }

@@ -16,6 +16,7 @@ export interface SessionRecord {
   capturedAt: string | null
   uploadedAt: string
   status: 'active' | 'hidden' | 'flagged'
+  pinned?: boolean
   photoUrl: string | null
   annotationUrl: string | null
 }
@@ -39,7 +40,7 @@ export default function CoupleGalleryPage() {
   const [data, setData] = useState<GalleryData | null>(null)
   const [sessions, setSessions] = useState<SessionRecord[]>([])
   const [demoProgress, setDemoProgress] = useState<{ current: number; total: number } | null>(null)
-  const [filter, setFilter] = useState<'all' | 'disposable' | 'polaroid' | 'super8' | 'noir' | 'flash' | 'champagne' | 'hidden' | 'flagged'>('all')
+  const [filter, setFilter] = useState<'all' | 'disposable' | 'polaroid' | 'super8' | 'noir' | 'flash' | 'champagne' | 'hidden' | 'flagged' | 'pinned'>('all')
   const [showQR, setShowQR] = useState(false)
   const [qrSettings, setQrSettings] = useState<QRSettings | null | 'loading'>(null)
   const [visible, setVisible] = useState(false)
@@ -194,6 +195,19 @@ export default function CoupleGalleryPage() {
     if (!res.ok) setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, status: 'flagged' } : s))
   }
 
+  // Pin ("keep") a photo so the rolling photo-cap deletion never removes it.
+  async function togglePin(sessionId: string, current: boolean) {
+    const next = !current
+    setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, pinned: next } : s))
+    if (demo) return // demo edits are local only
+    const res = await fetch(`/api/host/session?sessionId=${sessionId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenRef.current}` },
+      body: JSON.stringify({ pinned: next }),
+    })
+    if (!res.ok) setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, pinned: current } : s))
+  }
+
   async function downloadPhoto(photoUrl: string, annotationUrl: string | null, memoryNumber: number | null) {
     const blob = await flattenPhoto(photoUrl, annotationUrl)
     const objectUrl = URL.createObjectURL(blob)
@@ -325,6 +339,7 @@ export default function CoupleGalleryPage() {
   const activeSessions = allSessions.filter(s => s.status === 'active')
   const hiddenSessions = allSessions.filter(s => s.status === 'hidden')
   const flaggedSessions = allSessions.filter(s => s.status === 'flagged')
+  const pinnedSessions = allSessions.filter(s => s.pinned)
   const reviewEnabled = data?.coupleReviewEnabled ?? false
 
   // Single-select filter: a mode chip shows visible photos of that style;
@@ -332,6 +347,7 @@ export default function CoupleGalleryPage() {
   const gridSessions = allSessions.filter(s => {
     if (filter === 'hidden')  return s.status === 'hidden'
     if (filter === 'flagged') return s.status === 'flagged'
+    if (filter === 'pinned')  return !!s.pinned
     if (filter === 'all')     return s.status === 'active'
     return s.status === 'active' && s.mode === filter
   })
@@ -554,6 +570,9 @@ export default function CoupleGalleryPage() {
           <FilterChip active={filter === 'noir'}       onClick={() => setFilter('noir')}>Noir</FilterChip>
           <FilterChip active={filter === 'flash'}      onClick={() => setFilter('flash')}>Flash</FilterChip>
           <FilterChip active={filter === 'champagne'}  onClick={() => setFilter('champagne')}>Champagne</FilterChip>
+          {pinnedSessions.length > 0 && (
+            <FilterChip active={filter === 'pinned'} onClick={() => setFilter('pinned')}>Pinned</FilterChip>
+          )}
           {hiddenSessions.length > 0 && (
             <FilterChip active={filter === 'hidden'} onClick={() => setFilter('hidden')}>Hidden</FilterChip>
           )}
@@ -639,6 +658,7 @@ export default function CoupleGalleryPage() {
                 session={session}
                 canDownload={!demo}
                 onToggleVisibility={toggleVisibility}
+                onTogglePin={togglePin}
                 onDownload={downloadPhoto}
                 onDelete={deleteSession}
                 onOpen={setLightbox}
@@ -864,6 +884,7 @@ function PhotoTile({
   session,
   canDownload,
   onToggleVisibility,
+  onTogglePin,
   onDownload,
   onDelete,
   onOpen,
@@ -871,6 +892,7 @@ function PhotoTile({
   session: SessionRecord
   canDownload: boolean
   onToggleVisibility: (id: string, status: 'active' | 'hidden' | 'flagged') => void
+  onTogglePin: (id: string, pinned: boolean) => void
   onDownload: (photoUrl: string, annotationUrl: string | null, memoryNumber: number | null) => void
   onDelete: (id: string) => void
   onOpen: (session: SessionRecord) => void
@@ -914,6 +936,16 @@ function PhotoTile({
             </div>
           )}
 
+          {/* Pinned ("kept") badge — always visible so you can see what's protected */}
+          {session.pinned && (
+            <div
+              className="absolute bottom-2 left-2 w-6 h-6 rounded-full bg-amber-film/90 flex items-center justify-center shadow"
+              title="Kept — won't be auto-deleted"
+            >
+              <BookmarkIcon filled color="#1a1612" size={12} />
+            </div>
+          )}
+
           {/* Delete confirmation overlay */}
           {confirmDelete && (
             <div className="absolute inset-0 bg-ink/90 backdrop-blur-sm flex flex-col items-center justify-center gap-3 p-3">
@@ -949,6 +981,12 @@ function PhotoTile({
                 </ActionButton>
               )}
               <ActionButton
+                title={session.pinned ? 'Unpin' : 'Keep (never auto-delete)'}
+                onClick={() => onTogglePin(session.id, !!session.pinned)}
+              >
+                <BookmarkIcon filled={!!session.pinned} color={session.pinned ? '#c8a882' : '#f5f0e8'} />
+              </ActionButton>
+              <ActionButton
                 title={isHidden ? 'Show' : 'Hide'}
                 onClick={() => onToggleVisibility(session.id, session.status)}
               >
@@ -970,6 +1008,14 @@ function PhotoTile({
         </div>
       )}
     </div>
+  )
+}
+
+function BookmarkIcon({ filled, color = '#f5f0e8', size = 13 }: { filled?: boolean; color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />
+    </svg>
   )
 }
 

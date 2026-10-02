@@ -37,7 +37,7 @@ export const handler: Handler = async (event) => {
 
   const { data: sessions, error, count } = await admin
     .from('sessions')
-    .select('id, mode, memory_number, captured_at, uploaded_at, status, moderation_labels, output_path, annotation_path', { count: 'exact' })
+    .select('id, mode, memory_number, captured_at, uploaded_at, status, pinned, moderation_labels, output_path, annotation_path', { count: 'exact' })
     .eq('wedding_id', weddingId)
     .neq('status', 'deleted')
     .order('uploaded_at', { ascending: false })
@@ -58,6 +58,7 @@ export const handler: Handler = async (event) => {
     capturedAt:       s.captured_at,
     uploadedAt:       s.uploaded_at,
     status:           s.status,
+    pinned:           s.pinned ?? false,
     moderationLabels: s.moderation_labels ?? null,
     photoUrl:         s.output_path     ? urlMap.get(s.output_path)     ?? null : null,
     annotationUrl:    s.annotation_path ? urlMap.get(s.annotation_path) ?? null : null,
