@@ -79,6 +79,15 @@ export default function StaffPage() {
     if (saved) void load(saved, true)
   }, [load])
 
+  // While the lightbox is open, freeze the gallery behind it so a scroll/tap can't
+  // move the grid instead of the enlarged photo.
+  useEffect(() => {
+    if (!open) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [open])
+
   function submit(e: React.FormEvent) {
     e.preventDefault()
     const c = entering.trim()
@@ -200,14 +209,15 @@ export default function StaffPage() {
         </div>
       )}
 
-      {/* Lightbox + remove. Three ways out: the X, tapping the dark area, or Close. */}
+      {/* Lightbox + remove. The photo scales to the space between the top bar and the
+          buttons, so it can never overflow or hide them. Close with the X or Close. */}
       {open && (
         <div
-          className="fixed inset-0 z-50 bg-black/92 flex flex-col p-4 safe-top safe-bottom"
+          className="fixed inset-0 z-50 bg-black/92 flex flex-col overflow-hidden safe-top safe-bottom"
           onClick={() => { setOpen(null); setConfirm(false) }}
         >
           {/* Top bar with a clear close button */}
-          <div className="flex justify-end shrink-0">
+          <div className="shrink-0 flex justify-end p-3">
             <button
               onClick={(e) => { e.stopPropagation(); setOpen(null); setConfirm(false) }}
               aria-label="Close"
@@ -217,17 +227,16 @@ export default function StaffPage() {
             </button>
           </div>
 
-          {/* The photo itself ignores taps; the dark area around it closes. */}
-          <div className="flex-1 flex items-center justify-center min-h-0 py-3 pointer-events-none">
-            <div className="relative max-w-full max-h-full pointer-events-auto" onClick={e => e.stopPropagation()}>
-              <img src={open.photoUrl} alt="" draggable={false} className="block max-w-full max-h-full object-contain" />
-              {open.annotationUrl && (
-                <img src={open.annotationUrl} alt="" draggable={false} className="absolute inset-0 w-full h-full object-contain pointer-events-none" style={{ mixBlendMode: 'multiply' }} />
-              )}
-            </div>
+          {/* Image fills the space left between the bars; object-contain scales the photo
+              to fit inside it, so it is as large as it can be without covering anything. */}
+          <div className="relative flex-1 min-h-0 mx-4" onClick={e => e.stopPropagation()}>
+            <img src={open.photoUrl} alt="" draggable={false} className="absolute inset-0 w-full h-full object-contain" />
+            {open.annotationUrl && (
+              <img src={open.annotationUrl} alt="" draggable={false} className="absolute inset-0 w-full h-full object-contain pointer-events-none" style={{ mixBlendMode: 'multiply' }} />
+            )}
           </div>
 
-          <div className="w-full max-w-sm mx-auto flex flex-col gap-3 shrink-0" onClick={e => e.stopPropagation()}>
+          <div className="shrink-0 w-full max-w-sm mx-auto flex flex-col gap-3 p-4" onClick={e => e.stopPropagation()}>
             {!confirm ? (
               <button
                 onClick={() => setConfirm(true)}
