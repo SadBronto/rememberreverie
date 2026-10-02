@@ -114,8 +114,16 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
       `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS pinned BOOLEAN NOT NULL DEFAULT FALSE`,
     ],
   },
+  {
+    id: 'v14_slide_timing',
+    sql: [
+      // How often a custom slide appears (after every N photos) and how long it stays.
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS slideshow_slide_every INTEGER NOT NULL DEFAULT 7`,
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS slideshow_slide_seconds INTEGER NOT NULL DEFAULT 12`,
+    ],
+  },
   // Future migrations go here:
-  // { id: 'v14_...', sql: [`ALTER TABLE ...`] },
+  // { id: 'v15_...', sql: [`ALTER TABLE ...`] },
 ]
 
 async function run(sql: string, token: string): Promise<unknown> {

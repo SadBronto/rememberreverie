@@ -13,6 +13,8 @@ export default function SlidesManager({
   getToken: () => string | null
 }) {
   const [slides, setSlides] = useState<SlideItem[]>([])
+  const [every, setEvery] = useState(7)
+  const [seconds, setSeconds] = useState(12)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -22,7 +24,12 @@ export default function SlidesManager({
   const load = useCallback(async () => {
     try {
       const res = await fetch(`/api/host/slides?weddingId=${weddingId}`, { headers: authHeader() })
-      if (res.ok) { const d = await res.json(); setSlides(d.slides ?? []) }
+      if (res.ok) {
+        const d = await res.json()
+        setSlides(d.slides ?? [])
+        setEvery(d.every ?? 7)
+        setSeconds(d.seconds ?? 12)
+      }
     } catch { /* leave as-is */ }
   }, [weddingId, authHeader])
 
@@ -57,6 +64,16 @@ export default function SlidesManager({
       setBusy(false)
       if (fileRef.current) fileRef.current.value = ''
     }
+  }
+
+  async function saveSettings(e: number, s: number) {
+    try {
+      await fetch(`/api/host/slides?weddingId=${weddingId}`, {
+        method: 'POST',
+        headers: { ...authHeader(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ op: 'settings', every: e, seconds: s }),
+      })
+    } catch { /* non-blocking */ }
   }
 
   async function removeSlide(id: string) {
@@ -110,6 +127,29 @@ export default function SlidesManager({
         className="hidden"
         onChange={e => { const f = e.target.files?.[0]; if (f) void addSlide(f) }}
       />
+
+      <div className="flex flex-wrap gap-x-5 gap-y-2 items-center text-sans text-cream/60 text-xs pt-1">
+        <label className="flex items-center gap-2">
+          Show a slide every
+          <input
+            type="number" min={1} max={50} value={every}
+            onChange={e => setEvery(Math.max(1, Math.min(50, Number(e.target.value) || 1)))}
+            onBlur={() => saveSettings(every, seconds)}
+            className="w-14 bg-ink-light border border-cream/15 rounded-lg px-2 py-1 text-cream text-center focus:outline-none focus:border-cream/35"
+          />
+          photos
+        </label>
+        <label className="flex items-center gap-2">
+          Each shows for
+          <input
+            type="number" min={3} max={60} value={seconds}
+            onChange={e => setSeconds(Math.max(3, Math.min(60, Number(e.target.value) || 3)))}
+            onBlur={() => saveSettings(every, seconds)}
+            className="w-14 bg-ink-light border border-cream/15 rounded-lg px-2 py-1 text-cream text-center focus:outline-none focus:border-cream/35"
+          />
+          seconds
+        </label>
+      </div>
 
       {error && <p className="text-sans text-red-400/80 text-xs">{error}</p>}
       <p className="text-mono text-cream/25 text-[10px] leading-relaxed">

@@ -35,7 +35,7 @@ export const handler: Handler = async (event) => {
 
   const { data: wedding } = await admin
     .from('weddings')
-    .select('id, couple_email, slideshow_slides')
+    .select('id, couple_email, slideshow_slides, slideshow_slide_every, slideshow_slide_seconds')
     .eq('id', weddingId)
     .single()
   if (!wedding) return { statusCode: 404, body: 'Not found' }
@@ -50,16 +50,31 @@ export const handler: Handler = async (event) => {
   const slides: Slide[] = Array.isArray(wedding.slideshow_slides) ? wedding.slideshow_slides as Slide[] : []
   const prefix = `slides/${weddingId}/`
 
-  // ── GET: list with signed display URLs ──
+  // ── GET: list with signed display URLs + timing settings ──
   if (event.httpMethod === 'GET') {
     const urlMap = await getPhotoUrls(slides.map(s => s.path), 3600)
-    return json({ slides: slides.map(s => ({ id: s.id, path: s.path, url: urlMap.get(s.path) ?? null })) })
+    return json({
+      slides: slides.map(s => ({ id: s.id, path: s.path, url: urlMap.get(s.path) ?? null })),
+      every: wedding.slideshow_slide_every ?? 7,
+      seconds: wedding.slideshow_slide_seconds ?? 12,
+    })
   }
 
-  // ── POST: upload-url | save ──
+  // ── POST: upload-url | save | settings ──
   if (event.httpMethod === 'POST') {
-    let body: { op?: string; contentType?: string; slides?: Slide[] }
+    let body: { op?: string; contentType?: string; slides?: Slide[]; every?: number; seconds?: number }
     try { body = JSON.parse(event.body ?? '{}') } catch { return { statusCode: 400, body: 'Invalid JSON' } }
+
+    if (body.op === 'settings') {
+      const every = Math.max(1, Math.min(50, Math.round(Number(body.every) || 7)))
+      const seconds = Math.max(3, Math.min(60, Math.round(Number(body.seconds) || 12)))
+      const { error } = await admin
+        .from('weddings')
+        .update({ slideshow_slide_every: every, slideshow_slide_seconds: seconds })
+        .eq('id', weddingId)
+      if (error) return { statusCode: 500, body: 'Failed to save settings' }
+      return json({ ok: true, every, seconds })
+    }
 
     if (body.op === 'upload-url') {
       if (slides.length >= MAX_SLIDES) return { statusCode: 400, body: `Limit is ${MAX_SLIDES} slides` }

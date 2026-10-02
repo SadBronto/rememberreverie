@@ -34,6 +34,8 @@ interface SlideshowData {
   qrSlideEnabled: boolean
   autoFullscreen: boolean
   slowPoll: boolean
+  slideEvery?: number
+  slideSeconds?: number
   photos: SlideshowPhoto[]
   customSlides?: { id: string; url: string }[]
 }
@@ -63,6 +65,8 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   const [cursorHidden, setCursorHidden] = useState(false)
   const [photos, setPhotos]           = useState<SlideshowPhoto[]>([])
   const [customSlides, setCustomSlides] = useState<{ id: string; url: string }[]>([])
+  const [slideEvery, setSlideEvery]   = useState(CUSTOM_EVERY)
+  const [slideSeconds, setSlideSeconds] = useState(12)
   const [index, setIndex]             = useState(0)
   const [incoming, setIncoming]       = useState<number | null>(null) // index crossfading in on top
   const [incomingOpacity, setIncomingOpacity] = useState(0)
@@ -124,6 +128,8 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       setAutoFullscreen(data.autoFullscreen ?? false)
       setSlowPoll(data.slowPoll ?? false)
       setCustomSlides(data.customSlides ?? [])
+      setSlideEvery(data.slideEvery ?? CUSTOM_EVERY)
+      setSlideSeconds(data.slideSeconds ?? 12)
 
       setPhotos(prev => {
         const prevById = new Map(prev.map(p => [p.id, p]))
@@ -195,7 +201,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       if (qrSlideEnabled && guestUrl && (i + 1) % QR_EVERY === 0) {
         out.push({ id: `qr-${i}`, kind: 'qr' })
       }
-      if (customSlides.length > 0 && (i + 1) % CUSTOM_EVERY === 0) {
+      if (customSlides.length > 0 && (i + 1) % Math.max(1, slideEvery) === 0) {
         const cs = customSlides[customIdx % customSlides.length]
         customIdx++
         out.push({ id: `custom-${cs.id}-${i}`, kind: 'custom', url: cs.url })
@@ -206,7 +212,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       customSlides.forEach(cs => out.push({ id: `custom-${cs.id}`, kind: 'custom', url: cs.url }))
     }
     return out
-  }, [photos, qrSlideEnabled, guestUrl, customSlides])
+  }, [photos, qrSlideEnabled, guestUrl, customSlides, slideEvery])
 
   useEffect(() => { slidesRef.current = slides }, [slides])
 
@@ -261,12 +267,13 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   useEffect(() => {
     if (slides.length === 0) return
     if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current)
-    const dur = (slides[index]?.kind === 'qr' || slides[index]?.kind === 'custom') ? QR_DURATION : SLIDE_DURATION
+    const k = slides[index]?.kind
+    const dur = k === 'custom' ? slideSeconds * 1000 : k === 'qr' ? QR_DURATION : SLIDE_DURATION
     advanceTimerRef.current = setTimeout(() => advance(1), dur)
     return () => {
       if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current)
     }
-  }, [index, slides.length, advance])
+  }, [index, slides.length, advance, slideSeconds])
 
   // ── Keyboard + fullscreen ─────────────────────────────────────
 

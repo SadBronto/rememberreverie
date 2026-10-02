@@ -42,16 +42,20 @@ export const handler: Handler = async (event) => {
   let qrSlideEnabled = false
   let autoFullscreen = false
   let slowPoll = false
+  let slideEvery = 7
+  let slideSeconds = 12
   {
     const { data: extra, error: extraErr } = await admin
       .from('weddings')
-      .select('slideshow_qr_slide, slideshow_auto_fullscreen, slideshow_slow_poll')
+      .select('slideshow_qr_slide, slideshow_auto_fullscreen, slideshow_slow_poll, slideshow_slide_every, slideshow_slide_seconds')
       .eq('id', weddingId)
       .single()
     if (!extraErr && extra) {
       qrSlideEnabled = extra.slideshow_qr_slide ?? false
       autoFullscreen = extra.slideshow_auto_fullscreen ?? false
       slowPoll = extra.slideshow_slow_poll ?? false
+      slideEvery = extra.slideshow_slide_every ?? 7
+      slideSeconds = extra.slideshow_slide_seconds ?? 12
     }
   }
 
@@ -103,6 +107,8 @@ export const handler: Handler = async (event) => {
       qrSlideEnabled:   qrSlideEnabled,
       autoFullscreen:   autoFullscreen,
       slowPoll:         slowPoll,
+      slideEvery:       slideEvery,
+      slideSeconds:     slideSeconds,
       photos:           photos.filter(p => p.photoUrl),
       customSlides,
     }),
