@@ -146,15 +146,21 @@ export default function WeddingDetailPage() {
     if (!tokenRef.current) return
     setSaving(true)
     setSaveMsg(null)
+    // qr_settings (QR designer) and slideshow_slides (slides manager) are saved by
+    // their own controls and are NOT kept fresh in `form`. Sending the form's stale
+    // copies here would clobber a QR or slide change you just made, so drop them.
+    const payload: Record<string, unknown> = { ...form }
+    delete payload.qr_settings
+    delete payload.slideshow_slides
     const res = await fetch(`/api/admin/wedding?id=${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenRef.current}` },
-      body: JSON.stringify(form),
+      body: JSON.stringify(payload),
     })
     setSaving(false)
     setSaveMsg(res.ok ? 'saved' : 'error')
     if (res.ok) setTimeout(() => setSaveMsg(null), 2500)
-    if (res.ok) setWedding(f => f ? { ...f, ...form as WeddingDetail } : f)
+    if (res.ok) setWedding(f => f ? { ...f, ...(payload as Partial<WeddingDetail>) } : f)
   }
 
   async function toggleActive() {
