@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 
-type Mode = 'login' | 'link-sent' | 'set-password' | 'password-set'
+type Mode = 'login' | 'link-sent' | 'set-password' | 'password-set' | 'signed-in'
 
 export default function AdminLoginPage() {
   const navigate = useNavigate()
@@ -13,12 +13,12 @@ export default function AdminLoginPage() {
   const [error, setError]       = useState<string | null>(null)
   const [checking, setChecking] = useState(true)
 
-  // If already signed in (e.g. arrived here from the dashboard to set a password
-  // after a magic-link login), show the set-password view instead of the form.
+  // If already signed in, show a quick "go to dashboard" view (with an optional
+  // "set a password") instead of forcing a password prompt on every visit.
   useEffect(() => {
     if (!supabase) { setChecking(false); return }
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setMode('set-password')
+      if (session) setMode('signed-in')
       setChecking(false)
     })
   }, [])
@@ -62,6 +62,13 @@ export default function AdminLoginPage() {
     setMode('password-set')
   }
 
+  async function signOut() {
+    if (!supabase) return
+    await supabase.auth.signOut()
+    setEmail(''); setPassword('')
+    setMode('login')
+  }
+
   return (
     <div className="min-h-dvh bg-ink flex flex-col items-center justify-center px-6">
       <p className="text-mono text-cream/20 text-[10px] tracking-[0.4em] uppercase mb-10">
@@ -70,6 +77,28 @@ export default function AdminLoginPage() {
 
       {checking ? (
         <div className="w-7 h-7 rounded-full border-2 border-cream/20 border-t-cream/60 animate-spin" />
+      ) : mode === 'signed-in' ? (
+        <div className="text-center max-w-xs flex flex-col items-center gap-5">
+          <div>
+            <p className="text-serif text-cream text-2xl font-normal">You're signed in</p>
+            <p className="text-sans text-cream/40 text-sm leading-relaxed mt-2">Welcome back.</p>
+          </div>
+          <button
+            onClick={() => navigate('/admin/weddings', { replace: true })}
+            className="w-full py-3.5 rounded-full bg-cream text-ink text-sans text-sm font-medium tracking-widest uppercase active:scale-[0.97] transition-transform"
+          >
+            Go to dashboard
+          </button>
+          <div className="flex items-center gap-4">
+            <button onClick={() => setMode('set-password')} className="text-cream/35 text-sans text-xs tracking-widest uppercase hover:text-cream/60 transition-colors">
+              Set a password
+            </button>
+            <span className="text-cream/15">·</span>
+            <button onClick={signOut} className="text-cream/35 text-sans text-xs tracking-widest uppercase hover:text-cream/60 transition-colors">
+              Sign out
+            </button>
+          </div>
+        </div>
       ) : mode === 'link-sent' ? (
         <div className="text-center max-w-xs">
           <p className="text-serif text-cream text-2xl font-normal mb-3">Check your email</p>

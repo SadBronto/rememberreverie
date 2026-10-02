@@ -2,6 +2,7 @@ import type { CaptureSession } from '@/types/session'
 
 interface UploadResult {
   success: boolean
+  permanent: boolean   // true = server rejected it in a way retrying can't fix (4xx)
   memoryNumber: number | null
   retryCount: number
 }
@@ -13,7 +14,7 @@ async function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms))
 }
 
-// Upload a blob to a Supabase signed URL via HTTP PUT
+// Upload a blob to a signed URL via HTTP PUT
 async function putBlob(signedUrl: string, blob: Blob, contentType: string): Promise<boolean> {
   try {
     const res = await fetch(signedUrl, {
@@ -50,17 +51,19 @@ export async function uploadSession(session: CaptureSession): Promise<UploadResu
         }),
       })
 
-      // 4xx = non-retryable (bad request, wedding not found, etc.)
+      // 4xx = non-retryable (bad request, wedding not found or deleted, etc.). Mark it
+      // PERMANENT so the recovery queue discards it instead of retrying a dead photo
+      // forever.
       if (registerRes.status >= 400 && registerRes.status < 500) {
         console.warn('Upload register non-retryable error:', registerRes.status)
-        return { success: false, memoryNumber: null, retryCount }
+        return { success: false, permanent: true, memoryNumber: null, retryCount }
       }
 
       if (!registerRes.ok) throw new Error(`Register failed: ${registerRes.status}`)
 
       const { memoryNumber, uploadUrl, annotationUploadUrl } = await registerRes.json()
 
-      // Step 2: Upload photo blob directly to Supabase Storage (bypasses Netlify size limits)
+      // Step 2: Upload photo blob directly to storage (bypasses Netlify size limits)
       if (session.outputImage && uploadUrl) {
         const ok = await putBlob(uploadUrl, session.outputImage, 'image/jpeg')
         if (!ok) throw new Error('Photo upload to storage failed')
@@ -89,14 +92,14 @@ export async function uploadSession(session: CaptureSession): Promise<UploadResu
         }).catch(() => {})
       } catch { /* moderation must never break a successful upload */ }
 
-      return { success: true, memoryNumber: memoryNumber ?? null, retryCount }
+      return { success: true, permanent: false, memoryNumber: memoryNumber ?? null, retryCount }
     } catch (err) {
       if (attempt === MAX_RETRIES) {
         console.error('Upload failed after max retries:', err)
-        return { success: false, memoryNumber: null, retryCount }
+        return { success: false, permanent: false, memoryNumber: null, retryCount }
       }
     }
   }
 
-  return { success: false, memoryNumber: null, retryCount }
+  return { success: false, permanent: false, memoryNumber: null, retryCount }
 }

@@ -61,6 +61,10 @@ export const handler: Handler = async (event) => {
         .eq('id', sessionId)
         .single()
       memoryNumber = existing?.memory_number ?? null
+    } else if (dbError.code === '23503') {
+      // Foreign-key violation = this wedding_id no longer exists (deleted/invalid).
+      // Return 404 so the client treats it as permanent and stops retrying a dead photo.
+      return { statusCode: 404, body: JSON.stringify({ error: 'Wedding not found' }) }
     } else {
       console.error('DB insert error:', dbError)
       return { statusCode: 500, body: JSON.stringify({ error: 'Failed to create session' }) }

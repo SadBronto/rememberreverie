@@ -82,6 +82,22 @@ export async function countRecovery(): Promise<number> {
   return (await getAllRecovery()).length
 }
 
+// Discard every queued photo. Used when someone wants to clear photos that are
+// stuck and can't upload (these never reached the server, so this is the only way
+// to get rid of a dead one manually).
+export async function clearAllRecovery(): Promise<void> {
+  try {
+    const db = await openDB()
+    await new Promise<void>((resolve) => {
+      const tx = db.transaction(STORE, 'readwrite')
+      tx.objectStore(STORE).clear()
+      tx.oncomplete = () => resolve()
+      tx.onerror    = () => resolve()
+    })
+    db.close()
+  } catch { /* ignore */ }
+}
+
 let flushing = false
 
 // Re-attempt every pending upload. Successful ones are removed from the queue.
@@ -95,25 +111,32 @@ export async function flushPendingUploads(): Promise<{ flushed: number; remainin
     let flushed = 0
 
     for (const rec of pending) {
-      const session: CaptureSession = {
-        id:           rec.id,
-        weddingId:    rec.weddingId,
-        mode:         rec.mode,
-        sourceImages: [],
-        outputImage:  rec.outputImage,
-        annotation:   rec.annotation
-          ? { type: rec.annotation.type, dataUrl: rec.annotation.dataUrl, appliedAt: new Date(rec.annotation.appliedAt) }
-          : null,
-        capturedAt:   new Date(rec.capturedAt),
-        uploadStatus: 'pending',
-        memoryNumber: null,
-        retryCount:   0,
-      }
+      try {
+        const session: CaptureSession = {
+          id:           rec.id,
+          weddingId:    rec.weddingId,
+          mode:         rec.mode,
+          sourceImages: [],
+          outputImage:  rec.outputImage,
+          annotation:   rec.annotation
+            ? { type: rec.annotation.type, dataUrl: rec.annotation.dataUrl, appliedAt: new Date(rec.annotation.appliedAt) }
+            : null,
+          capturedAt:   new Date(rec.capturedAt),
+          uploadStatus: 'pending',
+          memoryNumber: null,
+          retryCount:   0,
+        }
 
-      const result = await uploadSession(session)
-      if (result.success) {
-        await removeRecovery(rec.id)
-        flushed++
+        const result = await uploadSession(session)
+        // Remove on success, OR when the server says retrying can't help (permanent =
+        // a 4xx/404, e.g. the event no longer exists) — otherwise a dead photo nags
+        // and retries forever. Transient failures (offline / 5xx) stay queued.
+        if (result.success || result.permanent) {
+          await removeRecovery(rec.id)
+          if (result.success) flushed++
+        }
+      } catch {
+        // A single bad record must never block the rest of the queue.
       }
     }
 

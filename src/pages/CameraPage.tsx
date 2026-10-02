@@ -6,7 +6,7 @@ import { useDemoStore, DEMO_PROMPTS } from '@/store/demoStore'
 import { CAMERA_MODES, type CameraModeConfig } from '@/config/modes'
 import { processSession } from '@/lib/imageProcessor'
 import { playShutterSound } from '@/lib/sound'
-import { flushPendingUploads, countRecovery } from '@/lib/recovery'
+import { flushPendingUploads, countRecovery, clearAllRecovery } from '@/lib/recovery'
 import { captureWindowStatus } from '@/lib/captureWindow'
 import type { CameraModeName } from '@/types/session'
 import ModeSelector from '@/components/ModeSelector'
@@ -29,6 +29,8 @@ export default function CameraPage() {
   const [flashVisible, setFlashVisible] = useState(false)
   const [cameraError, setCameraError] = useState<CameraError>(null)
   const [pendingCount, setPendingCount] = useState(0)
+  const [pendingMenu, setPendingMenu] = useState(false)
+  const [clearArmed, setClearArmed] = useState(false)
   // Disposable can be shot landscape OR portrait (guest's choice, this mode only)
   const [dispOrientation, setDispOrientation] = useState<'landscape' | 'portrait'>('landscape')
   // Which camera the guest is using. 'user' = front (selfie). The preview is
@@ -319,14 +321,45 @@ export default function CameraPage() {
         </div>
       </div>
 
-      {/* Pending-upload indicator — stranded photos retry automatically */}
+      {/* Pending-upload indicator — stranded photos retry automatically. Tap it for
+          a manual retry, or to clear a photo that can never upload. */}
       {pendingCount > 0 && (
-        <div className="absolute top-16 left-0 right-0 z-20 flex justify-center pointer-events-none safe-top">
-          <div className="bg-ink/70 backdrop-blur-sm border border-amber-film/30 rounded-full px-3.5 py-1.5 flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full border-2 border-amber-film/50 border-t-transparent animate-spin" />
-            <p className="text-mono text-amber-film/80 text-[10px] tracking-widest uppercase">
-              {pendingCount} waiting to upload
-            </p>
+        <div className="absolute top-16 left-0 right-0 z-20 flex justify-center safe-top px-4">
+          <div className="bg-ink/80 backdrop-blur-sm border border-amber-film/30 rounded-2xl px-3.5 py-2 flex flex-col items-center gap-2 max-w-[18rem]">
+            <button
+              onClick={() => { setPendingMenu(m => !m); setClearArmed(false) }}
+              className="flex items-center gap-2 touch-manipulation"
+            >
+              <span className="w-3 h-3 rounded-full border-2 border-amber-film/50 border-t-transparent animate-spin" />
+              <span className="text-mono text-amber-film/80 text-[10px] tracking-widest uppercase">
+                {pendingCount} waiting to upload
+              </span>
+            </button>
+            {pendingMenu && (
+              <div className="flex items-center gap-2 pt-0.5">
+                <button
+                  onClick={async () => { await flushPendingUploads(); setPendingCount(await countRecovery()) }}
+                  className="px-3 py-1 rounded-full border border-cream/25 text-cream/70 text-mono text-[9px] tracking-widest uppercase touch-manipulation active:scale-95"
+                >
+                  Retry now
+                </button>
+                {!clearArmed ? (
+                  <button
+                    onClick={() => setClearArmed(true)}
+                    className="px-3 py-1 rounded-full border border-red-400/30 text-red-400/70 text-mono text-[9px] tracking-widest uppercase touch-manipulation active:scale-95"
+                  >
+                    Clear
+                  </button>
+                ) : (
+                  <button
+                    onClick={async () => { await clearAllRecovery(); setPendingCount(0); setPendingMenu(false); setClearArmed(false) }}
+                    className="px-3 py-1 rounded-full bg-red-500 text-white text-mono text-[9px] tracking-widest uppercase touch-manipulation active:scale-95"
+                  >
+                    Tap to discard
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
