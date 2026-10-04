@@ -111,6 +111,8 @@ export default function DemoLandingPage() {
           {' · '}
           <a href="https://www.thirddegreeentertainment.com/contact" target="_blank" rel="noopener noreferrer" className="hover:text-cream/40 transition-colors">Contact</a>
           {' · '}
+          <Link to="/terms" className="hover:text-cream/40 transition-colors">Terms</Link>
+          {' · '}
           <Link to="/privacy" className="hover:text-cream/40 transition-colors">Privacy</Link>
         </p>
       </footer>

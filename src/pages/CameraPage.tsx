@@ -6,7 +6,7 @@ import { useDemoStore, DEMO_PROMPTS } from '@/store/demoStore'
 import { CAMERA_MODES, type CameraModeConfig } from '@/config/modes'
 import { processSession } from '@/lib/imageProcessor'
 import { playShutterSound } from '@/lib/sound'
-import { flushPendingUploads, countRecovery, clearAllRecovery } from '@/lib/recovery'
+import { flushPendingUploads, countRecovery, clearAllRecovery, getAllRecovery } from '@/lib/recovery'
 import { captureWindowStatus } from '@/lib/captureWindow'
 import type { CameraModeName } from '@/types/session'
 import ModeSelector from '@/components/ModeSelector'
@@ -337,7 +337,7 @@ export default function CameraPage() {
               </span>
             </button>
             {pendingMenu && (
-              <div className="flex items-center gap-2 pt-0.5">
+              <div className="flex items-center justify-center flex-wrap gap-2 pt-0.5">
                 <button
                   disabled={retrying}
                   onClick={async () => {
@@ -351,6 +351,25 @@ export default function CameraPage() {
                   className="px-3 py-1 rounded-full border border-cream/25 text-cream/70 text-mono text-[9px] tracking-widest uppercase touch-manipulation active:scale-95 disabled:opacity-50"
                 >
                   {retrying ? 'Retrying…' : 'Retry now'}
+                </button>
+                <button
+                  onClick={async () => {
+                    const recs = await getAllRecovery()
+                    if (!recs.length) return
+                    const JSZip = (await import('jszip')).default
+                    const zip = new JSZip()
+                    recs.forEach((r, i) => zip.file(`reverie-unsent-${i + 1}.jpg`, r.outputImage))
+                    const blob = await zip.generateAsync({ type: 'blob' })
+                    const url = URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = 'reverie-unsent-photos.zip'
+                    document.body.appendChild(a); a.click(); a.remove()
+                    setTimeout(() => URL.revokeObjectURL(url), 10000)
+                  }}
+                  className="px-3 py-1 rounded-full border border-cream/25 text-cream/70 text-mono text-[9px] tracking-widest uppercase touch-manipulation active:scale-95"
+                >
+                  Save to phone
                 </button>
                 {!clearArmed ? (
                   <button

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useSessionStore } from '@/store/sessionStore'
 import FilmGrain from '@/components/FilmGrain'
 import GeofenceGate from '@/components/GeofenceGate'
@@ -21,6 +21,11 @@ const DEV_FALLBACK: WeddingConfig = {
   timestampStyle: 'classic',
 }
 
+const CONSENT_KEY = 'reverie-consent-v1'
+function hasConsent(): boolean {
+  try { return localStorage.getItem(CONSENT_KEY) === '1' } catch { return false }
+}
+
 export default function LandingPage() {
   const { weddingId } = useParams()
   const navigate = useNavigate()
@@ -28,6 +33,7 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<'notfound' | 'network' | null>(null)
   const [gateOpen, setGateOpen] = useState(false)
+  const [consentOpen, setConsentOpen] = useState(false)
 
   useEffect(() => {
     const id = weddingId ?? 'demo'
@@ -87,10 +93,22 @@ export default function LandingPage() {
     weddingConfig.geofenceLng != null
   )
 
-  const handleOpen = () => {
+  const proceedToCamera = () => {
     if (geofenceActive) { setGateOpen(true); return }
     const id = weddingId ?? 'demo'
     navigate(`/w/${id}/camera`)
+  }
+
+  const handleOpen = () => {
+    // Real guests accept the consent notice once per device; demo guests skip it.
+    if (!isDemoId(weddingId ?? 'demo') && !hasConsent()) { setConsentOpen(true); return }
+    proceedToCamera()
+  }
+
+  const acceptConsent = () => {
+    try { localStorage.setItem(CONSENT_KEY, '1') } catch { /* ignore */ }
+    setConsentOpen(false)
+    proceedToCamera()
   }
 
   if (loadError) return <LandingMessage variant={loadError} />
@@ -116,6 +134,40 @@ export default function LandingPage() {
           onPass={() => navigate(`/w/${weddingId ?? 'demo'}/camera`)}
           onClose={() => setGateOpen(false)}
         />
+      )}
+
+      {/* One-time consent before a guest starts taking photos */}
+      {consentOpen && (
+        <div className="fixed inset-0 z-[70] bg-ink/95 backdrop-blur-sm flex items-end sm:items-center justify-center px-5 pb-6 safe-bottom">
+          <div className="w-full max-w-sm bg-ink-light border border-cream/15 rounded-3xl p-6 flex flex-col gap-4">
+            <div>
+              <p className="text-mono text-amber-film/70 text-[10px] tracking-[0.3em] uppercase">Before you start</p>
+              <h3 className="text-serif text-cream text-xl font-normal mt-2">A quick heads-up</h3>
+            </div>
+            <p className="text-sans text-cream/60 text-sm leading-relaxed font-light">
+              Photos you take here may appear on the event&rsquo;s screen and are saved to the host&rsquo;s
+              private gallery. Only share photos you have the right to, with the consent of anyone in
+              them, and nothing offensive or illegal. The host can remove any photo.
+            </p>
+            <p className="text-sans text-cream/40 text-xs leading-relaxed">
+              By continuing you agree to our{' '}
+              <Link to="/terms" className="text-amber-film/80 underline">Terms</Link> and{' '}
+              <Link to="/privacy" className="text-amber-film/80 underline">Privacy Policy</Link>.
+            </p>
+            <button
+              onClick={acceptConsent}
+              className="w-full py-3.5 rounded-full bg-cream text-ink text-sans text-sm font-medium tracking-widest uppercase active:scale-[0.97] transition-transform touch-manipulation"
+            >
+              I agree, open camera
+            </button>
+            <button
+              onClick={() => setConsentOpen(false)}
+              className="text-cream/35 text-sans text-xs tracking-widest uppercase touch-manipulation"
+            >
+              Not now
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Animated film grain — nearly subconscious */}
@@ -173,6 +225,11 @@ export default function LandingPage() {
         </button>
         <p className="text-mono text-cream/20 text-[10px] tracking-widest uppercase">
           a Third Degree Entertainment offering
+        </p>
+        <p className="text-mono text-cream/20 text-[9px] tracking-[0.2em] uppercase">
+          <Link to="/terms" className="hover:text-cream/45 transition-colors">Terms</Link>
+          {' · '}
+          <Link to="/privacy" className="hover:text-cream/45 transition-colors">Privacy</Link>
         </p>
       </div>
     </div>

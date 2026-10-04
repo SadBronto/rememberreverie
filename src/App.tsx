@@ -32,6 +32,7 @@ const PrintSignPage      = lazy(() => import('@/pages/admin/PrintSignPage'))
 const SlugPage           = lazy(() => import('@/pages/SlugPage'))
 const SignatureLabPage   = lazy(() => import('@/pages/SignatureLabPage'))
 const PrivacyPage        = lazy(() => import('@/pages/PrivacyPage'))
+const TermsPage          = lazy(() => import('@/pages/TermsPage'))
 const FilterDemoPage     = lazy(() => import('@/pages/FilterDemoPage'))
 const PricingPage        = lazy(() => import('@/pages/PricingPage'))
 const StaffPage          = lazy(() => import('@/pages/StaffPage'))
@@ -105,6 +106,7 @@ export default function App() {
         <Route path="/admin/weddings/:id/print" element={<PrintSignPage />} />
         <Route path="/admin/signature-lab" element={<SignatureLabPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/filterdemos" element={<FilterDemoPage />} />
         {/* On-site staff moderation (password-gated, no login) */}

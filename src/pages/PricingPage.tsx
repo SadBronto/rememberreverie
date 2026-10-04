@@ -159,6 +159,8 @@ export default function PricingPage() {
           <p className="text-mono text-cream/15 text-[9px] tracking-[0.2em] mt-3">
             <a href="mailto:hello@rememberreverie.com" className="hover:text-cream/40 transition-colors">Contact</a>
             {' · '}
+            <Link to="/terms" className="hover:text-cream/40 transition-colors">Terms</Link>
+            {' · '}
             <Link to="/privacy" className="hover:text-cream/40 transition-colors">Privacy</Link>
           </p>
         </footer>
