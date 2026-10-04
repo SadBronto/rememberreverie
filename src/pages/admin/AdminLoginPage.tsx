@@ -209,7 +209,7 @@ export default function AdminLoginPage() {
       {/* Context + legitimacy links */}
       <div className="mt-12 text-center max-w-xs">
         <p className="text-sans text-cream/25 text-[11px] leading-relaxed">
-          Reverie is a private photo-sharing service for weddings &amp; events, by
+          Reverie is a private photo-sharing service for events, by
           Third Degree Entertainment.
         </p>
         <p className="text-mono text-cream/15 text-[9px] tracking-[0.2em] mt-3">

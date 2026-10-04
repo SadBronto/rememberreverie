@@ -30,15 +30,14 @@ export default function DemoMenuBar() {
   const onDemoPath =
     path.startsWith('/demo') ||
     path.startsWith('/w/demo-') ||
-    path.startsWith('/host/demo-') ||
-    path.startsWith('/couple/demo-')  // legacy alias
+    path.startsWith('/host/demo-')
   if (!active && !onDemoPath) return null
 
   const current: Persona | null =
-    path.startsWith('/w/demo-')                                          ? 'guest'
-    : path.startsWith('/host/demo-') || path.startsWith('/couple/demo-') ? 'client'
-    : path.startsWith('/demo/setup') || path.startsWith('/host/setup') || path.startsWith('/couple/setup') ? 'setup'
-    : path === '/demo' || path === '/demo/'                              ? 'home'
+    path.startsWith('/w/demo-')                                        ? 'guest'
+    : path.startsWith('/host/demo-')                                   ? 'client'
+    : path.startsWith('/demo/setup') || path.startsWith('/host/setup') ? 'setup'
+    : path === '/demo' || path === '/demo/'                            ? 'home'
     : null
 
   // First time a persona is opened this session → show its intro splash; after

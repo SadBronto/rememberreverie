@@ -492,7 +492,7 @@ export default function WeddingDetailPage() {
 
         {/* Couple portal access / setup email */}
         <div className="flex flex-col gap-3">
-          <SectionLabel>{isPendingSetup ? 'Setup Email' : 'Couple Portal Access'}</SectionLabel>
+          <SectionLabel>{isPendingSetup ? 'Setup Email' : 'Host Portal Access'}</SectionLabel>
 
           {wedding.couple_email ? (
             <div className="flex flex-col gap-2">
@@ -710,17 +710,27 @@ export default function WeddingDetailPage() {
             </p>
           </FormField>
 
-          <FormField label="Project type">
-            <div className="flex items-center gap-3">
-              <AdminToggle value={form.is_event ?? false} onChange={v => setField('is_event', v)} />
-              <span className="text-sans text-cream/50 text-sm">
-                {form.is_event ? 'Non-wedding event' : 'Wedding'}
-              </span>
+          <FormField label="Event type">
+            <div className="flex gap-2">
+              {([{ v: false, label: 'Wedding' }, { v: true, label: 'Other event' }] as const).map(opt => (
+                <button
+                  key={String(opt.v)}
+                  type="button"
+                  onClick={() => setField('is_event', opt.v)}
+                  className={`flex-1 px-4 py-2.5 rounded-xl border text-sans text-sm transition-colors touch-manipulation ${
+                    (form.is_event ?? false) === opt.v
+                      ? 'bg-cream text-ink border-cream font-medium'
+                      : 'text-cream/50 border-cream/15'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
           </FormField>
 
           <FormField label="Contact email">
-            <AdminInput type="email" value={form.couple_email ?? ''} onChange={v => setField('couple_email', v || null)} placeholder="couple@email.com" />
+            <AdminInput type="email" value={form.couple_email ?? ''} onChange={v => setField('couple_email', v || null)} placeholder="host@email.com" />
           </FormField>
 
           <FormField label={form.is_event ? 'Name / organization' : 'Couple names'}>

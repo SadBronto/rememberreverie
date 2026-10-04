@@ -93,7 +93,7 @@ export default function DemoLandingPage() {
             rel="noopener noreferrer"
             className="mt-2 text-mono text-cream/28 text-[10px] tracking-[0.25em] uppercase touch-manipulation hover:text-cream/50 transition-colors duration-150"
           >
-            Book for your wedding or event →
+            Book for your event →
           </a>
         </div>
       </main>
@@ -104,7 +104,7 @@ export default function DemoLandingPage() {
         style={{ opacity: visible ? 1 : 0 }}
       >
         <p className="text-mono text-cream/15 text-[9px] tracking-[0.3em] uppercase">
-          Every wedding. Every memory.
+          Every moment. Every memory.
         </p>
         <p className="text-mono text-cream/20 text-[9px] tracking-[0.2em]">
           Reverie by Third Degree Entertainment

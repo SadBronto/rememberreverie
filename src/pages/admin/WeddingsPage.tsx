@@ -83,7 +83,7 @@ export default function WeddingsPage() {
       <div className="sticky top-0 z-10 bg-ink/90 backdrop-blur-md border-b border-cream/5 px-5 py-4 flex items-center justify-between">
         <div>
           <p className="text-mono text-cream/25 text-[9px] tracking-[0.35em] uppercase">Reverie · Admin</p>
-          <h1 className="text-serif text-cream text-lg font-normal mt-0.5">Weddings</h1>
+          <h1 className="text-serif text-cream text-lg font-normal mt-0.5">Events</h1>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -105,12 +105,12 @@ export default function WeddingsPage() {
 
         {weddings.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-serif text-cream/30 text-xl italic">No weddings yet</p>
+            <p className="text-serif text-cream/30 text-xl italic">No events yet</p>
             <button
               onClick={() => navigate('/admin/weddings/new')}
               className="mt-6 px-6 py-3 rounded-full bg-cream text-ink text-sans text-sm font-medium tracking-widest uppercase"
             >
-              Create first wedding
+              Create first event
             </button>
           </div>
         )}

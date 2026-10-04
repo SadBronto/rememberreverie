@@ -1,9 +1,6 @@
-// The client portal is served under two bases:
-//   /host   — canonical, neutral (what we share and link to going forward)
-//   /couple — legacy alias, still live so older links, QRs and emails keep working
-// Internal navigation mirrors whichever base the user is currently in, so the URL
-// stays consistent through a session. The demo runs under /couple and is
-// unaffected. The post-login callback always lands on /host (the canonical base).
-export function portalBase(pathname: string = window.location.pathname): '/host' | '/couple' {
-  return pathname.startsWith('/host') ? '/host' : '/couple'
+// The client portal is served under /host (canonical, neutral). This helper used to
+// mirror a legacy /couple base; /couple is gone, so it always returns /host. Kept as
+// a function so the many call sites stay unchanged and read clearly.
+export function portalBase(): '/host' {
+  return '/host'
 }

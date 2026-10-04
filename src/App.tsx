@@ -83,21 +83,14 @@ export default function App() {
         <Route path="/w/:weddingId/annotate" element={<AnnotatePage />} />
         <Route path="/w/:weddingId/done" element={<ConfirmationPage />} />
         <Route path="/w/:weddingId/slideshow" element={<SlideshowPage />} />
-        {/* Client portal — /host is canonical/neutral; /couple kept as a live alias
-            for existing links, QRs and emails. Both render the same pages. */}
+        {/* Client portal — /host (neutral, canonical). */}
         <Route path="/host/login" element={<LoginPage />} />
         <Route path="/host/setup" element={<CoupleSetupPage />} />
         <Route path="/host/no-wedding" element={<NoWeddingPage />} />
         <Route path="/host/:weddingId" element={<CoupleGalleryPage />} />
         <Route path="/host/:weddingId/settings" element={<CoupleSettingsPage />} />
         <Route path="/host/:weddingId/print" element={<CouplePrintPage />} />
-        <Route path="/couple/login" element={<LoginPage />} />
-        <Route path="/couple/setup" element={<CoupleSetupPage />} />
-        <Route path="/couple/no-wedding" element={<NoWeddingPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
-        <Route path="/couple/:weddingId" element={<CoupleGalleryPage />} />
-        <Route path="/couple/:weddingId/settings" element={<CoupleSettingsPage />} />
-        <Route path="/couple/:weddingId/print" element={<CouplePrintPage />} />
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/admin/weddings" element={<WeddingsPage />} />
         <Route path="/admin/weddings/new" element={<NewWeddingPage />} />

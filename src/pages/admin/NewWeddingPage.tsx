@@ -14,7 +14,7 @@ export default function NewWeddingPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!coupleEmail.trim()) { setError('Couple email is required.'); return }
+    if (!coupleEmail.trim()) { setError('An email is required.'); return }
     setError(null)
     setSaving(true)
 
@@ -38,7 +38,7 @@ export default function NewWeddingPage() {
     setSaving(false)
 
     if (res.status === 401) { navigate('/admin/login', { replace: true }); return }
-    if (!res.ok) { setError('Failed to create wedding. Try again.'); return }
+    if (!res.ok) { setError('Failed to create event. Try again.'); return }
 
     const data = await res.json()
     navigate(`/admin/weddings/${data.id}`)
@@ -51,7 +51,7 @@ export default function NewWeddingPage() {
         <button onClick={() => navigate('/admin/weddings')} className="text-cream/40 text-sans text-sm touch-manipulation">
           ← Back
         </button>
-        <h1 className="text-serif text-cream text-lg font-normal">New Wedding</h1>
+        <h1 className="text-serif text-cream text-lg font-normal">New Event</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="px-5 py-6 flex flex-col gap-6 max-w-lg">
@@ -59,17 +59,18 @@ export default function NewWeddingPage() {
         {/* Info callout */}
         <div className="bg-cream/[0.04] border border-cream/10 rounded-xl px-4 py-3.5">
           <p className="text-sans text-cream/60 text-sm leading-relaxed">
-            Enter the couple's email address. They'll receive a setup link where they configure everything — names, date, camera modes, and more.
+            Enter the host's email address. They'll get a setup link to configure everything
+            themselves: name, date, camera styles, and more.
           </p>
         </div>
 
         <Section label="Required">
-          <Field label="Couple email" hint="They'll use this to log in and set up their wedding">
+          <Field label="Host email" hint="They'll use this to log in and set up their event">
             <Input
               type="email"
               value={coupleEmail}
               onChange={v => setCoupleEmail(v)}
-              placeholder="couple@email.com"
+              placeholder="host@email.com"
               required
               autoFocus
             />
@@ -78,16 +79,16 @@ export default function NewWeddingPage() {
 
         <Section label="Admin reference (optional)">
           <p className="text-mono text-cream/20 text-[10px] tracking-wide -mt-1">
-            Only visible to you — the couple will set their own names and date.
+            Only visible to you. The host sets their own name and date.
           </p>
-          <Field label="Couple names">
+          <Field label="Name">
             <Input
               value={coupleNames}
               onChange={v => setCoupleNames(v)}
-              placeholder="Sophia & James"
+              placeholder="e.g. Avery &amp; Jordan"
             />
           </Field>
-          <Field label="Wedding date">
+          <Field label="Date">
             <Input
               type="date"
               value={weddingDate}
@@ -105,7 +106,7 @@ export default function NewWeddingPage() {
           disabled={saving || !coupleEmail.trim()}
           className="w-full py-4 rounded-full bg-cream text-ink text-sans text-sm font-medium tracking-widest uppercase active:scale-[0.97] transition-transform disabled:opacity-40"
         >
-          {saving ? 'Creating…' : 'Create Wedding'}
+          {saving ? 'Creating…' : 'Create Event'}
         </button>
       </form>
     </div>
