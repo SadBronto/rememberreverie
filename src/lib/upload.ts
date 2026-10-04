@@ -14,6 +14,24 @@ async function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms))
 }
 
+// A stable per-device id (this browser), so the server can rate-limit one phone
+// without affecting everyone on the venue's shared Wi-Fi. Best-effort: if storage
+// is blocked we just send a throwaway id.
+function getDeviceToken(): string {
+  try {
+    let t = localStorage.getItem('reverie-device')
+    if (!t) {
+      t = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+      localStorage.setItem('reverie-device', t)
+    }
+    return t
+  } catch {
+    return `anon-${Math.random().toString(36).slice(2, 10)}`
+  }
+}
+
 // Upload a blob to a signed URL via HTTP PUT
 async function putBlob(signedUrl: string, blob: Blob, contentType: string): Promise<boolean> {
   try {
@@ -48,8 +66,15 @@ export async function uploadSession(session: CaptureSession): Promise<UploadResu
           mode:          session.mode,
           capturedAt:    session.capturedAt.toISOString(),
           hasAnnotation: !!session.annotation,
+          deviceToken:   getDeviceToken(),
         }),
       })
+
+      // 429 = rate-limited (too many from this device just now). NOT permanent: keep
+      // it queued so it uploads once the short window clears, rather than dropping it.
+      if (registerRes.status === 429) {
+        return { success: false, permanent: false, memoryNumber: null, retryCount }
+      }
 
       // 4xx = non-retryable (bad request, wedding not found or deleted, etc.). Mark it
       // PERMANENT so the recovery queue discards it instead of retrying a dead photo

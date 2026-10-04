@@ -122,8 +122,18 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
       `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS slideshow_slide_seconds INTEGER NOT NULL DEFAULT 12`,
     ],
   },
+  {
+    id: 'v15_device_token',
+    sql: [
+      // Per-device anti-spam rate limiting: the client stamps each upload with a
+      // random per-device token so we can throttle a single phone without blocking
+      // a whole venue (which shares one IP).
+      `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS device_token TEXT NULL`,
+      `CREATE INDEX IF NOT EXISTS sessions_device_rate_idx ON sessions (wedding_id, device_token, uploaded_at)`,
+    ],
+  },
   // Future migrations go here:
-  // { id: 'v15_...', sql: [`ALTER TABLE ...`] },
+  // { id: 'v16_...', sql: [`ALTER TABLE ...`] },
 ]
 
 async function run(sql: string, token: string): Promise<unknown> {

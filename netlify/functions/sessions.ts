@@ -21,6 +21,7 @@ export const handler: Handler = async (event) => {
     mode: string
     capturedAt: string
     hasAnnotation: boolean
+    deviceToken?: string
   }
 
   try {
@@ -29,10 +30,33 @@ export const handler: Handler = async (event) => {
     return { statusCode: 400, body: 'Invalid JSON' }
   }
 
-  const { sessionId, weddingId, mode, capturedAt, hasAnnotation } = body
+  const { sessionId, weddingId, mode, capturedAt, hasAnnotation, deviceToken } = body
 
   if (!sessionId || !weddingId || !mode) {
     return { statusCode: 400, body: 'Missing required fields' }
+  }
+
+  // Per-device anti-spam rate limit. One phone (device_token) is capped per event; a
+  // retry of an already-registered photo (same id) is excluded so it is never limited.
+  // Over the limit → 429, which the client keeps queued and retries after the window.
+  const RATE_PER_MIN = 4
+  const RATE_PER_5MIN = 20
+  if (deviceToken) {
+    const now = Date.now()
+    const since5m = new Date(now - 5 * 60_000).toISOString()
+    const { data: recent } = await supabase
+      .from('sessions')
+      .select('uploaded_at')
+      .eq('wedding_id', weddingId)
+      .eq('device_token', deviceToken)
+      .neq('id', sessionId)
+      .gte('uploaded_at', since5m)
+    const rows = recent ?? []
+    const oneMinAgo = now - 60_000
+    const inLastMin = rows.filter(r => new Date(r.uploaded_at as string).getTime() >= oneMinAgo).length
+    if (rows.length >= RATE_PER_5MIN || inLastMin >= RATE_PER_MIN) {
+      return { statusCode: 429, body: JSON.stringify({ error: 'Too many photos too quickly. Please wait a moment.' }) }
+    }
   }
 
   // Insert session — memory_number assigned by DB trigger.
@@ -48,6 +72,7 @@ export const handler: Handler = async (event) => {
       captured_at: capturedAt,
       output_path: `${weddingId}/${sessionId}/output.jpg`,
       annotation_path: hasAnnotation ? `${weddingId}/${sessionId}/annotation.png` : null,
+      device_token: deviceToken ?? null,
     })
     .select('memory_number')
     .single()
