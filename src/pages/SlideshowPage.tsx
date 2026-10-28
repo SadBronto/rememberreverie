@@ -46,6 +46,8 @@ const POLL_INTERVAL_MS = 30000 // refresh for new photos
 const QR_EVERY         = 10    // insert a "scan to share" slide after every N photos
 const QR_DURATION      = 12000 // QR slide lingers longer than a photo
 const CUSTOM_EVERY     = 7     // insert a custom promo/logo slide after every N photos
+const PRELOAD_TIMEOUT_MS = 8000  // never let a hung image load stall the crossfade
+const STALL_GRACE_MS   = 20000 // watchdog: ms past a slide's due time before forcing on
 
 export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?: string } = {}) {
   const { weddingId: weddingIdParam } = useParams<{ weddingId: string }>()
@@ -79,6 +81,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   const indexRef         = useRef(0)
   const advanceTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
   const transitioningRef = useRef(false)
+  const expectedAdvanceAtRef = useRef(0)   // when the current slide should hand off (watchdog)
 
   useEffect(() => { indexRef.current = index }, [index])
 
@@ -262,6 +265,9 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     img.onerror = once
     img.src = url
     if (img.complete) once()
+    // Safety net: a hung image load must never freeze the show. Proceed anyway after a
+    // timeout (the `started` guard makes begin() run exactly once regardless).
+    window.setTimeout(once, PRELOAD_TIMEOUT_MS)
   }, [])
 
   useEffect(() => {
@@ -269,11 +275,31 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current)
     const k = slides[index]?.kind
     const dur = k === 'custom' ? slideSeconds * 1000 : k === 'qr' ? QR_DURATION : SLIDE_DURATION
+    expectedAdvanceAtRef.current = Date.now() + dur
     advanceTimerRef.current = setTimeout(() => advance(1), dur)
     return () => {
       if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current)
     }
   }, [index, slides.length, advance, slideSeconds])
+
+  // Freeze watchdog: on an unattended 24/7 display a hung image load, a stuck
+  // transition, or a dropped timer can leave the show frozen on one slide until the
+  // 6-hour reload. If we're well past when the current slide should have handed off,
+  // unstick the transition flag and force the next slide — recovery in ~20s, no reload.
+  useEffect(() => {
+    if (slides.length < 2) return
+    const iv = setInterval(() => {
+      const due = expectedAdvanceAtRef.current
+      if (due && Date.now() - due > STALL_GRACE_MS) {
+        transitioningRef.current = false
+        setIncoming(null)
+        setIncomingOpacity(0)
+        expectedAdvanceAtRef.current = Date.now() + STALL_GRACE_MS // avoid re-firing before advance reschedules
+        advance(1)
+      }
+    }, 5000)
+    return () => clearInterval(iv)
+  }, [slides.length, advance])
 
   // ── Keyboard + fullscreen ─────────────────────────────────────
 
