@@ -22,6 +22,7 @@ export const handler: Handler = async (event) => {
     capturedAt: string
     hasAnnotation: boolean
     deviceToken?: string
+    retry?: boolean
   }
 
   try {
@@ -30,7 +31,7 @@ export const handler: Handler = async (event) => {
     return { statusCode: 400, body: 'Invalid JSON' }
   }
 
-  const { sessionId, weddingId, mode, capturedAt, hasAnnotation, deviceToken } = body
+  const { sessionId, weddingId, mode, capturedAt, hasAnnotation, deviceToken, retry } = body
 
   if (!sessionId || !weddingId || !mode) {
     return { statusCode: 400, body: 'Missing required fields' }
@@ -41,7 +42,10 @@ export const handler: Handler = async (event) => {
   // Over the limit → 429, which the client keeps queued and retries after the window.
   const RATE_PER_MIN = 4
   const RATE_PER_5MIN = 20
-  if (deviceToken) {
+  // `retry` = a recovery flush re-sending a photo that already failed. That is not
+  // live flooding, so it is exempt: otherwise a backlog retries into its own cap and
+  // strands the remainder. Live captures (no retry flag) are still rate-limited.
+  if (deviceToken && !retry) {
     const now = Date.now()
     const since5m = new Date(now - 5 * 60_000).toISOString()
     const { data: recent } = await supabase

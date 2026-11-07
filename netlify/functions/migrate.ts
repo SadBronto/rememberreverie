@@ -132,8 +132,31 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
       `CREATE INDEX IF NOT EXISTS sessions_device_rate_idx ON sessions (wedding_id, device_token, uploaded_at)`,
     ],
   },
+  {
+    id: 'v16_upload_errors',
+    sql: [
+      // Server-side log of failed uploads, so recurring failures can be reviewed and
+      // fixed. Written (fire-and-forget) by the client on a terminal upload failure;
+      // read by the admin-only /api/admin/upload-errors dump. RLS on; the functions
+      // use the service key, so the anon key can never read it.
+      `CREATE TABLE IF NOT EXISTS upload_errors (
+        id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        wedding_id   TEXT NULL,
+        session_id   TEXT NULL,
+        device_token TEXT NULL,
+        stage        TEXT NULL,
+        status       INTEGER NULL,
+        detail       TEXT NULL,
+        attempt      INTEGER NULL,
+        retry        BOOLEAN NULL
+      )`,
+      `ALTER TABLE upload_errors ENABLE ROW LEVEL SECURITY`,
+      `CREATE INDEX IF NOT EXISTS upload_errors_created_idx ON upload_errors (created_at DESC)`,
+    ],
+  },
   // Future migrations go here:
-  // { id: 'v16_...', sql: [`ALTER TABLE ...`] },
+  // { id: 'v17_...', sql: [`ALTER TABLE ...`] },
 ]
 
 async function run(sql: string, token: string): Promise<unknown> {

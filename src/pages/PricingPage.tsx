@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { Link } from 'react-router-dom'
+import LooksPreview from '@/components/LooksPreview'
 
 // Public sales / pricing page. Restrained, editorial, event-neutral (works for a
 // wedding or a corporate night). Lives at /pricing for now; becomes the front
@@ -21,7 +22,7 @@ export default function PricingPage() {
         style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.5) 100%)' }}
       />
 
-      <div className="relative z-10 mx-auto w-full max-w-3xl px-6">
+      <div className="relative z-10 mx-auto w-full max-w-4xl px-6">
 
         {/* ── Hero ── */}
         <header className="pt-16 pb-24 text-center flex flex-col items-center">
@@ -79,14 +80,10 @@ export default function PricingPage() {
         {/* ── The looks ── */}
         <section className="py-20 text-center">
           <SectionLabel>Six looks to set the mood</SectionLabel>
-          <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-3 max-w-lg mx-auto">
-            {['Disposable', 'Polaroid', 'Super 8', 'Noir', 'Flash', 'Champagne'].map(name => (
-              <span key={name} className="text-serif text-cream/80 text-lg">{name}</span>
-            ))}
-          </div>
           <p className="text-sans text-cream/45 text-sm leading-relaxed max-w-[380px] mx-auto mt-6 font-light">
-            From flash-lit candids to warm, creamy film. Pick the feeling that fits your event.
+            From flash-lit candids to warm, creamy film. The same moment, six ways. Pick the feeling that fits your event.
           </p>
+          <LooksPreview />
         </section>
 
         <Divider />
@@ -94,7 +91,7 @@ export default function PricingPage() {
         {/* ── Pricing ── */}
         <section className="py-20">
           <SectionLabel center>Simple pricing</SectionLabel>
-          <div className="mt-10 grid sm:grid-cols-2 gap-5">
+          <div className="mt-10 grid gap-5 md:grid-cols-3">
             <PlanCard
               name="Reverie"
               price="$100"
@@ -111,11 +108,24 @@ export default function PricingPage() {
               name="Reverie Live"
               price="$200"
               tagline="Live on the big screen."
-              highlight
               features={[
                 'Everything in Reverie',
                 'Live slideshow as guests shoot',
                 'Automatic photo screening',
+              ]}
+            />
+            <PlanCard
+              name="Reverie Pro"
+              price="$250"
+              tagline="Live, plus every add-on."
+              highlight
+              badge="Best value"
+              features={[
+                'Everything in Reverie Live',
+                'Unlimited photos',
+                'Your gallery kept an extra year',
+                'Venue lock',
+                'Extended capture window',
               ]}
             />
           </div>
@@ -124,6 +134,19 @@ export default function PricingPage() {
             Add on when you need it. Unlimited photos <Money>+$25</Money> · Keep your gallery &amp;
             link another year <Money>+$25/yr</Money> · Venue lock <Money>+$15</Money> · Extended
             capture window <Money>+$40</Money>.
+          </p>
+        </section>
+
+        <Divider />
+
+        {/* ── Safe on the big screen (moderation) ── */}
+        <section className="py-20 text-center">
+          <SectionLabel center>Safe on the big screen</SectionLabel>
+          <p className="text-sans text-cream/55 text-sm leading-relaxed max-w-[480px] mx-auto mt-6 font-light">
+            On Reverie Live, every photo is checked the moment it is taken, before it ever reaches
+            the screen. We use Google's vision service to catch anything explicit or unsafe, so what
+            shows in the room stays right for your event. Anything it flags is held back for you or
+            your staff to review, never shown on its own.
           </p>
         </section>
 
@@ -194,10 +217,15 @@ function Step({ n, title, children }: { n: string; title: string; children: Reac
 }
 
 function PlanCard({
-  name, price, tagline, features, highlight,
-}: { name: string; price: string; tagline: string; features: string[]; highlight?: boolean }) {
+  name, price, tagline, features, highlight, badge,
+}: { name: string; price: string; tagline: string; features: string[]; highlight?: boolean; badge?: string }) {
   return (
-    <div className={`rounded-2xl p-7 border ${highlight ? 'border-amber-film/30 bg-amber-film/[0.04]' : 'border-cream/10 bg-cream/[0.02]'}`}>
+    <div className={`relative rounded-2xl p-7 border ${highlight ? 'border-amber-film/40 bg-amber-film/[0.05]' : 'border-cream/10 bg-cream/[0.02]'}`}>
+      {badge && (
+        <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-mono text-[8px] tracking-[0.2em] uppercase px-2.5 py-1 rounded-full bg-amber-film text-ink whitespace-nowrap">
+          {badge}
+        </span>
+      )}
       <div className="flex items-baseline justify-between">
         <h3 className="text-serif text-cream text-xl font-normal">{name}</h3>
         <span className="text-serif text-cream text-2xl">{price}</span>

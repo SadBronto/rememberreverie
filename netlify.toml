@@ -153,6 +153,17 @@
   to   = "/.netlify/functions/provision"
   status = 200
 
+# Client-reported upload-failure telemetry (fire-and-forget) + admin dump to review it.
+[[redirects]]
+  from = "/api/log-error"
+  to   = "/.netlify/functions/log-error"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/upload-errors"
+  to   = "/.netlify/functions/upload-errors"
+  status = 200
+
 # SPA catch-all — handles all React Router routes
 [[redirects]]
   from = "/*"

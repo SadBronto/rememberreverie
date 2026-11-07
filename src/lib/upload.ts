@@ -46,7 +46,37 @@ async function putBlob(signedUrl: string, blob: Blob, contentType: string): Prom
   }
 }
 
-export async function uploadSession(session: CaptureSession): Promise<UploadResult> {
+// Best-effort server-side record of a TERMINAL upload failure (a drop, or a give-up
+// after all retries), so recurring failures can be reviewed via the admin dump.
+// Guests never see this; it never throws and never blocks the upload.
+function reportFailure(
+  session: CaptureSession,
+  info: { stage: string; status?: number; detail?: string; attempt: number; retry: boolean },
+) {
+  try {
+    void fetch('/api/log-error', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      keepalive: true,
+      body: JSON.stringify({
+        sessionId:   session.id,
+        weddingId:   session.weddingId,
+        deviceToken: getDeviceToken(),
+        stage:       info.stage,
+        status:      info.status ?? null,
+        detail:      (info.detail ?? '').slice(0, 500),
+        attempt:     info.attempt,
+        retry:       info.retry,
+      }),
+    }).catch(() => {})
+  } catch { /* logging must never break an upload */ }
+}
+
+export async function uploadSession(
+  session: CaptureSession,
+  opts?: { retry?: boolean },
+): Promise<UploadResult> {
+  const isRetry = opts?.retry ?? false
   let retryCount = 0
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -67,6 +97,10 @@ export async function uploadSession(session: CaptureSession): Promise<UploadResu
           capturedAt:    session.capturedAt.toISOString(),
           hasAnnotation: !!session.annotation,
           deviceToken:   getDeviceToken(),
+          // A recovery/retry of a photo that already failed is not live flooding, so
+          // the server skips the per-device anti-spam cap for it. Without this, a
+          // backlog retries into its own rate limit and never fully drains.
+          retry:         isRetry,
         }),
       })
 
@@ -81,6 +115,7 @@ export async function uploadSession(session: CaptureSession): Promise<UploadResu
       // forever.
       if (registerRes.status >= 400 && registerRes.status < 500) {
         console.warn('Upload register non-retryable error:', registerRes.status)
+        reportFailure(session, { stage: 'dropped-4xx', status: registerRes.status, detail: 'register rejected; photo discarded', attempt: retryCount, retry: isRetry })
         return { success: false, permanent: true, memoryNumber: null, retryCount }
       }
 
@@ -121,6 +156,7 @@ export async function uploadSession(session: CaptureSession): Promise<UploadResu
     } catch (err) {
       if (attempt === MAX_RETRIES) {
         console.error('Upload failed after max retries:', err)
+        reportFailure(session, { stage: 'failed', detail: String(err), attempt, retry: isRetry })
         return { success: false, permanent: false, memoryNumber: null, retryCount }
       }
     }

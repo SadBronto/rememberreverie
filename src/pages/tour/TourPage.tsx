@@ -56,7 +56,7 @@ const STEPS: Step[] = [
   {
     kind: 'feature',
     eyebrow: 'The guest',
-    title: 'One scan, one shot.',
+    title: 'Scan and Shoot!',
     body: 'Guests scan a code and get a disposable-style camera on their phone. One real photo, no retakes, no edits, then they sign it. Nothing to download.',
     visual: 'guest',
   },
@@ -77,8 +77,8 @@ const STEPS: Step[] = [
   {
     kind: 'feature',
     eyebrow: 'Behind the scenes',
-    title: 'You stay in control.',
-    body: 'Pin the keepers, review anything flagged, slip in your own slides, and design the QR. Quiet tools that keep the gallery yours.',
+    title: 'You’re in control.',
+    body: 'Pin your favorites to keep them for good: a pinned photo is never removed, even when a busy gallery fills up and older shots roll off to make room. You can also review anything flagged, add your own slides, and design the QR.',
     visual: 'host',
   },
   {

@@ -107,37 +107,49 @@ export async function flushPendingUploads(): Promise<{ flushed: number; remainin
   if (flushing) return { flushed: 0, remaining: -1 }
   flushing = true
   try {
-    const pending = await getAllRecovery()
     let flushed = 0
 
-    for (const rec of pending) {
-      try {
-        const session: CaptureSession = {
-          id:           rec.id,
-          weddingId:    rec.weddingId,
-          mode:         rec.mode,
-          sourceImages: [],
-          outputImage:  rec.outputImage,
-          annotation:   rec.annotation
-            ? { type: rec.annotation.type, dataUrl: rec.annotation.dataUrl, appliedAt: new Date(rec.annotation.appliedAt) }
-            : null,
-          capturedAt:   new Date(rec.capturedAt),
-          uploadStatus: 'pending',
-          memoryNumber: null,
-          retryCount:   0,
-        }
+    // Drain in passes: keep sweeping while a pass still uploads something, so a whole
+    // backlog clears instead of stopping after one partial sweep. A pass that uploads
+    // nothing new means the rest are offline or dead, so we stop rather than spin.
+    for (let pass = 0; pass < 5; pass++) {
+      const pending = await getAllRecovery()
+      if (pending.length === 0) break
+      let passFlushed = 0
 
-        const result = await uploadSession(session)
-        // Remove on success, OR when the server says retrying can't help (permanent =
-        // a 4xx/404, e.g. the event no longer exists) - otherwise a dead photo nags
-        // and retries forever. Transient failures (offline / 5xx) stay queued.
-        if (result.success || result.permanent) {
-          await removeRecovery(rec.id)
-          if (result.success) flushed++
+      for (const rec of pending) {
+        try {
+          const session: CaptureSession = {
+            id:           rec.id,
+            weddingId:    rec.weddingId,
+            mode:         rec.mode,
+            sourceImages: [],
+            outputImage:  rec.outputImage,
+            annotation:   rec.annotation
+              ? { type: rec.annotation.type, dataUrl: rec.annotation.dataUrl, appliedAt: new Date(rec.annotation.appliedAt) }
+              : null,
+            capturedAt:   new Date(rec.capturedAt),
+            uploadStatus: 'pending',
+            memoryNumber: null,
+            retryCount:   0,
+          }
+
+          // retry:true exempts this from the server's per-device anti-spam cap, so a
+          // backlog can't throttle its own recovery flush.
+          const result = await uploadSession(session, { retry: true })
+          // Remove on success, OR when the server says retrying can't help (permanent =
+          // a 4xx/404, e.g. the event no longer exists) - otherwise a dead photo nags
+          // and retries forever. Transient failures (offline / 5xx) stay queued.
+          if (result.success || result.permanent) {
+            await removeRecovery(rec.id)
+            if (result.success) { flushed++; passFlushed++ }
+          }
+        } catch {
+          // A single bad record must never block the rest of the queue.
         }
-      } catch {
-        // A single bad record must never block the rest of the queue.
       }
+
+      if (passFlushed === 0) break
     }
 
     const remaining = (await getAllRecovery()).length

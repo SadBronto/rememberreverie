@@ -91,11 +91,17 @@ export default function CameraPage() {
     }
     const flushAndRefresh = async () => { await flushPendingUploads(); await refresh() }
     void flushAndRefresh()
-    const interval = setInterval(refresh, 5000)
+    const refreshInterval = setInterval(refresh, 5000)
+    // While anything is still queued, keep re-attempting on a slow cadence, so a
+    // stranded photo isn't stuck waiting for the app to be closed and reopened.
+    const reflushInterval = setInterval(async () => {
+      if (alive && (await countRecovery()) > 0) await flushAndRefresh()
+    }, 30000)
     window.addEventListener('online', flushAndRefresh)
     return () => {
       alive = false
-      clearInterval(interval)
+      clearInterval(refreshInterval)
+      clearInterval(reflushInterval)
       window.removeEventListener('online', flushAndRefresh)
     }
   }, [])
