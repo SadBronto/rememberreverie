@@ -5,7 +5,7 @@ import QRCreator, { type QRSettings } from '@/components/QRCreator'
 import StyledQR from '@/components/StyledQR'
 import SlidesManager from '@/components/SlidesManager'
 
-// Leaflet-backed venue picker — lazy so the map library only loads for admins
+// Leaflet-backed venue picker - lazy so the map library only loads for admins
 // who actually open the geofence editor (and never reaches the guest bundle).
 const GeofenceMap = lazy(() => import('@/components/GeofenceMap'))
 
@@ -331,7 +331,7 @@ export default function WeddingDetailPage() {
         </div>
       </div>
 
-      {/* Permanent-delete confirmation — type to confirm */}
+      {/* Permanent-delete confirmation - type to confirm */}
       {showDelete && (() => {
         const phrase = wedding.couple_names && wedding.couple_names !== 'TBD' ? wedding.couple_names : 'DELETE'
         const armed = deleteConfirmText.trim().toLowerCase() === phrase.toLowerCase()
@@ -434,7 +434,7 @@ export default function WeddingDetailPage() {
           </div>
         )}
 
-        {/* Guest URL + QR — only show after setup */}
+        {/* Guest URL + QR - only show after setup */}
         {!isPendingSetup && (
           <div className="flex flex-col gap-3">
             <SectionLabel>Guest QR Code</SectionLabel>
@@ -526,7 +526,7 @@ export default function WeddingDetailPage() {
                     }
                   </button>
                   {inviteError && (
-                    <p className="text-sans text-red-400/70 text-xs">Failed to send — check RESEND_API_KEY in Netlify.</p>
+                    <p className="text-sans text-red-400/70 text-xs">Failed to send. Check RESEND_API_KEY in Netlify.</p>
                   )}
                 </div>
               )}
@@ -543,7 +543,7 @@ export default function WeddingDetailPage() {
           <div className="flex flex-col gap-3">
             <SectionLabel>Reception Slideshow</SectionLabel>
             <p className="text-sans text-cream/40 text-xs leading-relaxed -mt-1">
-              Open on a TV or display at the reception — live updates as guests take photos.
+              Open on a TV or display at the reception. Live updates as guests take photos.
             </p>
             <a
               href={slideshowUrl}
@@ -600,7 +600,7 @@ export default function WeddingDetailPage() {
                     </>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <p className="text-mono text-cream/20 text-[9px]">—</p>
+                      <p className="text-mono text-cream/20 text-[9px]">-</p>
                     </div>
                   )}
                 </div>
@@ -761,13 +761,13 @@ export default function WeddingDetailPage() {
             </div>
             <div className="mt-2">
               <AdminSelect value={form.event_timezone ?? 'America/Los_Angeles'} onChange={v => setField('event_timezone', v)}>
-                <option value="America/Los_Angeles">Pacific — America/Los_Angeles</option>
-                <option value="America/Denver">Mountain — America/Denver</option>
-                <option value="America/Phoenix">Arizona — America/Phoenix</option>
-                <option value="America/Chicago">Central — America/Chicago</option>
-                <option value="America/New_York">Eastern — America/New_York</option>
-                <option value="America/Anchorage">Alaska — America/Anchorage</option>
-                <option value="Pacific/Honolulu">Hawaii — Pacific/Honolulu</option>
+                <option value="America/Los_Angeles">Pacific (America/Los_Angeles)</option>
+                <option value="America/Denver">Mountain (America/Denver)</option>
+                <option value="America/Phoenix">Arizona (America/Phoenix)</option>
+                <option value="America/Chicago">Central (America/Chicago)</option>
+                <option value="America/New_York">Eastern (America/New_York)</option>
+                <option value="America/Anchorage">Alaska (America/Anchorage)</option>
+                <option value="Pacific/Honolulu">Hawaii (Pacific/Honolulu)</option>
               </AdminSelect>
             </div>
             <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
@@ -826,7 +826,7 @@ export default function WeddingDetailPage() {
               </span>
             </div>
             <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
-              Adds a flip button so guests can take selfies — same no-retake rule and film look as the rear camera. Off = pure point-and-shoot.
+              Adds a flip button so guests can take selfies, same no-retake rule and film look as the rear camera. Off = pure point-and-shoot.
             </p>
           </FormField>
 
@@ -890,7 +890,7 @@ export default function WeddingDetailPage() {
               </span>
             </div>
             <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
-              On a laptop/desktop, the first click or key press makes the slideshow fill the screen — no hunting for the button. (On a TV stick the browser is already fullscreen, so this has no effect there.)
+              On a laptop/desktop, the first click or key press makes the slideshow fill the screen, no hunting for the button. (On a TV stick the browser is already fullscreen, so this has no effect there.)
             </p>
           </FormField>
 
@@ -963,7 +963,7 @@ export default function WeddingDetailPage() {
                     className="w-full accent-amber-film"
                   />
                   <p className="text-mono text-cream/25 text-[10px] leading-relaxed">
-                    Indoor GPS can drift 30–100m — keep the radius generous (150m+) so real guests aren't blocked.
+                    Indoor GPS can drift 30 to 100m. Keep the radius generous (150m+) so real guests aren't blocked.
                   </p>
                 </div>
 
@@ -992,7 +992,7 @@ export default function WeddingDetailPage() {
             )}
           </FormField>
 
-          {/* Staff moderation code — powers the on-site /staff/:slug delete page */}
+          {/* Staff moderation code - powers the on-site /staff/:slug delete page */}
           <FormField label="Staff moderation code (optional)">
             <AdminInput
               value={form.staff_code ?? ''}
@@ -1001,8 +1001,8 @@ export default function WeddingDetailPage() {
             />
             <p className="text-mono text-cream/25 text-[10px] leading-relaxed">
               {form.slug
-                ? <>Lets venue staff remove a bad photo at <span className="text-cream/40">rememberreverie.com/staff/{form.slug}</span> with this password — no login. Removed photos move to the Hidden archive for review. Needs a custom URL slug set above.</>
-                : <>Set a custom URL slug above first — the staff page lives at <span className="text-cream/40">rememberreverie.com/staff/&lt;slug&gt;</span>. Staff enter this password to remove a bad photo; it then moves to the Hidden archive for review.</>}
+                ? <>Lets venue staff remove a bad photo at <span className="text-cream/40">rememberreverie.com/staff/{form.slug}</span> with this password, no login. Removed photos move to the Hidden archive for review. Needs a custom URL slug set above.</>
+                : <>Set a custom URL slug above first. The staff page lives at <span className="text-cream/40">rememberreverie.com/staff/&lt;slug&gt;</span>. Staff enter this password to remove a bad photo; it then moves to the Hidden archive for review.</>}
             </p>
           </FormField>
 
@@ -1019,7 +1019,7 @@ export default function WeddingDetailPage() {
               {saving ? 'Saving…' : 'Save Changes'}
             </button>
             {saveMsg === 'saved' && <p className="text-sans text-green-400/70 text-sm">Saved</p>}
-            {saveMsg === 'error' && <p className="text-sans text-red-400/70 text-sm">Error — try again</p>}
+            {saveMsg === 'error' && <p className="text-sans text-red-400/70 text-sm">Error, try again</p>}
           </div>
         </div>
       </div>

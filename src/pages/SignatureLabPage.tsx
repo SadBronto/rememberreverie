@@ -3,8 +3,8 @@ import { getStroke } from 'perfect-freehand'
 
 // Private sandbox (route: /admin/signature-lab) to compare two pen feels before
 // deciding what to ship in the guest signing screen:
-//   • Quadratic  — midpoint curve smoothing, constant width (what AnnotatePage uses now)
-//   • Pressure   — perfect-freehand: variable width that tapers with speed (ink-pen feel)
+//   • Quadratic  - midpoint curve smoothing, constant width (what AnnotatePage uses now)
+//   • Pressure   - perfect-freehand: variable width that tapers with speed (ink-pen feel)
 // Draw the same signature in each, flip between them, judge which you like.
 
 type Mode = 'quadratic' | 'pressure'
@@ -138,7 +138,7 @@ export default function SignatureLabPage() {
   return (
     <div className="min-h-dvh bg-ink flex flex-col safe-top safe-bottom px-6">
       <header className="pt-8 pb-4">
-        <p className="text-mono text-cream/30 text-[10px] tracking-[0.3em] uppercase">Signature lab — private</p>
+        <p className="text-mono text-cream/30 text-[10px] tracking-[0.3em] uppercase">Signature lab - private</p>
         <h1 className="text-serif text-cream text-2xl font-normal mt-1">Pen feel comparison</h1>
         <p className="text-sans text-cream/40 text-sm mt-2 max-w-md leading-relaxed">
           {isIOS ? (

@@ -173,7 +173,7 @@ export default function CoupleSettingsPage() {
       setTimeout(() => setSaveMsg(null), 2500)
     } else {
       const text = await res.text()
-      setSaveMsg(text || 'Something went wrong — try again.')
+      setSaveMsg(text || 'Something went wrong. Try again.')
     }
   }
 
@@ -284,7 +284,7 @@ export default function CoupleSettingsPage() {
             </span>
           </div>
           <p className="text-mono text-cream/25 text-[10px] leading-relaxed">
-            Lets guests flip to the front camera for selfies — same no-retake rule and film look as the rear camera.
+            Lets guests flip to the front camera for selfies. Same no-retake rule and film look as the rear camera.
           </p>
         </Section>
 

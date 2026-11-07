@@ -86,7 +86,7 @@ export default function CoupleSetupPage() {
   const [timestampStyle, setTimestampStyle]   = useState<'classic' | 'vertical' | 'elegant'>('classic')
   const [welcomeMessage, setWelcomeMessage]   = useState('Leave us a memory.')
 
-  // Capture window — when guests may shoot. Dates are interpreted in eventTimezone
+  // Capture window - when guests may shoot. Dates are interpreted in eventTimezone
   // and drive both the guest date-gate and retention (capture_end + 90d).
   // Single-day derives from the event date; multi-day is entered explicitly.
   const [multiDay, setMultiDay]               = useState(false)
@@ -381,7 +381,7 @@ export default function CoupleSetupPage() {
             <StepLabel>Good to know.</StepLabel>
             <StepQuestion>When can guests take photos?</StepQuestion>
             <p className="text-sans text-cream/35 text-xs mt-2">
-              The camera opens and closes on its own — guests can only take photos during your event.
+              The camera opens and closes on its own. Guests can only take photos during your event.
             </p>
 
             <div className="mt-8 flex flex-col gap-3">
@@ -452,7 +452,7 @@ export default function CoupleSetupPage() {
           <StepWrapper visible={visible}>
             <StepLabel>Now for the fun part.</StepLabel>
             <StepQuestion>How do you want your memories to feel?</StepQuestion>
-            <p className="text-sans text-cream/35 text-xs mt-2">Choose one or more — you'll see each style you pick.</p>
+            <p className="text-sans text-cream/35 text-xs mt-2">Choose one or more. You'll see each style you pick.</p>
 
             {/* A preview for every selected style, shown together */}
             <div className="mt-6 flex flex-col gap-5">
@@ -550,7 +550,7 @@ export default function CoupleSetupPage() {
                 />
               </button>
               <span className={`text-sans text-sm transition-colors ${timestampEnabled ? 'text-cream/80' : 'text-cream/30'}`}>
-                {timestampEnabled ? 'Yes — stamp the date' : 'No timestamp'}
+                {timestampEnabled ? 'Yes, stamp the date' : 'No timestamp'}
               </span>
             </div>
 

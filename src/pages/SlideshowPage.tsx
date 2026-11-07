@@ -147,7 +147,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
         return reconciled
       })
 
-      // Clear any prior error on ANY successful fetch — so a display that booted
+      // Clear any prior error on ANY successful fetch - so a display that booted
       // before the lobby Wi-Fi was up self-heals the moment the network returns,
       // instead of sitting on the error screen until someone reloads it.
       setLoadError(false)
@@ -160,7 +160,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   useEffect(() => { fetchPhotos(true) }, [fetchPhotos])
 
   // Poll for new photos at the admin-configured cadence: 30s (reception) or 5 min
-  // (lobby / 24-7 — far fewer server hits). The interval swaps when the config loads.
+  // (lobby / 24-7 - far fewer server hits). The interval swaps when the config loads.
   const pollMs = slowPoll ? 300_000 : POLL_INTERVAL_MS
   useEffect(() => {
     const poll = setInterval(() => fetchPhotos(false), pollMs)
@@ -168,7 +168,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   }, [fetchPhotos, pollMs])
 
   // Instant refresh: when staff or the host removes a photo, they broadcast on this
-  // event's channel so it drops off the screen within ~1s — without waiting for the
+  // event's channel so it drops off the screen within ~1s - without waiting for the
   // poll above (up to 5 min on a lobby display). This is PURELY ADDITIVE: the whole
   // setup is wrapped so a realtime failure can never crash the running display, and
   // the poll above remains the source of truth either way.
@@ -179,7 +179,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       ch = supabase.channel(slideshowChannel(weddingId))
       ch.on('broadcast', { event: 'refresh' }, () => { void fetchPhotos(false) })
       ch.subscribe()
-    } catch { /* realtime unavailable — the 5-min poll stays as the fallback */ }
+    } catch { /* realtime unavailable - the 5-min poll stays as the fallback */ }
     return () => { try { if (ch) supabase?.removeChannel(ch) } catch { /* noop */ } }
   }, [weddingId, fetchPhotos])
 
@@ -285,7 +285,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   // Freeze watchdog: on an unattended 24/7 display a hung image load, a stuck
   // transition, or a dropped timer can leave the show frozen on one slide until the
   // 6-hour reload. If we're well past when the current slide should have handed off,
-  // unstick the transition flag and force the next slide — recovery in ~20s, no reload.
+  // unstick the transition flag and force the next slide - recovery in ~20s, no reload.
   useEffect(() => {
     if (slides.length < 2) return
     const iv = setInterval(() => {
@@ -334,7 +334,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
         const l = await wl.request('screen')
         if (cancelled) { void l.release(); return }
         lock = l
-      } catch { /* denied / unsupported — rely on device sleep settings */ }
+      } catch { /* denied / unsupported - rely on device sleep settings */ }
     }
     void acquire()
     const onVis = () => { if (document.visibilityState === 'visible') void acquire() }
@@ -369,7 +369,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   }, [])
 
   // Auto-fullscreen (admin opt-in). The Fullscreen API requires a user gesture, so
-  // a pure timer can't trigger it — we fullscreen on the FIRST interaction (one
+  // a pure timer can't trigger it - we fullscreen on the FIRST interaction (one
   // click / key / remote OK). Moot on a TV stick, which is already fullscreen.
   useEffect(() => {
     if (!autoFullscreen) return
@@ -468,12 +468,12 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       style={{ cursor: cursorHidden ? 'none' : undefined }}
       onClick={() => advance(1)}
     >
-      {/* Base layer — current slide, always fully opaque */}
+      {/* Base layer - current slide, always fully opaque */}
       {currentSlide && (
         <SlideLayer key={currentSlide.id} slide={currentSlide} opacity={1} guestUrl={guestUrl} qrSettings={qrSettings} message={welcomeMessage} />
       )}
 
-      {/* Incoming layer — next slide crossfading in on top */}
+      {/* Incoming layer - next slide crossfading in on top */}
       {incomingSlide && (
         <SlideLayer
           key={incomingSlide.id}
@@ -486,7 +486,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
         />
       )}
 
-      {/* Bottom scrim + names/date — only on photo slides */}
+      {/* Bottom scrim + names/date - only on photo slides */}
       {currentPhoto && (
         <>
           <div
@@ -514,14 +514,14 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
         </div>
       )}
 
-      {/* Memory number — top left, photo slides only */}
+      {/* Memory number - top left, photo slides only */}
       {currentPhoto?.memoryNumber != null && (
         <div className="absolute top-5 left-5 pointer-events-none">
           <p className="text-mono text-cream/25 text-[10px] tracking-[0.3em]">#{currentPhoto.memoryNumber}</p>
         </div>
       )}
 
-      {/* Slide counter — top right */}
+      {/* Slide counter - top right */}
       <div className="absolute top-5 right-16 pointer-events-none">
         <p className="text-mono text-cream/20 text-[10px] tracking-[0.2em]">{index + 1} / {total}</p>
       </div>
@@ -555,8 +555,8 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   )
 }
 
-// One stacked layer — a guest photo (+ signature overlay) or a "scan to share"
-// QR slide — so the base and incoming layers crossfade cleanly.
+// One stacked layer - a guest photo (+ signature overlay) or a "scan to share"
+// QR slide - so the base and incoming layers crossfade cleanly.
 function SlideLayer({
   slide,
   opacity,
@@ -579,8 +579,8 @@ function SlideLayer({
     >
       {slide.kind === 'photo' ? (
         // Both layers fill the viewport with object-contain, so the photo scales
-        // UP to fill the screen at any resolution (not just down) — fixes "small
-        // image with big black borders" on a 4K display — while the signature
+        // UP to fill the screen at any resolution (not just down) - fixes "small
+        // image with big black borders" on a 4K display - while the signature
         // overlay stays perfectly aligned (identical contain box).
         <div className="relative w-full h-full">
           <img

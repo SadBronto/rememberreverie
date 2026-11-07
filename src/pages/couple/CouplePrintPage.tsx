@@ -12,7 +12,7 @@ interface Wedding {
   qr_settings: QRSettings | null
 }
 
-// Couple-facing print sign route — same sheet as the admin, fetched via the
+// Couple-facing print sign route - same sheet as the admin, fetched via the
 // couple endpoint (returns the signed-in couple's own event).
 export default function CouplePrintPage() {
   const { weddingId } = useParams<{ weddingId: string }>()

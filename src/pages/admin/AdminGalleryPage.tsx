@@ -373,7 +373,7 @@ function GalleryTile({ photo, onClick }: { photo: GalleryPhoto; onClick: () => v
         </>
       ) : (
         <div className="aspect-square bg-ink-light flex items-center justify-center">
-          <p className="text-mono text-cream/15 text-[9px]">—</p>
+          <p className="text-mono text-cream/15 text-[9px]">-</p>
         </div>
       )}
     </div>

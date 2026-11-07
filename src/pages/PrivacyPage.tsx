@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 const CONTACT_URL  = 'https://www.thirddegreeentertainment.com/contact'
 const LAST_UPDATED = 'June 11, 2026'
 
-// Privacy policy — also serves as a legitimacy signal for the domain (a real
+// Privacy policy - also serves as a legitimacy signal for the domain (a real
 // business with a clear data policy + contact, not a phishing throwaway).
 export default function PrivacyPage() {
   return (
@@ -42,20 +42,20 @@ export default function PrivacyPage() {
         </Section>
 
         <Section title="How we use your information">
-          <Bullet>To provide the service — creating your gallery, authenticating you, and
+          <Bullet>To provide the service: creating your gallery, authenticating you, and
             displaying photos in your gallery and slideshow.</Bullet>
-          <Bullet>To keep displays appropriate — uploaded photos may be automatically screened
+          <Bullet>To keep displays appropriate: uploaded photos may be automatically screened
             for explicit content so it can be hidden from public slideshows pending review.</Bullet>
           <Bullet>To communicate with you about your account (for example, sign-in links and
             occasional service notices).</Bullet>
         </Section>
 
         <Section title="Service providers we use">
-          <Bullet><b>Supabase</b> — database, photo storage, and authentication.</Bullet>
-          <Bullet><b>Netlify</b> — website and application hosting.</Bullet>
-          <Bullet><b>Google Cloud Vision</b> — automated screening of uploaded photos for
+          <Bullet><b>Supabase</b>: database, photo storage, and authentication.</Bullet>
+          <Bullet><b>Netlify</b>: website and application hosting.</Bullet>
+          <Bullet><b>Google Cloud Vision</b>: automated screening of uploaded photos for
             explicit content (content-safety only).</Bullet>
-          <Bullet><b>Email delivery (Amazon SES / Resend)</b> — sending one-time sign-in links.</Bullet>
+          <Bullet><b>Email delivery (Amazon SES / Resend)</b>: sending one-time sign-in links.</Bullet>
           <p className="text-sans text-sm leading-relaxed mt-1">
             We do not sell your personal information or share it for advertising.
           </p>
@@ -67,7 +67,7 @@ export default function PrivacyPage() {
             <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer" className="text-cream underline underline-offset-2">
               Unsplash
             </a>
-            {' '}— they are not real customer photos. With thanks to the photographers:
+            {' '}- they are not real customer photos. With thanks to the photographers:
           </p>
           <p className="text-sans text-cream/45 text-xs leading-relaxed">
             Alena Plotnikova, Allef Vinícius, Alvaro Cvg, Andreas Rønningen, Andrii Olishevskyi,
@@ -83,7 +83,7 @@ export default function PrivacyPage() {
 
         <Section title="How long we keep photos">
           <p className="text-sans text-sm leading-relaxed">
-            Photos are retained for the life of your event and then deleted — typically around
+            Photos are retained for the life of your event and then deleted, typically around
             90 days after a wedding date, or on the end date set for a non-wedding event. You can
             download your photos any time before then, and you can ask us to delete your data
             sooner.
@@ -112,8 +112,8 @@ export default function PrivacyPage() {
 
         <Section title="Contact">
           <p className="text-sans text-sm leading-relaxed">
-            Reverie is operated by Third Degree Entertainment. For questions or requests —
-            including access to or deletion of your data — please reach us through{' '}
+            Reverie is operated by Third Degree Entertainment. For questions or requests -
+            including access to or deletion of your data. Please reach us through{' '}
             <a href={CONTACT_URL} target="_blank" rel="noopener noreferrer" className="text-cream underline underline-offset-2">
               thirddegreeentertainment.com/contact
             </a>.

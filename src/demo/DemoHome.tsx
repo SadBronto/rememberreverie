@@ -36,7 +36,7 @@ export default function DemoHome() {
         <p className="text-mono text-[10px] tracking-[0.3em] text-amber-film/80 uppercase">Live demo</p>
         <h1 className="text-serif text-cream text-4xl font-normal tracking-wide mt-1">Reverie</h1>
         <p className="text-sans text-cream/55 text-sm leading-relaxed max-w-[300px] font-light mt-4">
-          See it from every side. Pick a perspective below — your choices carry
+          See it from every side. Pick a perspective below. Your choices carry
           across all three.
         </p>
       </header>
@@ -44,7 +44,7 @@ export default function DemoHome() {
       <div className="relative z-10 flex-1 w-full max-w-sm flex flex-col justify-center gap-3 pb-32">
         <DemoCard
           label="Guest"
-          line="Scan, shoot, and sign a photo — the experience your guests get."
+          line="Scan, shoot, and sign a photo. The experience your guests get."
           onClick={goGuest}
         />
         <DemoCard
@@ -54,7 +54,7 @@ export default function DemoHome() {
         />
         <DemoCard
           label="Setup"
-          line="Build an event start to finish — modes, signing, timestamps, and more."
+          line="Build an event start to finish: modes, signing, timestamps, and more."
           onClick={goSetup}
         />
       </div>

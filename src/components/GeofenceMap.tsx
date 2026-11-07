@@ -64,7 +64,7 @@ export default function GeofenceMap({
     })
 
     mapRef.current = map; markerRef.current = marker; circleRef.current = circle
-    // Container may have mounted hidden/scrolled — recompute size next tick.
+    // Container may have mounted hidden/scrolled - recompute size next tick.
     setTimeout(() => map.invalidateSize(), 60)
 
     return () => { map.remove(); mapRef.current = null }
@@ -125,7 +125,7 @@ export default function GeofenceMap({
         </button>
       </div>
       {searchErr && (
-        <p className="text-sans text-red-400/70 text-xs">Couldn't find that — drop the pin manually instead.</p>
+        <p className="text-sans text-red-400/70 text-xs">Couldn't find that - drop the pin manually instead.</p>
       )}
       <div
         ref={elRef}

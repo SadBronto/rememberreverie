@@ -36,6 +36,7 @@ const TermsPage          = lazy(() => import('@/pages/TermsPage'))
 const FilterDemoPage     = lazy(() => import('@/pages/FilterDemoPage'))
 const PricingPage        = lazy(() => import('@/pages/PricingPage'))
 const StaffPage          = lazy(() => import('@/pages/StaffPage'))
+const TourPage           = lazy(() => import('@/pages/tour/TourPage'))
 
 function Loading() {
   return (
@@ -46,7 +47,7 @@ function Loading() {
 }
 
 export default function App() {
-  // Retry any photos stranded by a bad connection — the moment the device comes
+  // Retry any photos stranded by a bad connection - the moment the device comes
   // back online, and whenever the app returns to the foreground.
   useEffect(() => {
     const flush = () => { void flushPendingUploads() }
@@ -83,7 +84,7 @@ export default function App() {
         <Route path="/w/:weddingId/annotate" element={<AnnotatePage />} />
         <Route path="/w/:weddingId/done" element={<ConfirmationPage />} />
         <Route path="/w/:weddingId/slideshow" element={<SlideshowPage />} />
-        {/* Client portal — /host (neutral, canonical). */}
+        {/* Client portal - /host (neutral, canonical). */}
         <Route path="/host/login" element={<LoginPage />} />
         <Route path="/host/setup" element={<CoupleSetupPage />} />
         <Route path="/host/no-wedding" element={<NoWeddingPage />} />
@@ -101,14 +102,16 @@ export default function App() {
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/pricing" element={<PricingPage />} />
+        {/* New guided demo (v2), parallel to /demo while it's in review. */}
+        <Route path="/tour" element={<TourPage />} />
         <Route path="/filterdemos" element={<FilterDemoPage />} />
         {/* On-site staff moderation (password-gated, no login) */}
         <Route path="/staff/:slug" element={<StaffPage />} />
-        {/* Vanity slug — must be last; only matches single-segment paths not caught above */}
+        {/* Vanity slug - must be last; only matches single-segment paths not caught above */}
         <Route path="/:slug" element={<SlugPage />} />
       </Routes>
     </Suspense>
-    {/* Persistent demo persona menu — self-hides outside the demo */}
+    {/* Persistent demo persona menu - self-hides outside the demo */}
     <DemoMenuBar />
     {/* First-time-per-persona intro splash */}
     <DemoSplash />

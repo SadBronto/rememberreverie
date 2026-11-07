@@ -204,7 +204,7 @@ export default function DemoSetupPage() {
             <StepQuestion>How do you want your memories to feel?</StepQuestion>
             <p className="text-sans text-cream/35 text-xs mt-2">Choose one or more.</p>
 
-            {/* Full-ratio preview — switches as you tap each style */}
+            {/* Full-ratio preview - switches as you tap each style */}
             <div className="mt-6">
               <StylePreviewThumb
                 mode={previewMode}
@@ -282,11 +282,11 @@ export default function DemoSetupPage() {
                 />
               </button>
               <span className={`text-sans text-sm transition-colors ${timestampEnabled ? 'text-cream/80' : 'text-cream/30'}`}>
-                {timestampEnabled ? 'Yes — stamp the date' : 'No timestamp'}
+                {timestampEnabled ? 'Yes, stamp the date' : 'No timestamp'}
               </span>
             </div>
 
-            {/* Style selector — only shown when timestamp is on */}
+            {/* Style selector - only shown when timestamp is on */}
             {timestampEnabled && (
               <>
                 {/* Full-ratio preview */}

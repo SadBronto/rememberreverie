@@ -3,7 +3,7 @@ import { uploadSession } from '@/lib/upload'
 
 // Local recovery queue for photos that haven't successfully uploaded yet.
 //
-// Why IndexedDB and not localStorage: a processed photo is a ~1.5–3 MB JPEG.
+// Why IndexedDB and not localStorage: a processed photo is a ~1.5-3 MB JPEG.
 // localStorage only stores strings (base64 inflates that ~33%) and caps at
 // ~5 MB, so it can't safely hold more than one pending photo. IndexedDB stores
 // the Blob natively with a far larger quota, so a guest can lose connectivity,
@@ -45,7 +45,7 @@ export async function saveRecovery(rec: PendingUpload): Promise<void> {
     })
     db.close()
   } catch {
-    // IndexedDB unavailable (private mode, etc.) — recovery is best-effort.
+    // IndexedDB unavailable (private mode, etc.) - recovery is best-effort.
   }
 }
 
@@ -129,7 +129,7 @@ export async function flushPendingUploads(): Promise<{ flushed: number; remainin
 
         const result = await uploadSession(session)
         // Remove on success, OR when the server says retrying can't help (permanent =
-        // a 4xx/404, e.g. the event no longer exists) — otherwise a dead photo nags
+        // a 4xx/404, e.g. the event no longer exists) - otherwise a dead photo nags
         // and retries forever. Transient failures (offline / 5xx) stay queued.
         if (result.success || result.permanent) {
           await removeRecovery(rec.id)

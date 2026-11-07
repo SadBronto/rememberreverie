@@ -36,7 +36,7 @@ export default function CameraPage() {
   const [dispOrientation, setDispOrientation] = useState<'landscape' | 'portrait'>('landscape')
   // Which camera the guest is using. 'user' = front (selfie). The preview is
   // mirrored for a natural feel, but the SAVED photo is un-mirrored (we draw from
-  // the raw video frames, which CSS transforms don't touch) — like a real photo.
+  // the raw video frames, which CSS transforms don't touch) - like a real photo.
   const [facing, setFacing] = useState<'environment' | 'user'>('environment')
 
   const modeConfig = CAMERA_MODES[selectedMode]
@@ -74,7 +74,7 @@ export default function CameraPage() {
     if (windowClosed) return  // don't acquire the camera outside the window
     startCamera()
     return () => stopCamera()
-  // Restart the camera when the MODE or the FACING (front/rear) changes — but NOT
+  // Restart the camera when the MODE or the FACING (front/rear) changes - but NOT
   // on orientation toggle, which must not re-zoom the feed (the overlay + capture
   // handle orientation).
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,7 +103,7 @@ export default function CameraPage() {
   async function startCamera() {
     stopCamera()
     setCameraError(null)
-    // Request a generous, consistent feed and DON'T force the mode's aspect ratio —
+    // Request a generous, consistent feed and DON'T force the mode's aspect ratio -
     // forcing it made the browser crop/zoom the sensor (Polaroid looked zoomed, and
     // toggling Disposable orientation zoomed). We frame with the viewfinder overlay
     // and crop to the mode's aspect at capture time instead.
@@ -134,11 +134,11 @@ export default function CameraPage() {
           setCameraError('permission-denied')
           return
         }
-        // NotFoundError, NotReadableError, etc. — try next facing mode
+        // NotFoundError, NotReadableError, etc. - try next facing mode
       }
     }
 
-    // Both cameras failed — no camera hardware available
+    // Both cameras failed - no camera hardware available
     setCameraError('no-camera')
   }
 
@@ -238,7 +238,7 @@ export default function CameraPage() {
           state: { isLastDemoPhoto },
         })
       } else if (isLastDemoPhoto) {
-        // Non-polaroid last demo photo — finalize and jump straight to gallery
+        // Non-polaroid last demo photo - finalize and jump straight to gallery
         const { activeSession } = useSessionStore.getState()
         if (activeSession) finalizeSession(activeSession)
         navigate('/demo/gallery', { replace: true })
@@ -322,7 +322,7 @@ export default function CameraPage() {
         </div>
       </div>
 
-      {/* Pending-upload indicator — stranded photos retry automatically. Tap it for
+      {/* Pending-upload indicator - stranded photos retry automatically. Tap it for
           a manual retry, or to clear a photo that can never upload. */}
       {pendingCount > 0 && (
         <div className="absolute top-16 left-0 right-0 z-20 flex justify-center safe-top px-4">
@@ -422,7 +422,7 @@ export default function CameraPage() {
           </div>
         )}
 
-        {/* Mode selector — only shown when couple has enabled multiple styles */}
+        {/* Mode selector - only shown when couple has enabled multiple styles */}
         {allowedModes.length > 1 && (
           <ModeSelector
             modes={allowedModes}

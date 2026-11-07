@@ -3,7 +3,7 @@ import type { WeddingConfig } from '@/types/session'
 import FilmGrain from '@/components/FilmGrain'
 
 // Guest-side location gate. Shown when an event has a fence and the guest taps
-// "Open Camera". The distance check runs entirely in the browser — the guest's
+// "Open Camera". The distance check runs entirely in the browser - the guest's
 // coordinates are never sent to us. The bypass code IS verified server-side.
 
 type Phase = 'intro' | 'checking' | 'outside' | 'denied' | 'bypass'
@@ -46,7 +46,7 @@ export default function GeofenceGate({
         const { latitude, longitude, accuracy } = pos.coords
         const d = distanceM(latitude, longitude, config.geofenceLat!, config.geofenceLng!)
         // Give guests the benefit of their GPS error margin (capped) so real
-        // attendees near the edge — or indoors — aren't wrongly blocked.
+        // attendees near the edge - or indoors - aren't wrongly blocked.
         const slack = Math.min(accuracy || 0, 150)
         if (d <= radius + slack) onPass()
         else setPhase('outside')
@@ -117,7 +117,7 @@ export default function GeofenceGate({
             <h2 className="text-serif text-cream text-2xl font-normal mt-3 leading-tight">Before your photo</h2>
             <p className="text-sans text-cream/55 text-sm leading-relaxed font-light mt-4">
               To keep this gallery to guests who are actually here, we'll do a one-time check of your
-              location before you add a photo. We don't store it or track you — we just confirm you're at {eventName}.
+              location before you add a photo. We don't store it or track you. We just confirm you're at {eventName}.
             </p>
             <Primary label="Continue" onClick={check} />
             <button onClick={onClose} className="mt-3 text-sans text-cream/35 text-xs tracking-widest uppercase touch-manipulation hover:text-cream/55">
@@ -149,7 +149,7 @@ export default function GeofenceGate({
           <>
             <h2 className="text-serif text-cream text-2xl font-normal leading-tight">We couldn't check your location</h2>
             <p className="text-sans text-cream/55 text-sm leading-relaxed font-light mt-4">
-              To add a photo, allow location access when your browser asks, then try again — or
+              To add a photo, allow location access when your browser asks, then try again, or
               re-enable it in your browser's site settings.
             </p>
             <Primary label="Try Again" onClick={check} />
@@ -173,7 +173,7 @@ export default function GeofenceGate({
               className="mt-5 w-full max-w-[260px] text-center bg-ink-light border border-cream/15 rounded-xl px-4 py-3 text-cream text-sans tracking-widest focus:outline-none focus:border-cream/35"
             />
             {codeErr && (
-              <p className="text-sans text-red-400/70 text-xs mt-3">That code didn't match — double-check with staff.</p>
+              <p className="text-sans text-red-400/70 text-xs mt-3">That code didn't match. Double-check with staff.</p>
             )}
             <Primary label={verifying ? 'Checking…' : 'Submit'} onClick={submitCode} />
             <button onClick={() => setPhase('intro')} className="mt-3 text-sans text-cream/35 text-xs tracking-widest uppercase touch-manipulation hover:text-cream/55">

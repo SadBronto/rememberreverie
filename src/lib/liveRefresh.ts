@@ -6,7 +6,7 @@ import { supabase } from './supabase'
 // lobby display). The SlideshowPage subscribes to the same channel.
 //
 // Fire-and-forget and defensive: if Realtime/Supabase isn't available, it's a no-op
-// and the slideshow's own poll remains the fallback — nothing breaks.
+// and the slideshow's own poll remains the fallback - nothing breaks.
 
 export function slideshowChannel(weddingId: string) {
   return `slideshow:${weddingId}`
@@ -25,6 +25,6 @@ export function pokeSlideshow(weddingId: string | undefined | null) {
       }
     })
   } catch {
-    /* realtime unavailable — the slideshow poll will catch up */
+    /* realtime unavailable - the slideshow poll will catch up */
   }
 }

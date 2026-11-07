@@ -5,22 +5,22 @@ import FilmGrain from '@/components/FilmGrain'
 
 // Per-persona intro shown the first time each is opened in a session. Fades in over
 // the current screen; on Continue it navigates underneath, then fades out to reveal
-// the demo screen — an elegant cross-fade.
+// the demo screen - an elegant cross-fade.
 const COPY = {
   guest: {
     eyebrow: 'The guest view',
     title:   'What your guests see',
-    body:    'When a guest scans your QR code — or opens your customizable event link — this is exactly what they’ll see. Take a photo, watch it develop, and sign it.',
+    body:    'When a guest scans your QR code, or opens your customizable event link, this is exactly what they’ll see. Take a photo, watch it develop, and sign it.',
   },
   client: {
     eyebrow: 'Your gallery',
     title:   'Where it all collects',
-    body:    'Every photo your guests capture lands here, privately — to browse, download, and review. It’s also where you design your QR code, manage your settings, and approve or remove flagged photos.',
+    body:    'Every photo your guests capture lands here, privately, to browse, download, and review. It’s also where you design your QR code, manage your settings, and approve or remove flagged photos.',
   },
   setup: {
     eyebrow: 'Setting up',
     title:   'Make it yours',
-    body:    'This is how you’ll set up your event — walk through it just like the real thing.',
+    body:    'This is how you’ll set up your event. Walk through it just like the real thing.',
   },
 }
 

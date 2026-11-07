@@ -29,7 +29,7 @@ export default function ConfirmationPage() {
     return () => URL.revokeObjectURL(url)
   }, [lastSession])
 
-  // Staggered entrance — photo first, then text
+  // Staggered entrance - photo first, then text
   useEffect(() => {
     const t1 = setTimeout(() => setPhotoVisible(true), 80)
     const t2 = setTimeout(() => setTextVisible(true), 500)
@@ -65,7 +65,7 @@ export default function ConfirmationPage() {
     if (n.share && n.canShare && n.canShare({ files: [file] })) {
       try { await n.share({ files: [file], title: 'My photo' }) } catch { /* user cancelled */ }
     } else {
-      // Desktop / unsupported — fall back to a direct download
+      // Desktop / unsupported - fall back to a direct download
       const url = URL.createObjectURL(file)
       const a = document.createElement('a')
       a.href = url
@@ -78,7 +78,7 @@ export default function ConfirmationPage() {
   return (
     <div className="flex flex-col items-center min-h-dvh bg-ink px-5 safe-top safe-bottom overflow-hidden">
 
-      {/* Photo — hero of the screen */}
+      {/* Photo - hero of the screen */}
       <div
         className="relative flex items-center justify-center flex-1 w-full py-8 transition-all duration-700 ease-out"
         style={{
@@ -177,7 +177,7 @@ export default function ConfirmationPage() {
         </button>
       </div>
 
-      {/* Auto-return progress bar — hidden once the guest pauses to save/share */}
+      {/* Auto-return progress bar - hidden once the guest pauses to save/share */}
       {!paused && (
         <div className="w-full h-px bg-cream/5 absolute bottom-0 left-0">
           <div

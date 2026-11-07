@@ -35,7 +35,7 @@ export default function PricingPage() {
           </h1>
           <p className="text-sans text-cream/55 text-base leading-relaxed max-w-[420px] mt-6 font-light">
             Hand every guest a disposable-style camera on their phone. They scan, shoot, and
-            sign — and every photo develops into one gallery that's yours to keep.
+            sign. Every photo develops into one gallery that's yours to keep.
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-3 mt-10 w-full max-w-xs sm:max-w-md">
             <button
@@ -60,7 +60,7 @@ export default function PricingPage() {
           <SectionLabel>How it works</SectionLabel>
           <div className="mt-10 flex flex-col gap-10">
             <Step n="01" title="Share a code">
-              Put out a QR code. Guests scan it with their phone camera — nothing to download,
+              Put out a QR code. Guests scan it with their phone camera. Nothing to download,
               no account to make.
             </Step>
             <Step n="02" title="Everyone shoots">
@@ -68,7 +68,7 @@ export default function PricingPage() {
               that fits the night, and let guests sign their photos.
             </Step>
             <Step n="03" title="It all develops">
-              Every photo lands in one private gallery — yours to browse and download in full
+              Every photo lands in one private gallery, yours to browse and download in full
               resolution. On Reverie Live, they appear on the big screen as they're taken.
             </Step>
           </div>
@@ -85,7 +85,7 @@ export default function PricingPage() {
             ))}
           </div>
           <p className="text-sans text-cream/45 text-sm leading-relaxed max-w-[380px] mx-auto mt-6 font-light">
-            From flash-lit candids to warm, creamy film — pick the feeling that fits your event.
+            From flash-lit candids to warm, creamy film. Pick the feeling that fits your event.
           </p>
         </section>
 
@@ -121,7 +121,7 @@ export default function PricingPage() {
           </div>
 
           <p className="text-sans text-cream/45 text-sm leading-relaxed text-center max-w-[520px] mx-auto mt-10 font-light">
-            Add on when you need it — Unlimited photos <Money>+$25</Money> · Keep your gallery &amp;
+            Add on when you need it. Unlimited photos <Money>+$25</Money> · Keep your gallery &amp;
             link another year <Money>+$25/yr</Money> · Venue lock <Money>+$15</Money> · Extended
             capture window <Money>+$40</Money>.
           </p>
@@ -135,7 +135,7 @@ export default function PricingPage() {
             See it for yourself.
           </h2>
           <p className="text-sans text-cream/50 text-sm mt-4 max-w-[360px] font-light leading-relaxed">
-            Walk through the whole experience — as a guest, as the host, and behind the scenes.
+            Walk through the whole experience, as a guest, as the host, and behind the scenes.
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-3 mt-8 w-full max-w-xs sm:max-w-md">
             <button

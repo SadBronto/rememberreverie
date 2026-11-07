@@ -2,7 +2,7 @@ import type { WeddingConfig } from '@/types/session'
 
 // The demo runs as a "wedding" whose id starts with `demo-`. That prefix is the
 // single seam the rest of the app already keys off (see sessionStore.finalizeSession
-// — demo sessions skip the network upload). Keeping the prefix means the real
+// - demo sessions skip the network upload). Keeping the prefix means the real
 // guest/couple/slideshow screens work in the demo without a parallel code path.
 export const DEMO_WEDDING_ID = 'demo-reverie'
 

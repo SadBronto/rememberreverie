@@ -7,8 +7,8 @@ import { processSession } from '@/lib/imageProcessor'
 
 // Builds the demo gallery by running each raw demo photo through the REAL
 // processSession pipeline (so the demo can't drift from the product), then layers
-// in any photos the prospect captured in the Guest persona. The expensive bit —
-// filtering the 46 bundled photos — is processed in batches and cached.
+// in any photos the prospect captured in the Guest persona. The expensive bit -
+// filtering the 46 bundled photos - is processed in batches and cached.
 
 let manifestCache: SessionRecord[] | null = null
 
@@ -76,7 +76,7 @@ export async function buildDemoGallery(
   let manifest: SessionRecord[]
 
   if (manifestCache) {
-    // Already processed — return from cache. If a callback was provided
+    // Already processed - return from cache. If a callback was provided
     // (re-entering the gallery), fire it all at once since there's no staggering.
     manifest = manifestCache
     if (onProgress) {
@@ -84,7 +84,7 @@ export async function buildDemoGallery(
     }
   } else {
     // First load: process manifest in batches of 4, staggered. Each batch fires
-    // the onProgress callback, so photos appear in the UI over ~1.5–2 seconds.
+    // the onProgress callback, so photos appear in the UI over ~1.5-2 seconds.
     manifest = []
     const BATCH_SIZE = 4
 

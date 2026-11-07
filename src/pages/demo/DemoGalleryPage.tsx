@@ -53,7 +53,7 @@ export default function DemoGalleryPage() {
           const modeConfig    = CAMERA_MODES[photo.mode]
           const sourceImages  = [{ blob, capturedAt: new Date(), index: 0 }]
 
-          // 900px wide — crisp for 2-column gallery on retina, much faster than 2400px
+          // 900px wide - crisp for 2-column gallery on retina, much faster than 2400px
           const outputBlob = await processSession(
             sourceImages,
             modeConfig,
@@ -75,7 +75,7 @@ export default function DemoGalleryPage() {
             return next
           })
         } catch {
-          // Skip broken images — skeleton stays in place
+          // Skip broken images - skeleton stays in place
         }
       }
     }
@@ -158,7 +158,7 @@ export default function DemoGalleryPage() {
       >
         <div className="columns-2 gap-2">
 
-          {/* User's actual captured photos — front and center */}
+          {/* User's actual captured photos - front and center */}
           {completedSessions.map((session) => session.outputImage && (
             <UserPhotoTile
               key={session.id}
@@ -167,7 +167,7 @@ export default function DemoGalleryPage() {
             />
           ))}
 
-          {/* Seed photos — processing through filters one by one */}
+          {/* Seed photos - processing through filters one by one */}
           {SEED_PHOTOS.map((photo, i) => (
             processed[i]
               ? <DevelopedTile
@@ -215,7 +215,7 @@ function Stat({ value, label }: { value: string; label: string }) {
   )
 }
 
-// Aspect ratios for skeleton tiles — match processed output (image + border framing)
+// Aspect ratios for skeleton tiles - match processed output (image + border framing)
 const MODE_ASPECT: Record<string, string> = {
   disposable: 'aspect-[3/2]',
   polaroid:   'aspect-[5/6]',

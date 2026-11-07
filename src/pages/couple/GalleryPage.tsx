@@ -53,7 +53,7 @@ export default function CoupleGalleryPage() {
     // real pipeline) + any Guest-persona captures. No auth, no backend.
     if (demo && weddingId) {
       // Show the page chrome instantly with an empty gallery, then process the
-      // photos in the background behind a "developing" state — so prospects aren't
+      // photos in the background behind a "developing" state - so prospects aren't
       // staring at a blank spinner while 46 images run through the filter pipeline.
       setData({
         wedding: {
@@ -155,7 +155,7 @@ export default function CoupleGalleryPage() {
     if (res.ok) pokeSlideshow(weddingId) // drop it from any live slideshow now
 
     if (!res.ok) {
-      // Revert — put it back (re-fetch would be cleaner but this avoids a round-trip)
+      // Revert - put it back (re-fetch would be cleaner but this avoids a round-trip)
       window.location.reload()
     }
   }
@@ -180,7 +180,7 @@ export default function CoupleGalleryPage() {
       // Revert on failure
       setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, status: currentStatus } : s))
     } else {
-      pokeSlideshow(weddingId) // hiding/showing changes the live set — refresh the TV now
+      pokeSlideshow(weddingId) // hiding/showing changes the live set - refresh the TV now
     }
   }
 
@@ -243,7 +243,7 @@ export default function CoupleGalleryPage() {
           zip.file(`memory-${num}.jpg`, blob)
           added++
         } catch (err) {
-          // One unreachable photo must not abort the whole download — skip it,
+          // One unreachable photo must not abort the whole download - skip it,
           // but record which one (and exactly why) so it's diagnosable.
           failures.push({
             label: s.memoryNumber != null ? `#${s.memoryNumber}` : s.id,
@@ -255,7 +255,7 @@ export default function CoupleGalleryPage() {
       }
 
       // Full per-photo detail (which, its URL, and the exact error) for diagnosis.
-      if (failures.length > 0) console.error('Reverie — photos that failed to download:', failures)
+      if (failures.length > 0) console.error('Reverie - photos that failed to download:', failures)
 
       if (added === 0) {
         const reasons = [...new Set(failures.map(f => f.reason))].join('; ') || 'unknown'
@@ -370,11 +370,11 @@ export default function CoupleGalleryPage() {
         const h12 = h % 12 || 12
         return `${h12}:00 ${ampm}`
       })()
-    : '—'
+    : '-'
 
   const guestUrl = weddingId ? `https://rememberreverie.com/w/${weddingId}` : ''
 
-  // Effective deletion date — mirrors cleanup.ts: retention_until, else
+  // Effective deletion date - mirrors cleanup.ts: retention_until, else
   // capture_end + 90d, else the legacy wedding_date + 90d.
   const retentionInfo = (() => {
     const w = data?.wedding
@@ -496,12 +496,12 @@ export default function CoupleGalleryPage() {
         </div>
       )}
 
-      {/* Retention notice — shown when ≤ 60 days to deletion */}
+      {/* Retention notice - shown when ≤ 60 days to deletion */}
       {retentionInfo && retentionInfo.daysLeft <= 60 && (
         <RetentionNotice {...retentionInfo} onDownload={downloadAll} />
       )}
 
-      {/* Slideshow CTA — Reverie Live only */}
+      {/* Slideshow CTA - Reverie Live only */}
       {data?.wedding.plan === 'live' && (
       <div className="px-4 pt-3 pb-1">
         <a
@@ -521,7 +521,7 @@ export default function CoupleGalleryPage() {
             </div>
             <div>
               <p className="text-sans text-cream/80 text-sm font-medium leading-tight">Reception Slideshow</p>
-              <p className="text-mono text-cream/30 text-[10px] tracking-[0.15em] mt-0.5">Live display — memories appear as guests shoot</p>
+              <p className="text-mono text-cream/30 text-[10px] tracking-[0.15em] mt-0.5">Live display, memories appear as guests shoot</p>
             </div>
           </div>
           <svg className="shrink-0 opacity-30 group-hover:opacity-60 transition-opacity" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="rgba(245,240,232,1)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -534,7 +534,7 @@ export default function CoupleGalleryPage() {
       {/* Controls + filters */}
       <div className="px-5 py-3 border-b border-cream/5 flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
-          {/* Download all ZIP — hidden in the demo (downloads disabled) */}
+          {/* Download all ZIP - hidden in the demo (downloads disabled) */}
           {demo ? <span /> : (
             <button
               onClick={downloadAll}
@@ -561,7 +561,7 @@ export default function CoupleGalleryPage() {
           )}
         </div>
 
-        {/* Filter — one at a time */}
+        {/* Filter - one at a time */}
         <div className="flex items-center gap-2 flex-wrap">
           <FilterChip active={filter === 'all'}        onClick={() => setFilter('all')}>All</FilterChip>
           <FilterChip active={filter === 'disposable'} onClick={() => setFilter('disposable')}>Disposable</FilterChip>
@@ -584,7 +584,7 @@ export default function CoupleGalleryPage() {
         </div>
       </div>
 
-      {/* Needs review — flagged photos, shown only when the admin enabled it */}
+      {/* Needs review - flagged photos, shown only when the admin enabled it */}
       {reviewEnabled && flaggedSessions.length > 0 && (
         <div className="px-4 pt-3 pb-1">
           <div className="bg-red-500/8 border border-red-500/25 rounded-xl p-3.5">
@@ -619,7 +619,7 @@ export default function CoupleGalleryPage() {
         </div>
       )}
 
-      {/* Developing — demo photos arriving in batches */}
+      {/* Developing - demo photos arriving in batches */}
       {demoProgress && (
         <div className="flex flex-col items-center justify-center py-28 px-6 text-center gap-4">
           <div className="w-7 h-7 rounded-full border-2 border-cream/20 border-t-cream/60 animate-spin" />
@@ -629,7 +629,7 @@ export default function CoupleGalleryPage() {
         </div>
       )}
 
-      {/* Onboarding — brand-new gallery with no photos yet */}
+      {/* Onboarding - brand-new gallery with no photos yet */}
       {!demoProgress && allSessions.length === 0 && (
         <OnboardingPanel
           onCreateQR={() => setShowQR(true)}
@@ -637,7 +637,7 @@ export default function CoupleGalleryPage() {
         />
       )}
 
-      {/* Empty state — no photos match the current filter */}
+      {/* Empty state - no photos match the current filter */}
       {!demoProgress && allSessions.length > 0 && gridSessions.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
           <p className="text-serif text-cream/40 text-xl italic">Nothing here</p>
@@ -689,7 +689,7 @@ export default function CoupleGalleryPage() {
         </p>
       </div>
 
-      {/* Lightbox — tap a photo to view it large */}
+      {/* Lightbox - tap a photo to view it large */}
       {lightbox && (
         <Lightbox
           session={lightbox}
@@ -781,7 +781,7 @@ function Lightbox({
 // Fetch an image as a blob with a forced-fresh CORS request. The gallery shows
 // each photo via a plain <img> (no Origin header), and R2/Cloudflare only return
 // the CORS header (Access-Control-Allow-Origin) when the request carries an Origin
-// — so the browser caches a header-less copy. A normal fetch() would reuse that
+// - so the browser caches a header-less copy. A normal fetch() would reuse that
 // copy and be blocked by CORS; cache:'reload' forces a fresh CORS request that
 // gets the header. (R2 egress is free, so re-fetching costs nothing.)
 async function fetchPhotoBlob(url: string): Promise<Blob> {
@@ -800,8 +800,8 @@ async function fetchPhotoBlob(url: string): Promise<Blob> {
 }
 
 // JPEG blob of the photo with the signature composited on top (matching the
-// on-screen multiply blend). Composites from decoded blobs — not <img crossorigin>
-// — so the canvas can never be tainted; falls back to the raw photo if anything
+// on-screen multiply blend). Composites from decoded blobs - not <img crossorigin>
+// - so the canvas can never be tainted; falls back to the raw photo if anything
 // fails, so a download always works.
 async function flattenPhoto(photoUrl: string, annotationUrl: string | null): Promise<Blob> {
   const photoBlob = await fetchPhotoBlob(photoUrl)
@@ -837,7 +837,7 @@ function OnboardingPanel({ onCreateQR, onChooseLink }: { onCreateQR: () => void;
         This is where it all collects.
       </h2>
       <p className="text-sans text-cream/45 text-sm leading-relaxed mt-3">
-        Right now it's empty — but not for long. Create your QR code, set it where
+        Right now it's empty, but not for long. Create your QR code, set it where
         your guests will find it, and every photo they take appears here, automatically.
       </p>
       <button
@@ -850,7 +850,7 @@ function OnboardingPanel({ onCreateQR, onChooseLink }: { onCreateQR: () => void;
         onClick={onChooseLink}
         className="mt-4 text-sans text-cream/35 text-xs italic touch-manipulation active:text-cream/60 transition-colors"
       >
-        Make it yours — choose a custom link before you print
+        Make it yours. Choose a custom link before you print
       </button>
     </div>
   )
@@ -936,11 +936,11 @@ function PhotoTile({
             </div>
           )}
 
-          {/* Pinned ("kept") badge — always visible so you can see what's protected */}
+          {/* Pinned ("kept") badge - always visible so you can see what's protected */}
           {session.pinned && (
             <div
               className="absolute bottom-2 left-2 w-6 h-6 rounded-full bg-amber-film/90 flex items-center justify-center shadow"
-              title="Kept — won't be auto-deleted"
+              title="Kept, won't be auto-deleted"
             >
               <BookmarkIcon filled color="#1a1612" size={12} />
             </div>
@@ -1065,7 +1065,7 @@ function RetentionNotice({
   formatted: string
   onDownload: () => void
 }) {
-  // 31–60 days: quiet amber line
+  // 31-60 days: quiet amber line
   if (daysLeft > 30) {
     return (
       <div className="px-5 py-2">
@@ -1076,7 +1076,7 @@ function RetentionNotice({
     )
   }
 
-  // 15–30 days: small amber card
+  // 15-30 days: small amber card
   if (daysLeft > 14) {
     return (
       <div className="px-4 pt-2 pb-1">
@@ -1098,7 +1098,7 @@ function RetentionNotice({
     )
   }
 
-  // 7–14 days: orange, more urgent
+  // 7-14 days: orange, more urgent
   if (daysLeft > 7) {
     return (
       <div className="px-4 pt-2 pb-1">
@@ -1128,7 +1128,7 @@ function RetentionNotice({
       <div className="bg-red-500/12 border border-red-500/35 rounded-xl px-4 py-4">
         <div className="flex items-center justify-between gap-3 mb-2">
           <p className="text-sans text-red-400 text-sm font-bold">
-            {daysLeft <= 1 ? 'Last day' : `${daysLeft} days left`} — download now
+            {daysLeft <= 1 ? 'Last day' : `${daysLeft} days left`}, download now
           </p>
           <button
             onClick={onDownload}

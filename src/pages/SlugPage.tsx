@@ -29,7 +29,7 @@ export default function SlugPage() {
     )
   }
 
-  // Loading — no flash of content, just a quiet wait
+  // Loading - no flash of content, just a quiet wait
   return (
     <div className="min-h-screen bg-ink flex items-center justify-center">
       <p className="text-mono text-cream/20 text-[10px] tracking-[0.4em] uppercase animate-pulse">

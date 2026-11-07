@@ -2,7 +2,7 @@ interface Props {
   opacity?: number
 }
 
-// Static film-grain texture (SVG fractal noise), tiled — identical to the home
+// Static film-grain texture (SVG fractal noise), tiled - identical to the home
 // page's background. Intentionally NOT animated: moving grain reads as a flickery
 // "video static" effect, which the client rejected. One overlay, no canvas, no
 // requestAnimationFrame. Drop it inside a `relative` (ideally `overflow-hidden`)

@@ -71,7 +71,7 @@ const OUTPUT_ASPECT: Record<CameraModeName, string> = {
  * In 'cover' mode: fills whatever fixed-size parent you give it (use overflow:hidden).
  * In 'natural' mode: renders at the image's own aspect ratio, constrained by maxHeight.
  *
- * Results are cached globally — repeated renders are instant after the first.
+ * Results are cached globally - repeated renders are instant after the first.
  */
 export default function StylePreviewThumb({
   mode,

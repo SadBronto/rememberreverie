@@ -1,5 +1,5 @@
 // Real stock wedding photos served from /gallery/.
-// Each is assigned a Reverie mode — the gallery processes them through
+// Each is assigned a Reverie mode - the gallery processes them through
 // the full filter pipeline so visitors see the actual product aesthetic.
 //
 // Mode distribution: 4 Disposable, 3 Polaroid, 4 Super 8

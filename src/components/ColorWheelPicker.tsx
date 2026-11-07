@@ -45,7 +45,7 @@ interface Props {
   onClose: () => void
 }
 
-const WHEEL_SIZE = 220   // canvas px — small keeps paint fast
+const WHEEL_SIZE = 220   // canvas px - small keeps paint fast
 
 export default function ColorWheelPicker({ color, onChange, onClose }: Props) {
   const wheelRef     = useRef<HTMLCanvasElement>(null)

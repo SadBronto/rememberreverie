@@ -45,7 +45,7 @@ export default function LandingPage() {
       return
     }
 
-    // Demo guest landing never hits the API — fall back to the base demo config
+    // Demo guest landing never hits the API - fall back to the base demo config
     // (keeps the Guest flow reload-safe even though demo state isn't persisted).
     if (isDemoId(id)) {
       setWeddingConfig({ ...DEMO_BASE_CONFIG, id })
@@ -53,7 +53,7 @@ export default function LandingPage() {
       return
     }
 
-    // In local dev there may be no backend — fall back to a sample config so the
+    // In local dev there may be no backend - fall back to a sample config so the
     // page still renders. In production we NEVER show a fake couple to a guest;
     // we show a proper error screen instead.
     const isLocalDev =
@@ -114,7 +114,7 @@ export default function LandingPage() {
   if (loadError) return <LandingMessage variant={loadError} />
   if (loading || !weddingConfig) return <LandingLoading />
 
-  // Capture window — gate the camera when the event hasn't opened yet or has
+  // Capture window - gate the camera when the event hasn't opened yet or has
   // already closed. Fail-open (status 'none') keeps ungated events untouched.
   const windowStatus = captureWindowStatus(weddingConfig)
   if (windowStatus === 'before' || windowStatus === 'ended') {
@@ -126,7 +126,7 @@ export default function LandingPage() {
   return (
     <div className="relative flex flex-col min-h-dvh bg-ink px-6 overflow-hidden safe-top safe-bottom">
 
-      {/* Location fence — gate before the camera when the event has one set */}
+      {/* Location fence - gate before the camera when the event has one set */}
       {gateOpen && (
         <GeofenceGate
           config={weddingConfig}
@@ -170,7 +170,7 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* Animated film grain — nearly subconscious */}
+      {/* Animated film grain - nearly subconscious */}
       <FilmGrain opacity={0.038} />
 
       {/* Vignette */}
@@ -185,7 +185,7 @@ export default function LandingPage() {
         <h1 className="text-serif text-cream text-3xl font-normal tracking-wide mt-1">Reverie</h1>
       </header>
 
-      {/* Center content — flex-centered with slight upward bias via pb */}
+      {/* Center content - flex-centered with slight upward bias via pb */}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-5 text-center pb-[10vh]">
         <div className="w-10 h-px bg-cream/20" />
 
@@ -215,7 +215,7 @@ export default function LandingPage() {
         )}
       </div>
 
-      {/* CTA — anchored at bottom */}
+      {/* CTA - anchored at bottom */}
       <div className="relative z-10 flex flex-col items-center gap-4 w-full max-w-xs mx-auto pb-10">
         <button
           onClick={handleOpen}

@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 const url  = import.meta.env.VITE_SUPABASE_URL  as string
 const anon = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 
-// Client uses the anon key — safe to ship in the browser with RLS enabled.
+// Client uses the anon key - safe to ship in the browser with RLS enabled.
 // Only used for Storage uploads (photo blobs go directly to Supabase, bypassing
 // Netlify Function size limits). All DB writes go through Netlify Functions
 // which use the service key server-side.

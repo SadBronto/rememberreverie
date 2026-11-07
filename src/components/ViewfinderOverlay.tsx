@@ -109,7 +109,7 @@ export default function ViewfinderOverlay({ mode, phase, aspectRatio, signatureM
         const sigH = Math.round(height * config.frame.borderBottom)
         const sigTop = top + height
         // Hide if it would collide with the bottom controls (shutter + mode
-        // selector) — on tall phones there isn't room, and overlapping is worse
+        // selector) - on tall phones there isn't room, and overlapping is worse
         // than not showing the hint at all.
         if (sigTop + sigH > window.innerHeight - 180) return null
         return (

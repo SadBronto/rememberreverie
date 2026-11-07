@@ -32,7 +32,7 @@ export default function SlideshowSlugPage({ slug }: Props) {
       <div className="min-h-dvh bg-black flex flex-col items-center justify-center gap-4 text-center px-8">
         <p className="text-serif text-cream/40 text-xl italic">Slideshow not found</p>
         <p className="text-mono text-cream/20 text-xs tracking-widest">
-          Check the URL with your couple — the slug may not be set up yet.
+          Check the URL with your couple. The slug may not be set up yet.
         </p>
       </div>
     )

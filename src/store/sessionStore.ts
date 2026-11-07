@@ -69,11 +69,11 @@ export const useSessionStore = create<SessionState>((set) => ({
 
   finalizeSession: async (session) => {
     // Demo sessions (weddingId starts with 'demo-') skip the network upload
-    // entirely — the gallery reads directly from completedSessions in the store.
+    // entirely - the gallery reads directly from completedSessions in the store.
     const isDemo = session.weddingId.startsWith('demo-')
     if (isDemo) {
       set((state) => ({
-        // Only clear activeSession if it's still THIS session — prevents a race where a
+        // Only clear activeSession if it's still THIS session - prevents a race where a
         // slow upload from photo N wipes the activeSession that photo N+1 just created.
         activeSession: state.activeSession?.id === session.id ? null : state.activeSession,
         completedSessions: [...state.completedSessions, { ...session, uploadStatus: 'success' }],

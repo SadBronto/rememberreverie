@@ -1,7 +1,7 @@
 import type { CameraModeConfig, FilterConfig, FrameConfig } from '@/config/modes'
 import type { SourceImage } from '@/types/session'
 
-const OUTPUT_QUALITY = 0.92   // JPEG quality — visually lossless
+const OUTPUT_QUALITY = 0.92   // JPEG quality - visually lossless
 
 // Per-event timestamp size scale (see ProcessOptions).
 const TS_SIZE_SCALE = { small: 0.82, medium: 1, large: 1.25 } as const
@@ -10,13 +10,13 @@ const TS_OUTLINE_WEIGHT = { off: 0, small: 0.06, medium: 0.10, large: 0.16 } as 
 
 export interface ProcessOptions {
   timestampEnabled: boolean
-  /** Layout style — each has its own position, font size, and colour */
+  /** Layout style - each has its own position, font size, and colour */
   timestampStyle: 'classic' | 'vertical' | 'elegant'
   /** Passed to the 'elegant' style to render "Couple Names · date" */
   coupleNames?: string
   /**
    * Horizontal alignment of the source image within the crop area.
-   * 'left' starts from the left edge instead of centering — useful for preview
+   * 'left' starts from the left edge instead of centering - useful for preview
    * thumbnails where the subject is off-centre in the sample image.
    * Default: 'center'.
    */
@@ -73,11 +73,11 @@ async function compositeImages(
   let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight
 
   if (srcAspect > tgtAspect) {
-    // Source is wider — crop sides. 'left' keeps left edge; 'center' splits evenly.
+    // Source is wider - crop sides. 'left' keeps left edge; 'center' splits evenly.
     sw = img.naturalHeight * tgtAspect
     sx = sourceAlign === 'left' ? 0 : (img.naturalWidth - sw) / 2
   } else {
-    // Source is taller — crop top/bottom. 'left' keeps top; 'center' splits evenly.
+    // Source is taller - crop top/bottom. 'left' keeps top; 'center' splits evenly.
     sh = img.naturalWidth / tgtAspect
     sy = sourceAlign === 'left' ? 0 : (img.naturalHeight - sh) / 2
   }
@@ -136,7 +136,7 @@ async function applyFilters(source: HTMLCanvasElement, filter: FilterConfig): Pr
       b = Math.round(b + (tint.b - b) * tint.strength)
     }
 
-    // Selective colour — desaturate everything except hues near the target
+    // Selective colour - desaturate everything except hues near the target
     if (sel) {
       const mx = Math.max(r, g, b), mn = Math.min(r, g, b), dd = mx - mn
       let h = 0
@@ -159,7 +159,7 @@ async function applyFilters(source: HTMLCanvasElement, filter: FilterConfig): Pr
       }
     }
 
-    // Duotone — map luminance onto a two-colour ramp
+    // Duotone - map luminance onto a two-colour ramp
     if (duo) {
       const l = (0.299 * r + 0.587 * g + 0.114 * b) / 255
       r = duo.shadow.r + (duo.highlight.r - duo.shadow.r) * l
@@ -247,7 +247,7 @@ async function applyFrame(
   if (frame.style === 'polaroid') {
     // Warm vintage frame: cream gradient, faint paper tooth on the border only,
     // gently aged corners, and a soft inner shadow so the photo reads as recessed.
-    // 'v2' is the stronger treatment — clearly cream (not white), more texture, a
+    // 'v2' is the stronger treatment - clearly cream (not white), more texture, a
     // deeper recess and a faint gloss, so it reads unmistakably as a Polaroid.
     const v2 = frame.weathering === 'v2'
 
@@ -279,7 +279,7 @@ async function applyFrame(
     ctx.drawImage(source, bL, bT)
   }
 
-  // Wedding-level timestampEnabled is the sole gate — mode's showTimestamp is only
+  // Wedding-level timestampEnabled is the sole gate - mode's showTimestamp is only
   // a design default and should not override the couple's explicit configuration.
   if (options.timestampEnabled) {
     drawTimestamp(ctx, totalW, totalH, bB, bL, bR, options)
@@ -346,7 +346,7 @@ function drawCover(
 
 // ── Polaroid frame helpers ─────────────────────────────────────────────────────
 
-// Subtle warm darkening from each corner — a hint of age, not a heavy vignette.
+// Subtle warm darkening from each corner - a hint of age, not a heavy vignette.
 function drawAgedCorners(ctx: CanvasRenderingContext2D, w: number, h: number, strength: number) {
   const corners: [number, number][] = [[0, 0], [w, 0], [0, h], [w, h]]
   ctx.save()
@@ -360,7 +360,7 @@ function drawAgedCorners(ctx: CanvasRenderingContext2D, w: number, h: number, st
   ctx.restore()
 }
 
-// Faint diagonal gloss across the border — the subtle sheen of a real Polaroid.
+// Faint diagonal gloss across the border - the subtle sheen of a real Polaroid.
 // Drawn before the photo so it only shows on the frame, never washing the image.
 function drawPolaroidSheen(ctx: CanvasRenderingContext2D, w: number, h: number) {
   const g = ctx.createLinearGradient(0, 0, w, h)
@@ -426,7 +426,7 @@ function drawTimestamp(
   if (style === 'elegant')  drawElegant(ctx, w, h, bB, options.coupleNames, scale, options.timestampOutline ?? 'medium')
 }
 
-/** Bottom-right, two lines, orange — `05 21 '26 / 21:52:43` */
+/** Bottom-right, two lines, orange - `05 21 '26 / 21:52:43` */
 function drawClassic(
   ctx: CanvasRenderingContext2D,
   w: number, h: number,
@@ -447,7 +447,7 @@ function drawClassic(
   ctx.fillText(`${t.hh}:${t.min}:${t.sec}`, x, yBase - Math.round(fontSize * 1.45))
 }
 
-/** Bottom-left, rotated 90° upward, warm amber — `05 · 21 · '26` */
+/** Bottom-left, rotated 90° upward, warm amber - `05 · 21 · '26` */
 function drawVertical(
   ctx: CanvasRenderingContext2D,
   w: number, h: number,

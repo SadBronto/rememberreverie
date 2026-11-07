@@ -25,7 +25,7 @@ export interface CaptureSession {
   mode: CameraModeName
   sourceImages: SourceImage[]      // one per capture (1 for now, 4 for future strip)
   outputImage: Blob | null         // processed composite (filters applied, images merged)
-  annotation: Annotation | null    // stored separately — never baked into outputImage
+  annotation: Annotation | null    // stored separately - never baked into outputImage
   capturedAt: Date
   uploadStatus: UploadStatus
   memoryNumber: number | null      // assigned by server after successful upload
@@ -54,10 +54,10 @@ export interface WeddingConfig {
   eventTimezone?: string | null
   slideshowEnabled: boolean
   timestampEnabled: boolean
-  // Layout styles (not color — each style has its own position, font size, and colour)
-  // classic:  bottom-right, two lines, orange — date + time
-  // vertical: bottom-left, rotated 90°, warm amber — date only
-  // elegant:  top-left, small, off-white — couple name + date
+  // Layout styles (not color - each style has its own position, font size, and colour)
+  // classic:  bottom-right, two lines, orange - date + time
+  // vertical: bottom-left, rotated 90°, warm amber - date only
+  // elegant:  top-left, small, off-white - couple name + date
   timestampStyle: 'classic' | 'vertical' | 'elegant'
   // Design customization (host-adjustable)
   timestampSize?: 'small' | 'medium' | 'large'

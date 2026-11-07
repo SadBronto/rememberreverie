@@ -245,9 +245,9 @@ export interface SVGParams {
   transparent: boolean
   gradDir: GradDir
   gradColor2: string
-  quietZone: number   // in modules (0–4)
+  quietZone: number   // in modules (0-4)
   centerDataUrl: string | null
-  logoSize: number    // 1–100 percent of data area
+  logoSize: number    // 1-100 percent of data area
 }
 
 export function buildSVG(p: SVGParams): string {
@@ -462,7 +462,7 @@ export default function QRCreator({ url, coupleNames, onClose, initialSettings, 
     return () => { dead = true }
   }, [monogramText, monogramColor, centerMode])
 
-  // Auto-save — skip first mount, then debounce 800ms after any setting change
+  // Auto-save - skip first mount, then debounce 800ms after any setting change
   useEffect(() => {
     if (!onSave) return
     if (!didMountRef.current) { didMountRef.current = true; return }
@@ -570,7 +570,7 @@ export default function QRCreator({ url, coupleNames, onClose, initialSettings, 
         setLogoDataUrl(canvas.toDataURL('image/png'))
         setCenterMode('logo')
       }
-      img.onerror = () => { setLogoDataUrl(src); setCenterMode('logo') } // e.g. SVG — keep as-is
+      img.onerror = () => { setLogoDataUrl(src); setCenterMode('logo') } // e.g. SVG - keep as-is
       img.src = src
     }
     reader.readAsDataURL(file)
@@ -629,7 +629,7 @@ export default function QRCreator({ url, coupleNames, onClose, initialSettings, 
               <ColorInput label="Color" value={monogramColor} onChange={setMonogramColor} id="mono-color" />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sans text-cream/40 text-xs">Logo size — {logoSize}%</label>
+              <label className="text-sans text-cream/40 text-xs">Logo size - {logoSize}%</label>
               <input
                 type="range" min={10} max={30} step={1}
                 value={logoSize} onChange={e => setLogoSize(Number(e.target.value))}
@@ -650,7 +650,7 @@ export default function QRCreator({ url, coupleNames, onClose, initialSettings, 
             <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
             {logoDataUrl && (
               <div className="flex flex-col gap-1.5 mt-1">
-                <label className="text-sans text-cream/40 text-xs">Logo size — {logoSize}%</label>
+                <label className="text-sans text-cream/40 text-xs">Logo size - {logoSize}%</label>
                 <input
                   type="range" min={10} max={30} step={1}
                   value={logoSize} onChange={e => setLogoSize(Number(e.target.value))}

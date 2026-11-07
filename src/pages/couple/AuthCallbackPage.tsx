@@ -71,7 +71,7 @@ export default function AuthCallbackPage() {
       if (!wedding) {
         navigate('/host/no-wedding', { replace: true })
       } else if (wedding.status === 'pending_setup') {
-        // Host hasn't configured their event yet — send them to the setup wizard
+        // Host hasn't configured their event yet - send them to the setup wizard
         navigate('/host/setup', { replace: true })
       } else {
         navigate(`/host/${wedding.id}`, { replace: true })

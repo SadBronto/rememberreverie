@@ -47,15 +47,15 @@ const CANDIDATES: Candidate[] = [
   { key: 'dustgrain',   label: 'Dust & Grain', note: 'texture', config: mk('Dust & Grain', { warmth: 0.08, grain: 0.26, vignette: 0.3, brightness: 1.0, contrast: 1.0, saturation: 0.85, liftedBlacks: 0.12, softness: 0.15 }) },
 
   // ── Wild ──
-  { key: 'selred',    label: 'Selective — Red',    note: 'wild', config: mk('Selective — Red', { warmth: 0, grain: 0.06, vignette: 0.18, brightness: 1.0, contrast: 1.1, saturation: 1.1, liftedBlacks: 0.02, softness: 0.1, selectiveColor: { hue: 2, range: 28 } }) },
-  { key: 'selyellow', label: 'Selective — Yellow', note: 'wild', config: mk('Selective — Yellow', { warmth: 0, grain: 0.06, vignette: 0.18, brightness: 1.0, contrast: 1.1, saturation: 1.1, liftedBlacks: 0.02, softness: 0.1, selectiveColor: { hue: 52, range: 26 } }) },
-  { key: 'selblue',   label: 'Selective — Blue',   note: 'wild', config: mk('Selective — Blue', { warmth: 0, grain: 0.06, vignette: 0.18, brightness: 1.0, contrast: 1.1, saturation: 1.1, liftedBlacks: 0.02, softness: 0.1, selectiveColor: { hue: 212, range: 45 } }) },
-  { key: 'duotone',   label: 'Duotone — Indigo & Blush', note: 'wild', config: mk('Duotone — Indigo & Blush', { warmth: 0, grain: 0.06, vignette: 0.26, brightness: 1.0, contrast: 1.05, saturation: 1.0, liftedBlacks: 0.0, softness: 0.1, duotone: { shadow: { r: 28, g: 30, b: 58 }, highlight: { r: 246, g: 224, b: 206 } } }) },
+  { key: 'selred',    label: 'Selective - Red',    note: 'wild', config: mk('Selective - Red', { warmth: 0, grain: 0.06, vignette: 0.18, brightness: 1.0, contrast: 1.1, saturation: 1.1, liftedBlacks: 0.02, softness: 0.1, selectiveColor: { hue: 2, range: 28 } }) },
+  { key: 'selyellow', label: 'Selective - Yellow', note: 'wild', config: mk('Selective - Yellow', { warmth: 0, grain: 0.06, vignette: 0.18, brightness: 1.0, contrast: 1.1, saturation: 1.1, liftedBlacks: 0.02, softness: 0.1, selectiveColor: { hue: 52, range: 26 } }) },
+  { key: 'selblue',   label: 'Selective - Blue',   note: 'wild', config: mk('Selective - Blue', { warmth: 0, grain: 0.06, vignette: 0.18, brightness: 1.0, contrast: 1.1, saturation: 1.1, liftedBlacks: 0.02, softness: 0.1, selectiveColor: { hue: 212, range: 45 } }) },
+  { key: 'duotone',   label: 'Duotone - Indigo & Blush', note: 'wild', config: mk('Duotone - Indigo & Blush', { warmth: 0, grain: 0.06, vignette: 0.26, brightness: 1.0, contrast: 1.05, saturation: 1.0, liftedBlacks: 0.0, softness: 0.1, duotone: { shadow: { r: 28, g: 30, b: 58 }, highlight: { r: 246, g: 224, b: 206 } } }) },
 ]
 
 const SAMPLES = [
-  { label: 'Sample — landscape', path: '/demo-media/photos/d01.jpg' },
-  { label: 'Sample — portrait',  path: '/demo-media/photos/p01.jpg' },
+  { label: 'Sample - landscape', path: '/demo-media/photos/d01.jpg' },
+  { label: 'Sample - portrait',  path: '/demo-media/photos/p01.jpg' },
 ]
 
 interface Tile { key: string; label: string; note: string; url: string }
@@ -129,7 +129,7 @@ export default function FilterDemoPage() {
           <p className="text-mono text-cream/30 text-[10px] tracking-[0.3em] uppercase">Internal tool</p>
           <h1 className="text-serif text-cream text-3xl font-normal mt-1">Filter comparison</h1>
           <p className="text-sans text-cream/50 text-sm mt-2 max-w-2xl leading-relaxed">
-            Load a photo, then click any looks below to add them to the comparison — they render
+            Load a photo, then click any looks below to add them to the comparison - they render
             large, side by side, up top. Click again to remove. All processing runs in your browser.
           </p>
         </header>
@@ -161,7 +161,7 @@ export default function FilterDemoPage() {
         {busy && <p className="text-sans text-amber-film/70 text-sm mb-6">Processing…</p>}
         {error && <p className="text-sans text-red-400/80 text-sm mb-6">{error}</p>}
         {!active && !busy && (
-          <p className="text-sans text-cream/30 text-sm">No photo yet — upload one or load a sample above.</p>
+          <p className="text-sans text-cream/30 text-sm">No photo yet - upload one or load a sample above.</p>
         )}
 
         {active && (
@@ -211,7 +211,7 @@ export default function FilterDemoPage() {
             </div>
 
             {/* ── Picker: all looks ── */}
-            <p className="text-mono text-cream/40 text-[11px] tracking-[0.2em] uppercase mb-3">All looks — click to add / remove</p>
+            <p className="text-mono text-cream/40 text-[11px] tracking-[0.2em] uppercase mb-3">All looks - click to add / remove</p>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
               {active.tiles.map(t => {
                 const selected = compare.includes(t.key)

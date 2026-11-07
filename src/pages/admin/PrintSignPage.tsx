@@ -11,7 +11,7 @@ interface Wedding {
   qr_settings: QRSettings | null
 }
 
-// Admin print sign route — fetches the event and renders the shared sheet.
+// Admin print sign route - fetches the event and renders the shared sheet.
 export default function PrintSignPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()

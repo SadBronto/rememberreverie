@@ -26,7 +26,7 @@ export default function LoginPage() {
         return
       }
     } catch {
-      // If the check endpoint fails, fall through and let signInWithOtp run —
+      // If the check endpoint fails, fall through and let signInWithOtp run -
       // better to send an unnecessary email than to silently block a real user.
     }
 
@@ -111,7 +111,7 @@ export default function LoginPage() {
       {/* No-supabase fallback for local dev */}
       {!supabase && (
         <p className="mt-8 text-sans text-cream/20 text-[11px] text-center max-w-xs">
-          Supabase not configured — set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable auth.
+          Supabase not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable auth.
         </p>
       )}
 
@@ -119,7 +119,7 @@ export default function LoginPage() {
       <div className="mt-12 text-center max-w-xs">
         <p className="text-sans text-cream/25 text-[11px] leading-relaxed">
           Reverie is a private photo-sharing service for weddings &amp; events, by
-          Third Degree Entertainment. We use one-time email links to sign you in — never a password.
+          Third Degree Entertainment. We use one-time email links to sign you in, never a password.
         </p>
         <p className="text-mono text-cream/15 text-[9px] tracking-[0.2em] mt-3">
           <a href="https://www.thirddegreeentertainment.com/contact" target="_blank" rel="noopener noreferrer" className="hover:text-cream/40 transition-colors">Contact</a>

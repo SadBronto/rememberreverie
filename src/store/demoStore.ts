@@ -22,7 +22,7 @@ interface DemoState {
   // ── New persona shell (Guest / Client / Setup) ──
   // `active` gates the persistent bottom menu; `config` is the demo wedding
   // config, mutated by the Setup persona so a prospect's choices flow into the
-  // Guest flow and Client gallery. Resets on reload — every prospect starts clean.
+  // Guest flow and Client gallery. Resets on reload - every prospect starts clean.
   active: boolean
   config: WeddingConfig
 

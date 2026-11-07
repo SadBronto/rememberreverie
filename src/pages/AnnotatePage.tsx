@@ -116,7 +116,7 @@ export default function AnnotatePage() {
     const ctx    = canvas?.getContext('2d')
     if (!ctx || !canvas) return
 
-    // Save state before this stroke so we can undo. Cap the history — at device
+    // Save state before this stroke so we can undo. Cap the history - at device
     // resolution each snapshot is several MB, so unbounded growth could OOM mobile.
     strokeHistoryRef.current.push(ctx.getImageData(0, 0, canvas.width, canvas.height))
     if (strokeHistoryRef.current.length > 20) strokeHistoryRef.current.shift()
@@ -237,7 +237,7 @@ export default function AnnotatePage() {
         ctx.lineWidth   = weight
 
         if (pts.length === 1) {
-          // A tap with no movement — leave a dot
+          // A tap with no movement - leave a dot
           ctx.beginPath()
           ctx.arc(pts[0]!.x, pts[0]!.y, weight / 2, 0, Math.PI * 2)
           ctx.fill()
@@ -414,7 +414,7 @@ export default function AnnotatePage() {
             draggable={false}
           />
 
-          {/* Signature hint — inside signing area (bottom ~21% for polaroid) */}
+          {/* Signature hint - inside signing area (bottom ~21% for polaroid) */}
           {isSignature && !hasDrawn && (
             <div
               className="absolute left-[12%] right-[12%] pointer-events-none"
@@ -441,7 +441,7 @@ export default function AnnotatePage() {
       {/* ── Pen controls ────────────────────────────────────────────────────── */}
       <div className="relative z-10 px-5 pb-3 flex flex-col gap-3">
 
-        {/* Mode toggle — only show on desktop */}
+        {/* Mode toggle - only show on desktop */}
         {!isIOS && (
           <div className="flex gap-2 justify-center">
             {(['quadratic', 'pressure'] as const).map(m => (
@@ -458,10 +458,10 @@ export default function AnnotatePage() {
           </div>
         )}
 
-        {/* Color row — colour wheel picker + rainbow */}
+        {/* Color row - colour wheel picker + rainbow */}
         <div className="flex items-center gap-4 justify-center">
 
-          {/* Colour swatch — tapping opens the custom colour wheel */}
+          {/* Colour swatch - tapping opens the custom colour wheel */}
           <button
             onClick={() => { setIsRainbow(false); setShowColorPicker(true) }}
             aria-label="Choose colour"

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { buildSVG, buildMatrix, renderMonogram, type QRSettings } from '@/components/QRCreator'
 
 // Renders the *designed* QR (from saved qr_settings) anywhere outside the designer
-// — the admin preview, the printable sign, etc. Falls back to a plain styled QR if
+// - the admin preview, the printable sign, etc. Falls back to a plain styled QR if
 // no settings exist. Handles the async monogram render internally.
 export default function StyledQR({
   url,
