@@ -3,8 +3,9 @@ import { processSession } from '@/lib/imageProcessor'
 import { CAMERA_MODES } from '@/config/modes'
 import type { CameraModeName } from '@/types/session'
 
-// One representative, clearly-celebratory sample (landscape, already 3:2).
-const SAMPLE = '/demo-media/photos/d05.jpg'
+// One simple, bright, full-color sample (landscape, already 3:2) so each look's
+// effect is obvious against neutral daylight color.
+const SAMPLE = '/demo-media/photos/d13.jpg'
 
 const LOOKS: { mode: CameraModeName; label: string }[] = [
   { mode: 'disposable', label: 'Disposable' },
