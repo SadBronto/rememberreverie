@@ -7,13 +7,13 @@ import type { CameraModeName } from '@/types/session'
 // and dark shadows, so differences like Polaroid's faded blacks show up.
 const SAMPLE = '/demo-media/photos/d15.jpg'
 
-const LOOKS: { mode: CameraModeName; label: string }[] = [
-  { mode: 'disposable', label: 'Disposable' },
-  { mode: 'polaroid',   label: 'Polaroid' },
-  { mode: 'super8',     label: 'Super 8' },
-  { mode: 'noir',       label: 'Noir' },
-  { mode: 'flash',      label: 'Flash' },
-  { mode: 'champagne',  label: 'Champagne' },
+const LOOKS: { mode: CameraModeName; label: string; blurb: string }[] = [
+  { mode: 'disposable', label: 'Disposable', blurb: 'Grainy, punchy, and candid.' },
+  { mode: 'polaroid',   label: 'Polaroid',   blurb: 'Soft, faded instant-print nostalgia.' },
+  { mode: 'super8',     label: 'Super 8',    blurb: 'Warm, dreamy, and cinematic.' },
+  { mode: 'noir',       label: 'Noir',       blurb: 'Black and white with deep shadows.' },
+  { mode: 'flash',      label: 'Flash',      blurb: 'Crisp, bright, and straight-on.' },
+  { mode: 'champagne',  label: 'Champagne',  blurb: 'Warm, creamy, and glowing.' },
 ]
 
 // Shows ONE sample photo through each of the six real looks, so visitors see what the
@@ -65,7 +65,7 @@ export default function LooksPreview() {
 
   return (
     <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-xl mx-auto">
-      {LOOKS.map(({ mode, label }) => (
+      {LOOKS.map(({ mode, label, blurb }) => (
         <div key={mode} className="flex flex-col gap-1.5">
           <div className="relative aspect-[3/2] rounded-lg overflow-hidden bg-ink-light">
             {urls[mode] ? (
@@ -80,6 +80,9 @@ export default function LooksPreview() {
           </div>
           <span className="text-mono text-cream/50 text-[9px] tracking-[0.25em] uppercase text-center">
             {label}
+          </span>
+          <span className="text-sans text-cream/45 text-xs font-light leading-snug text-center">
+            {blurb}
           </span>
         </div>
       ))}
