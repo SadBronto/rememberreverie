@@ -155,8 +155,17 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
       `CREATE INDEX IF NOT EXISTS upload_errors_created_idx ON upload_errors (created_at DESC)`,
     ],
   },
+  {
+    id: 'v17_spotlight_new',
+    sql: [
+      // Per-event option: a freshly taken photo jumps the queue and plays right after
+      // the current slide, then also takes its normal place at the end of the rotation.
+      // Off by default so existing events behave exactly as before until enabled.
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS slideshow_spotlight_new BOOLEAN NOT NULL DEFAULT FALSE`,
+    ],
+  },
   // Future migrations go here:
-  // { id: 'v17_...', sql: [`ALTER TABLE ...`] },
+  // { id: 'v18_...', sql: [`ALTER TABLE ...`] },
 ]
 
 async function run(sql: string, token: string): Promise<unknown> {

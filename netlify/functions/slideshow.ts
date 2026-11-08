@@ -59,9 +59,22 @@ export const handler: Handler = async (event) => {
     }
   }
 
+  // "Show new photos right away" is fetched on its OWN so that, if its column isn't
+  // migrated yet, only this feature stays off and every other display setting above
+  // still loads normally.
+  let spotlightNew = false
+  {
+    const { data: sp, error: spErr } = await admin
+      .from('weddings')
+      .select('slideshow_spotlight_new')
+      .eq('id', weddingId)
+      .single()
+    if (!spErr && sp) spotlightNew = sp.slideshow_spotlight_new ?? false
+  }
+
   const { data: sessions, error } = await admin
     .from('sessions')
-    .select('id, mode, memory_number, captured_at, output_path, annotation_path')
+    .select('id, mode, memory_number, captured_at, uploaded_at, output_path, annotation_path')
     .eq('wedding_id', weddingId)
     .eq('status', 'active')
     .not('output_path', 'is', null)
@@ -82,6 +95,7 @@ export const handler: Handler = async (event) => {
     mode:          s.mode,
     memoryNumber:  s.memory_number,
     capturedAt:    s.captured_at,
+    uploadedAt:    s.uploaded_at ?? null,
     photoUrl:      s.output_path     ? urlMap.get(s.output_path)     ?? null : null,
     annotationUrl: s.annotation_path ? urlMap.get(s.annotation_path) ?? null : null,
   }))
@@ -109,6 +123,8 @@ export const handler: Handler = async (event) => {
       slowPoll:         slowPoll,
       slideEvery:       slideEvery,
       slideSeconds:     slideSeconds,
+      spotlightNew:     spotlightNew,
+      serverTime:       Date.now(),
       photos:           photos.filter(p => p.photoUrl),
       customSlides,
     }),

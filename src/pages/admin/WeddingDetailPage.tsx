@@ -33,6 +33,7 @@ interface WeddingDetail {
   slideshow_qr_slide: boolean
   slideshow_auto_fullscreen: boolean
   slideshow_slow_poll: boolean
+  slideshow_spotlight_new: boolean
   geofence_enabled: boolean
   geofence_lat: number | null
   geofence_lng: number | null
@@ -903,6 +904,18 @@ export default function WeddingDetailPage() {
             </div>
             <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
               How often the display checks for new photos. 30s feels live at a reception; 5 min is much gentler on the server for a display left running for days.
+            </p>
+          </FormField>
+
+          <FormField label="Show new photos right away">
+            <div className="flex items-center gap-3">
+              <AdminToggle value={form.slideshow_spotlight_new ?? false} onChange={v => setField('slideshow_spotlight_new', v)} />
+              <span className="text-sans text-cream/50 text-sm">
+                {(form.slideshow_spotlight_new ?? false) ? 'On: new photos play next' : 'Off: new photos wait their turn'}
+              </span>
+            </div>
+            <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
+              A freshly taken photo plays on the screen right after the current slide (once it has passed screening), then still takes its normal place at the end of the rotation. Gives guests instant satisfaction when the slideshow is long.
             </p>
           </FormField>
 

@@ -7,12 +7,14 @@ import { useDemoStore } from '@/store/demoStore'
 import { buildDemoGallery } from '@/demo/demoGallery'
 import { supabase } from '@/lib/supabase'
 import { slideshowChannel } from '@/lib/liveRefresh'
+import { pickNextSlide, enqueueSpotlight, EMPTY_SPOTLIGHT, type SpotlightState } from '@/lib/spotlight'
 
 interface SlideshowPhoto {
   id: string
   mode: string
   memoryNumber: number | null
   capturedAt: string | null
+  uploadedAt?: string | null
   photoUrl: string
   annotationUrl: string | null
 }
@@ -36,6 +38,8 @@ interface SlideshowData {
   slowPoll: boolean
   slideEvery?: number
   slideSeconds?: number
+  spotlightNew?: boolean
+  serverTime?: number
   photos: SlideshowPhoto[]
   customSlides?: { id: string; url: string }[]
 }
@@ -48,6 +52,10 @@ const QR_DURATION      = 12000 // QR slide lingers longer than a photo
 const CUSTOM_EVERY     = 7     // insert a custom promo/logo slide after every N photos
 const PRELOAD_TIMEOUT_MS = 8000  // never let a hung image load stall the crossfade
 const STALL_GRACE_MS   = 20000 // watchdog: ms past a slide's due time before forcing on
+// "Show new photos right away" fallback: if the instant realtime announcement never
+// arrives (e.g. realtime blocked on the display), a photo first seen by the poll is
+// spotlighted once it is at least this old, which is long enough to have been screened.
+const SPOTLIGHT_FALLBACK_AGE_MS = 20000
 
 export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?: string } = {}) {
   const { weddingId: weddingIdParam } = useParams<{ weddingId: string }>()
@@ -82,6 +90,15 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   const advanceTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
   const transitioningRef = useRef(false)
   const expectedAdvanceAtRef = useRef(0)   // when the current slide should hand off (watchdog)
+
+  // "Show new photos right away" (per-event option). All refs, so the stable fetch
+  // callback below never needs to be recreated (that would re-run the initial load).
+  const spotlightOnRef     = useRef(false)                       // option enabled for this event
+  const spotlightRef       = useRef<SpotlightState>(EMPTY_SPOTLIGHT)
+  const baselineRef        = useRef<Set<string>>(new Set())      // photos present at first load: never spotlighted
+  const baselineReadyRef   = useRef(false)
+  const spotlightedRef     = useRef<Set<string>>(new Set())      // already queued once: never again
+  const announcedRef       = useRef<Set<string>>(new Set())      // ids announced "ready" by the server (post-screening)
 
   useEffect(() => { indexRef.current = index }, [index])
 
@@ -134,6 +151,34 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       setSlideEvery(data.slideEvery ?? CUSTOM_EVERY)
       setSlideSeconds(data.slideSeconds ?? 12)
 
+      // "Show new photos right away": queue freshly taken photos to jump the line.
+      // The first successful fetch just records what's already there (never
+      // spotlighted). After that, a photo qualifies if the server announced it (sent
+      // after it was uploaded AND screened, so a flagged photo can't slip through) or,
+      // as a fallback when realtime isn't getting through, if the poll finds it and it
+      // is old enough to have been screened.
+      spotlightOnRef.current = data.spotlightNew ?? false
+      if (!baselineReadyRef.current) {
+        baselineRef.current = new Set(data.photos.map(p => p.id))
+        baselineReadyRef.current = true
+      } else if (spotlightOnRef.current) {
+        const serverNow = data.serverTime ?? Date.now()
+        const fresh = data.photos.filter(p => {
+          if (baselineRef.current.has(p.id) || spotlightedRef.current.has(p.id)) return false
+          if (announcedRef.current.has(p.id)) return true
+          const age = p.uploadedAt ? serverNow - Date.parse(p.uploadedAt) : 0
+          return age >= SPOTLIGHT_FALLBACK_AGE_MS
+        }).map(p => p.id)
+        if (fresh.length > 0) {
+          fresh.forEach(id => { spotlightedRef.current.add(id); announcedRef.current.delete(id) })
+          spotlightRef.current = {
+            ...spotlightRef.current,
+            queue: enqueueSpotlight(spotlightRef.current.queue, fresh),
+          }
+        }
+        if (announcedRef.current.size > 50) announcedRef.current.clear()  // never grow unbounded
+      }
+
       setPhotos(prev => {
         const prevById = new Map(prev.map(p => [p.id, p]))
         // Reconcile to the API's current ACTIVE set on every poll:
@@ -177,7 +222,13 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     let ch: ReturnType<NonNullable<typeof supabase>['channel']> | null = null
     try {
       ch = supabase.channel(slideshowChannel(weddingId))
-      ch.on('broadcast', { event: 'refresh' }, () => { void fetchPhotos(false) })
+      ch.on('broadcast', { event: 'refresh' }, (msg: { payload?: { spotlight?: string } }) => {
+        // A new photo finished uploading + screening: remember it, then refresh so it
+        // can jump the queue. (Removals send no id and just refresh.)
+        const sid = msg?.payload?.spotlight
+        if (sid) announcedRef.current.add(sid)
+        void fetchPhotos(false)
+      })
       ch.subscribe()
     } catch { /* realtime unavailable - the 5-min poll stays as the fallback */ }
     return () => { try { if (ch) supabase?.removeChannel(ch) } catch { /* noop */ } }
@@ -236,7 +287,11 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     if (total === 0 || transitioningRef.current) return
     transitioningRef.current = true
 
-    const next = (indexRef.current + delta + total) % total
+    // Plain rotation, unless "show new photos right away" has a fresh photo waiting to
+    // jump the queue (then it plays next and the show resumes where it was).
+    const picked = pickNextSlide(list.map(s => s.id), indexRef.current, delta, spotlightRef.current)
+    spotlightRef.current = picked.state
+    const next = picked.next
 
     const begin = () => {
       // True crossfade: the new slide fades in ON TOP of the current one.

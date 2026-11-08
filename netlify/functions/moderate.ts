@@ -1,6 +1,7 @@
-import type { Handler } from '@netlify/functions'
+import type { Handler, HandlerEvent, HandlerResponse } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
 import { getPhotoUrls } from '../lib/storage'
+import { broadcastSlideshow } from '../lib/broadcast'
 
 const admin = createClient(
   process.env.SUPABASE_URL!,
@@ -36,7 +37,7 @@ const atLeast = (level: string, threshold: string) =>
 // Fail-OPEN: any error (no key, fetch fail, Vision down) leaves the photo visible.
 // Losing a real memory to an API hiccup is worse than a rare miss, and the admin
 // can always hide manually.
-export const handler: Handler = async (event) => {
+async function runModeration(event: HandlerEvent): Promise<HandlerResponse> {
   if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' }
   if (!VISION_KEY) return { statusCode: 200, body: JSON.stringify({ skipped: 'no-key' }) }
 
@@ -137,4 +138,38 @@ export const handler: Handler = async (event) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ moderated: true, flagged, labels: { adult, violence, racy } }),
   }
+}
+
+// After screening has finished (whatever the outcome), tell a live slideshow that this
+// photo is ready, but only if the event opted in ("show new photos right away") and the
+// photo is still active (not flagged/hidden). The slideshow plays it next. Announcing
+// HERE, after moderation, is what guarantees an explicit photo is never spotlighted.
+async function announceIfSpotlight(sessionId: string): Promise<void> {
+  const { data: session } = await admin
+    .from('sessions')
+    .select('id, status, wedding_id')
+    .eq('id', sessionId)
+    .single()
+  if (!session || session.status !== 'active') return
+
+  // Separate tolerant query: if the column isn't migrated yet, this just no-ops.
+  const { data: w, error } = await admin
+    .from('weddings')
+    .select('plan, slideshow_spotlight_new')
+    .eq('id', session.wedding_id)
+    .single()
+  if (error || !w || (w.plan ?? 'basic') !== 'live' || !w.slideshow_spotlight_new) return
+
+  await broadcastSlideshow(session.wedding_id, { spotlight: sessionId, at: Date.now() })
+}
+
+export const handler: Handler = async (event) => {
+  const res = await runModeration(event)
+  try {
+    const sessionId = (JSON.parse(event.body ?? '{}') as { sessionId?: string }).sessionId
+    if (event.httpMethod === 'POST' && sessionId) await announceIfSpotlight(sessionId)
+  } catch {
+    /* announcing must never affect the moderation response */
+  }
+  return res
 }
