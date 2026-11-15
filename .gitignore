@@ -36,3 +36,6 @@ DEMO PHOTOS/
 # Internal planning / business strategy — keep local, never in the repo
 REVERIE_V2_PLAN.md
 HANDOFF.md
+
+# Local Netlify folder
+.netlify

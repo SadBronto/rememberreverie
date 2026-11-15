@@ -86,6 +86,7 @@ export const handler: Handler = async (event) => {
                      'is_event', 'event_end_date', 'couple_review_enabled', 'qr_settings',
                      'slideshow_qr_slide', 'slideshow_slides', 'slideshow_auto_fullscreen',
                      'slideshow_slow_poll', 'slideshow_spotlight_new',
+                     'display_monitor', 'display_hours_start', 'display_hours_end',
                      'plan', 'capture_start', 'capture_end', 'event_timezone', 'retention_until',
                      'addon_unlimited', 'addon_geofence',
                      'geofence_enabled', 'geofence_lat', 'geofence_lng', 'geofence_radius_m',

@@ -10,7 +10,6 @@ import ConfirmationPage from '@/pages/ConfirmationPage'
 import DemoLandingPage from '@/pages/demo/DemoLandingPage'
 import DemoMenuBar from '@/demo/DemoMenuBar'
 import DemoSplash from '@/demo/DemoSplash'
-
 // ── Everything else: lazy-loaded on demand (keeps the guest bundle small) ──
 const SlideshowSlugPage  = lazy(() => import('@/pages/SlideshowSlugPage'))
 const DemoHome           = lazy(() => import('@/demo/DemoHome'))
@@ -28,6 +27,7 @@ const WeddingsPage       = lazy(() => import('@/pages/admin/WeddingsPage'))
 const NewWeddingPage     = lazy(() => import('@/pages/admin/NewWeddingPage'))
 const WeddingDetailPage  = lazy(() => import('@/pages/admin/WeddingDetailPage'))
 const AdminGalleryPage   = lazy(() => import('@/pages/admin/AdminGalleryPage'))
+const HealthPage         = lazy(() => import('@/pages/admin/HealthPage'))
 const PrintSignPage      = lazy(() => import('@/pages/admin/PrintSignPage'))
 const SlugPage           = lazy(() => import('@/pages/SlugPage'))
 const SignatureLabPage   = lazy(() => import('@/pages/SignatureLabPage'))
@@ -94,6 +94,7 @@ export default function App() {
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/admin/weddings" element={<WeddingsPage />} />
+        <Route path="/admin/health" element={<HealthPage />} />
         <Route path="/admin/weddings/new" element={<NewWeddingPage />} />
         <Route path="/admin/weddings/:id" element={<WeddingDetailPage />} />
         <Route path="/admin/weddings/:id/gallery" element={<AdminGalleryPage />} />

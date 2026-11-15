@@ -34,6 +34,9 @@ interface WeddingDetail {
   slideshow_auto_fullscreen: boolean
   slideshow_slow_poll: boolean
   slideshow_spotlight_new: boolean
+  display_monitor: boolean
+  display_hours_start: string | null
+  display_hours_end: string | null
   geofence_enabled: boolean
   geofence_lat: number | null
   geofence_lng: number | null
@@ -916,6 +919,25 @@ export default function WeddingDetailPage() {
             </div>
             <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
               A freshly taken photo plays on the screen right after the current slide (once it has passed screening), then still takes its normal place at the end of the rotation. Gives guests instant satisfaction when the slideshow is long.
+            </p>
+          </FormField>
+
+          <FormField label="Display monitoring">
+            <div className="flex items-center gap-3">
+              <AdminToggle value={form.display_monitor ?? true} onChange={v => setField('display_monitor', v)} />
+              <span className="text-sans text-cream/50 text-sm">
+                {(form.display_monitor ?? true) ? 'On: you are emailed if the screen goes offline or freezes' : 'Off: no alerts for this display'}
+              </span>
+            </div>
+            {(form.display_monitor ?? true) && (
+              <div className="flex items-center gap-3 mt-3">
+                <AdminInput type="time" value={form.display_hours_start ?? ''} onChange={v => setField('display_hours_start', v || null)} />
+                <span className="text-sans text-cream/40 text-sm">to</span>
+                <AdminInput type="time" value={form.display_hours_end ?? ''} onChange={v => setField('display_hours_end', v || null)} />
+              </div>
+            )}
+            <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
+              Optional watched hours, in this event's timezone (set under capture window). Leave both blank to watch 24/7. Outside these hours a switched-off display never triggers an alert. Alerts go to the admin email, once per problem.
             </p>
           </FormField>
 

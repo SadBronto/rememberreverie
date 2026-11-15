@@ -7,6 +7,11 @@
 [functions."cleanup"]
   schedule = "0 3 * * *"
 
+# Display health check: every 10 minutes, looks for offline/frozen venue displays and
+# upload-failure spikes, and emails an alert once per incident.
+[functions."health-check"]
+  schedule = "*/10 * * * *"
+
 [dev]
   command = "npm run dev"
   port = 8888
@@ -162,6 +167,11 @@
 [[redirects]]
   from = "/api/admin/upload-errors"
   to   = "/.netlify/functions/upload-errors"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/health"
+  to   = "/.netlify/functions/admin-health"
   status = 200
 
 # SPA catch-all — handles all React Router routes

@@ -14,13 +14,17 @@ export const handler: Handler = async (event) => {
   const slug = event.queryStringParameters?.slug?.trim().toLowerCase()
   if (!slug) return { statusCode: 400, body: 'Missing slug' }
 
+  // maybeSingle: "no such slug" is data=null (404), but a database error is a 500, so a
+  // momentary hiccup is never mistaken for "this slideshow doesn't exist" (the kiosk
+  // retries on 5xx but treats 404 as a configuration problem).
   const { data, error } = await db
     .from('weddings')
     .select('id')
     .eq('slug', slug)
-    .single()
+    .maybeSingle()
 
-  if (error || !data) return { statusCode: 404, body: 'Not found' }
+  if (error) return { statusCode: 500, body: 'Lookup failed' }
+  if (!data) return { statusCode: 404, body: 'Not found' }
 
   return {
     statusCode: 200,

@@ -4,6 +4,12 @@ import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath, URL } from 'url'
 
 export default defineConfig({
+  // Which deploy this code came from (Netlify exposes the commit at build time). Shown
+  // in the admin service-health page so we can see whether a venue's display has picked
+  // up the latest code, and attached to crash reports.
+  define: {
+    __BUILD_ID__: JSON.stringify((process.env.COMMIT_REF ?? 'dev').slice(0, 7)),
+  },
   plugins: [
     react(),
     VitePWA({

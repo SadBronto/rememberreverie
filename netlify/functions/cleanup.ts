@@ -226,8 +226,21 @@ export const handler: Handler = async () => {
     }
   }
 
+  // ── Prune the issue logs (90-day retention) ───────────────────
+  // Only notable events are ever stored, so these stay small; this just ages them out.
+  let pruned = 0
+  try {
+    const cutoff = new Date(todayMs - 90 * 24 * 60 * 60 * 1000).toISOString()
+    for (const table of ['service_events', 'upload_errors']) {
+      const { count } = await admin.from(table).delete({ count: 'exact' }).lt('created_at', cutoff)
+      pruned += count ?? 0
+    }
+  } catch (err) {
+    console.error('cleanup: log prune failed', err)
+  }
+
   return {
     statusCode: 200,
-    body: JSON.stringify({ cleaned, warned: toWarn.length, capWarned, errors }),
+    body: JSON.stringify({ cleaned, warned: toWarn.length, capWarned, pruned, errors }),
   }
 }

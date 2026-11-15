@@ -164,8 +164,43 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
       `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS slideshow_spotlight_new BOOLEAN NOT NULL DEFAULT FALSE`,
     ],
   },
+  {
+    id: 'v18_service_health',
+    sql: [
+      // Display heartbeat: the slideshow reports in on each poll, so we can tell when a
+      // venue's screen goes quiet or freezes. State/alert columns drive the scheduled
+      // health check (one alert per incident, a recovery notice, a daily reminder).
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS display_seen_at TIMESTAMPTZ NULL`,
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS display_advanced_at TIMESTAMPTZ NULL`,
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS display_visible BOOLEAN NULL`,
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS display_build TEXT NULL`,
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS display_state TEXT NOT NULL DEFAULT 'unknown'`,
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS display_alerted_at TIMESTAMPTZ NULL`,
+      // Per-event monitoring controls: on/off, and optional business hours (HH:MM in the
+      // event timezone) so a display that is switched off at night doesn't page anyone.
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS display_monitor BOOLEAN NOT NULL DEFAULT TRUE`,
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS display_hours_start TEXT NULL`,
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS display_hours_end TEXT NULL`,
+      // Running log of NOTABLE events only (crashes, boot failures, display offline /
+      // recovered, upload-failure spikes). Not a request log: routine traffic is never
+      // stored. Kept 90 days, pruned by the daily cleanup job.
+      `CREATE TABLE IF NOT EXISTS service_events (
+        id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        wedding_id TEXT NULL,
+        kind       TEXT NOT NULL,
+        severity   TEXT NOT NULL DEFAULT 'warn',
+        source     TEXT NULL,
+        detail     TEXT NULL,
+        meta       JSONB NULL
+      )`,
+      `ALTER TABLE service_events ENABLE ROW LEVEL SECURITY`,
+      `CREATE INDEX IF NOT EXISTS service_events_created_idx ON service_events (created_at DESC)`,
+      `CREATE INDEX IF NOT EXISTS service_events_wedding_kind_idx ON service_events (wedding_id, kind, created_at DESC)`,
+    ],
+  },
   // Future migrations go here:
-  // { id: 'v18_...', sql: [`ALTER TABLE ...`] },
+  // { id: 'v19_...', sql: [`ALTER TABLE ...`] },
 ]
 
 async function run(sql: string, token: string): Promise<unknown> {

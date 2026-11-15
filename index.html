@@ -14,9 +14,43 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet" />
     <title>Reverie</title>
+    <!-- Brand background before ANY css/js loads, so a page that fails to start shows
+         warm dark instead of a blank white screen. -->
+    <style>html,body{margin:0;background:#1a1612}</style>
   </head>
   <body>
     <div id="root"></div>
+    <!-- Boot watchdog. Runs independently of the app bundle, so it still works when the
+         app itself fails to start (a network blip while loading, a missing file). If the
+         app hasn't rendered anything after a while, log it and reload with a growing
+         delay. A venue display retries forever; a guest's phone gives up after 3 tries so
+         a truly broken build can never trap someone in a reload loop. -->
+    <script>
+      (function () {
+        var KEY = 'reverie-recover'
+        var kiosk = /^slideshow\./.test(location.hostname)
+        var wait = kiosk ? 20000 : 60000
+        function attempts() {
+          try { var n = JSON.parse(sessionStorage.getItem(KEY) || '{}').n; return typeof n === 'number' ? n : 0 } catch (e) { return 0 }
+        }
+        setTimeout(function () {
+          var root = document.getElementById('root')
+          if (root && root.childElementCount > 0) return
+          var n = attempts()
+          try {
+            var body = JSON.stringify({
+              kind: 'boot_failure',
+              detail: 'the app did not start within ' + (wait / 1000) + 's (attempt ' + (n + 1) + ')',
+              path: location.pathname, host: location.hostname, ua: navigator.userAgent.slice(0, 160)
+            })
+            if (navigator.sendBeacon) navigator.sendBeacon('/api/log-error', new Blob([body], { type: 'application/json' }))
+          } catch (e) {}
+          if (!kiosk && n >= 3) return
+          try { sessionStorage.setItem(KEY, JSON.stringify({ n: n + 1, t: Date.now() })) } catch (e) {}
+          setTimeout(function () { location.reload() }, Math.min(5000 * Math.pow(2, n), 300000))
+        }, wait)
+      })()
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

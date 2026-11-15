@@ -90,6 +90,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   const advanceTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
   const transitioningRef = useRef(false)
   const expectedAdvanceAtRef = useRef(0)   // when the current slide should hand off (watchdog)
+  const lastAdvanceAtRef = useRef(Date.now())  // last time the show actually changed slides (heartbeat)
 
   // "Show new photos right away" (per-event option). All refs, so the stable fetch
   // callback below never needs to be recreated (that would re-run the initial load).
@@ -130,7 +131,15 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     }
 
     try {
-      const res = await fetch(`/api/slideshow?weddingId=${weddingId}`)
+      // Heartbeat rides along on the normal poll: how long since the show last changed
+      // slides (0 when there is only one slide, since it legitimately can't move), whether
+      // the page is visible, and which build this display is running. The server records
+      // it so a venue's screen going quiet or freezing can be spotted and alerted on.
+      const sinceAdvance = slidesRef.current.length >= 2
+        ? Math.max(0, Math.round((Date.now() - lastAdvanceAtRef.current) / 1000))
+        : 0
+      const hb = `&hb=1&adv=${sinceAdvance}&vis=${document.visibilityState}&b=${encodeURIComponent(__BUILD_ID__)}`
+      const res = await fetch(`/api/slideshow?weddingId=${weddingId}${hb}`)
       if (!res.ok) { if (isInitial) setLoadError(true); return }
       const data: SlideshowData = await res.json()
 
@@ -294,6 +303,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     const next = picked.next
 
     const begin = () => {
+      lastAdvanceAtRef.current = Date.now()
       // True crossfade: the new slide fades in ON TOP of the current one.
       setIncoming(next)
       setIncomingOpacity(0)

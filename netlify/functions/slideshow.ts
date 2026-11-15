@@ -36,6 +36,27 @@ export const handler: Handler = async (event) => {
     }
   }
 
+  // Display heartbeat. The slideshow page adds ?hb=1 (plus how long since it last changed
+  // slides, whether the page is visible, and its build) to its regular poll, so we always
+  // know a venue's screen is alive and moving. Best-effort: never blocks or fails the
+  // response, and is a no-op until the health columns are migrated.
+  const qs = event.queryStringParameters ?? {}
+  if (qs.hb) {
+    try {
+      const nowMs = Date.now()
+      const adv = Number(qs.adv)
+      const beat: Record<string, unknown> = {
+        display_seen_at: new Date(nowMs).toISOString(),
+        display_visible: qs.vis !== 'hidden',
+        display_build: (qs.b ?? '').slice(0, 40) || null,
+      }
+      if (Number.isFinite(adv) && adv >= 0 && adv < 7 * 86400) {
+        beat.display_advanced_at = new Date(nowMs - adv * 1000).toISOString()
+      }
+      await admin.from('weddings').update(beat).eq('id', weddingId)
+    } catch { /* heartbeat is best-effort */ }
+  }
+
   // QR-slide toggle is fetched separately and tolerantly: if the
   // slideshow_qr_slide column hasn't been migrated yet, the slideshow still loads
   // (the QR slide just stays off until the migration runs).

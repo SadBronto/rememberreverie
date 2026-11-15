@@ -87,6 +87,12 @@ export default function WeddingsPage() {
         </div>
         <div className="flex items-center gap-3">
           <button
+            onClick={() => navigate('/admin/health')}
+            className="text-sans text-cream/30 text-[11px] tracking-widest uppercase hover:text-cream/50 transition-colors touch-manipulation"
+          >
+            Health
+          </button>
+          <button
             onClick={() => navigate('/admin/login')}
             className="text-sans text-cream/30 text-[11px] tracking-widest uppercase hover:text-cream/50 transition-colors touch-manipulation"
           >
