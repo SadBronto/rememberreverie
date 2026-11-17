@@ -10,7 +10,6 @@ interface Wedding {
   qr_settings: QRSettings | null
   staff_code: string | null
   photo_cap: number | null
-  addon_unlimited: boolean | null
   slideshow_slow_poll: boolean | null
 }
 
@@ -65,7 +64,8 @@ export default function StaffSheetPage() {
   }
 
   const staffUrl = wedding.slug ? `https://rememberreverie.com/staff/${wedding.slug}` : ''
-  const unlimited = !!wedding.addon_unlimited || wedding.photo_cap == null
+  // The rolling delete is driven by photo_cap alone, so the sheet follows it too.
+  const unlimited = wedding.photo_cap == null
   const arrives = wedding.slideshow_slow_poll ? 'within five minutes' : 'within a minute'
   const holds = unlimited
     ? 'Every photo taken stays on the screen.'
