@@ -480,6 +480,12 @@ export default function WeddingDetailPage() {
               >
                 Print table sign →
               </button>
+              <button
+                onClick={() => navigate(`/admin/weddings/${id}/staff-sheet`)}
+                className="self-start px-4 py-2.5 rounded-full border border-cream/15 text-cream/50 text-sans text-xs tracking-widest uppercase touch-manipulation active:bg-cream/5"
+              >
+                Print staff sheet →
+              </button>
             </div>
 
             {/* Vanity slug */}

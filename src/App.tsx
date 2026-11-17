@@ -29,6 +29,7 @@ const WeddingDetailPage  = lazy(() => import('@/pages/admin/WeddingDetailPage'))
 const AdminGalleryPage   = lazy(() => import('@/pages/admin/AdminGalleryPage'))
 const HealthPage         = lazy(() => import('@/pages/admin/HealthPage'))
 const PrintSignPage      = lazy(() => import('@/pages/admin/PrintSignPage'))
+const StaffSheetPage     = lazy(() => import('@/pages/admin/StaffSheetPage'))
 const SlugPage           = lazy(() => import('@/pages/SlugPage'))
 const SignatureLabPage   = lazy(() => import('@/pages/SignatureLabPage'))
 const PrivacyPage        = lazy(() => import('@/pages/PrivacyPage'))
@@ -99,6 +100,7 @@ export default function App() {
         <Route path="/admin/weddings/:id" element={<WeddingDetailPage />} />
         <Route path="/admin/weddings/:id/gallery" element={<AdminGalleryPage />} />
         <Route path="/admin/weddings/:id/print" element={<PrintSignPage />} />
+        <Route path="/admin/weddings/:id/staff-sheet" element={<StaffSheetPage />} />
         <Route path="/admin/signature-lab" element={<SignatureLabPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
