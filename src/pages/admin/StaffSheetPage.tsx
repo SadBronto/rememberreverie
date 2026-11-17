@@ -82,7 +82,11 @@ export default function StaffSheetPage() {
           .ss-toolbar, .ss-edit { display: none !important; }
           html, body, #root { background: #ffffff !important; }
           .ss-wrap { background: #ffffff !important; padding: 0 !important; min-height: 0 !important; }
-          .ss-sheet { box-shadow: none !important; margin: 0 !important; width: 100% !important; min-height: 0 !important; }
+          /* The printer already adds a 0.5in page margin, so drop most of the on-screen padding.
+             Fixed height + hidden overflow guarantees it can never spill onto a second page. */
+          .ss-sheet { box-shadow: none !important; margin: 0 !important; width: 100% !important; min-height: 0 !important;
+                      height: 9.7in !important; overflow: hidden !important; box-sizing: border-box !important;
+                      padding: 0.2in 0.3in 0 !important; }
         }
         .ss-sheet, .ss-sheet * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       `}</style>
