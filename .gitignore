@@ -39,3 +39,6 @@ HANDOFF.md
 
 # Local Netlify folder
 .netlify
+
+# Generated venue packets (contain staff codes)
+Venue Kit/
