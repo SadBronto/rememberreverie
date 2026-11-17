@@ -156,20 +156,23 @@ function playbook() {
   c.push(step('Turn the TV on and switch to that HDMI input. Use the stick remote to do first time setup.', 'steps2'))
   c.push(step('Connect to the venue Wi-Fi. Use the main network. Avoid guest networks that show a login or terms page, because the stick cannot click through it. If that is all they have, ask the venue for a normal password network or use Ethernet.', 'steps2'))
   c.push(step('Sign in with the shared Reverie Google account. Skip any optional offers.', 'steps2'))
-  c.push(h2('B. Install the kiosk app (Screenlite Web Kiosk)'))
-  c.push(step('On the stick, install the Downloader app from the Play Store.', 'steps3'))
-  c.push(step('In Settings > Apps > Security (or "Install unknown apps"), allow Downloader to install apps.', 'steps3'))
-  c.push(step('In Downloader, get the Screenlite Web Kiosk APK from the project releases page (github.com/screenlite/android-web-kiosk) or from IzzyOnDroid, then install it.', 'steps3'))
-  c.push(step('Open the app once. When it asks, grant "Display over other apps". It will not run without that.', 'steps3'))
-  c.push(step('Open its settings: press the center OK button on the remote 5 times within 2 seconds.', 'steps3'))
-  c.push(step([ 'Set the Kiosk URL to ', ['https://slideshow.rememberreverie.com/<slug>', { bold: true }], ' (use the venue slug). Save.' ], 'steps3'))
-  c.push(step('The app starts automatically whenever the stick boots; there is no setting to turn on.', 'steps3'))
-  c.push(h2('C. Keep the stick awake'))
-  c.push(step('Google TV Settings > System > Ambient mode (screensaver): turn it off or set the longest timeout.', 'steps4'))
-  c.push(step('Settings > System > Power and energy: turn off any "turn off after" or sleep timer.', 'steps4'))
-  c.push(step('If the TV supports HDMI-CEC, you can let the TV wake the stick. Not required.', 'steps4'))
-  c.push(h2('D. Prove it survives a power cut'))
-  c.push(step('Unplug the stick, wait 10 seconds, plug it back in. The slideshow should return on its own in about a minute with nobody touching the remote. If it does not, check Display over other apps and the Settings notes in the troubleshooting section.', 'steps5'))
+  c.push(rich([['Order matters. ', { bold: true }], 'Once the kiosk app is running, it keeps itself in front of everything, including the Google TV settings menu. So do EVERY device setting first (B), install the app without opening it (C), and open it only at the very end (D).']))
+  c.push(h2('B. Device settings (do all of these BEFORE the kiosk app is ever opened)'))
+  c.push(step('Google TV Settings > System > Ambient mode (screensaver): turn it off or set the longest timeout.', 'steps3'))
+  c.push(step('Settings > System > Power and energy: turn off any "turn off after" or sleep timer.', 'steps3'))
+  c.push(step('Settings > Apps > Security and restrictions (or "Install unknown apps"): allow Downloader to install apps. You need this to install the kiosk app.', 'steps3'))
+  c.push(step('If the TV supports HDMI-CEC, you can let the TV wake the stick. Not required.', 'steps3'))
+  c.push(h2('C. Install the kiosk app (do NOT open it yet)'))
+  c.push(step('Install the Downloader app from the Play Store.', 'steps4'))
+  c.push(step('In Downloader, get the Screenlite Web Kiosk APK from the project releases page (github.com/screenlite/android-web-kiosk) or from IzzyOnDroid, then install it.', 'steps4'))
+  c.push(step('When the installer finishes it offers Open or Done. Choose Done. Do not open it.', 'steps4'))
+  c.push(h2('D. Launch the kiosk app (last step)'))
+  c.push(step('Open Screenlite Web Kiosk. When it asks, grant "Display over other apps". It will not run without that.', 'steps5'))
+  c.push(step('Open its settings: press the center OK button on the remote 5 times within 2 seconds.', 'steps5'))
+  c.push(step([ 'Set the Kiosk URL to ', ['https://slideshow.rememberreverie.com/<slug>', { bold: true }], ' (use the venue slug). Save.' ], 'steps5'))
+  c.push(step('The app starts automatically whenever the stick boots; there is no setting to turn on.', 'steps5'))
+  c.push(step('Prove it survives a power cut: unplug the stick, wait 10 seconds, plug it back in. The slideshow should return on its own in about a minute with nobody touching the remote.', 'steps5'))
+  c.push(p('If the slideshow does not come back after a power cut, the stick may be blocking background starts. You will need to change that in device settings (search for "autostart" or "over other apps"), but the kiosk app will keep covering the settings screen. I have not verified a way out of that lock. If you get stuck, note exactly what worked and tell me so it can go in here.', { italics: true }))
 
   c.push(h1('5. On site: verify it works'))
   c.push(table([600, 8760], [
@@ -177,7 +180,7 @@ function playbook() {
     ['[ ]', 'Slideshow shows on the TV, full screen, no menu bar or cursor.'],
     ['[ ]', 'Patron QR: scan it with your phone, take a photo, confirm it appears on the TV (new photos show right away).'],
     ['[ ]', 'Staff page: open rememberreverie.com/staff/<slug>, enter the code, remove your test photo, confirm it leaves the TV (a few seconds, or up to 5 minutes at worst).'],
-    ['[ ]', 'Power cut test passed (section 4D).'],
+    ['[ ]', 'Power cut test passed (end of section 4D).'],
     ['[ ]', 'Admin > Health shows the venue as OK within about 10 minutes.'],
     ['[ ]', 'Poster placed where patrons look. Staff card and reset sheet handed over and taped up.'],
   ]))
@@ -292,8 +295,14 @@ for (let i = 0; i < rest.length; i += 2) args[rest[i].replace(/^--/, '')] = rest
 
 if (cmd === 'playbook') {
   const file = path.join(OUT, 'Reverie Install Playbook.docx')
-  fs.writeFileSync(file, await Packer.toBuffer(playbook()))
-  console.log('wrote', file)
+  const buf = await Packer.toBuffer(playbook())
+  try { fs.writeFileSync(file, buf); console.log('wrote', file) }
+  catch (e) {
+    // The old copy is open in Word (locked). Save alongside it instead.
+    if (e.code !== 'EBUSY') throw e
+    const alt = file.replace('.docx', ' (new).docx')
+    fs.writeFileSync(alt, buf); console.log('old copy is open in Word; wrote', alt)
+  }
 } else if (cmd === 'packet') {
   if (!args.venue || !args.slug || !args.code) { console.error('Need --venue --slug --code'); process.exit(1) }
   const file = path.join(OUT, `${args.venue} Packet.docx`)
