@@ -6,6 +6,7 @@ import { isDemoId } from '@/demo/demoConfig'
 import { useDemoStore } from '@/store/demoStore'
 import SlidesManager from '@/components/SlidesManager'
 import type { CameraModeName, WeddingConfig } from '@/types/session'
+import { useFreshToken } from '@/lib/useFreshToken'
 
 interface WeddingSettings {
   couple_names:      string
@@ -34,6 +35,7 @@ export default function CoupleSettingsPage() {
   const { weddingId } = useParams<{ weddingId: string }>()
   const navigate       = useNavigate()
   const tokenRef       = useRef<string | null>(null)
+  useFreshToken(tokenRef)
   const demo           = isDemoId(weddingId)
   const demoConfig     = useDemoStore((s) => s.config)
   const applySetup     = useDemoStore((s) => s.applySetup)

@@ -8,6 +8,7 @@ import { useDemoStore } from '@/store/demoStore'
 import { useSessionStore } from '@/store/sessionStore'
 import { buildDemoGallery } from '@/demo/demoGallery'
 import { pokeSlideshow } from '@/lib/liveRefresh'
+import { useFreshToken } from '@/lib/useFreshToken'
 
 export interface SessionRecord {
   id: string
@@ -47,6 +48,7 @@ export default function CoupleGalleryPage() {
   const [zipProgress, setZipProgress] = useState<{ current: number; total: number } | null>(null)
   const [lightbox, setLightbox] = useState<SessionRecord | null>(null)
   const tokenRef = useRef<string | null>(null)
+  useFreshToken(tokenRef)
 
   useEffect(() => {
     // Demo mode: build the gallery from the bundled photos (filtered through the

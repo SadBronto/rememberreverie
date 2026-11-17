@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import QRCreator, { type QRSettings } from '@/components/QRCreator'
 import StyledQR from '@/components/StyledQR'
 import SlidesManager from '@/components/SlidesManager'
+import { useFreshToken } from '@/lib/useFreshToken'
 
 // Leaflet-backed venue picker - lazy so the map library only loads for admins
 // who actually open the geofence editor (and never reaches the guest bundle).
@@ -80,6 +81,7 @@ export default function WeddingDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const tokenRef = useRef<string | null>(null)
+  useFreshToken(tokenRef)
 
   const [wedding, setWedding]           = useState<WeddingDetail | null>(null)
   const [counts, setCounts]             = useState<Counts | null>(null)

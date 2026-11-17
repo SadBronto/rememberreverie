@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { useFreshToken } from '@/lib/useFreshToken'
 
 interface WeddingSummary {
   id: string
@@ -38,6 +39,7 @@ export default function WeddingsPage() {
   const [loading, setLoading] = useState(true)
   const [authError, setAuthError] = useState(false)
   const tokenRef = useRef<string | null>(null)
+  useFreshToken(tokenRef)
 
   useEffect(() => {
     async function load() {

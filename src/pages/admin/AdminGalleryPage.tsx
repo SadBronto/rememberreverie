@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { useFreshToken } from '@/lib/useFreshToken'
 
 interface GalleryPhoto {
   id: string
@@ -41,6 +42,7 @@ export default function AdminGalleryPage() {
   const { id: weddingId } = useParams<{ id: string }>()
   const navigate           = useNavigate()
   const tokenRef           = useRef<string | null>(null)
+  useFreshToken(tokenRef)
 
   const [photos, setPhotos]       = useState<GalleryPhoto[]>([])
   const [total, setTotal]         = useState(0)
