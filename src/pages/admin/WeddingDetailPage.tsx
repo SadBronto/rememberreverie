@@ -32,6 +32,8 @@ interface WeddingDetail {
   couple_review_enabled: boolean
   qr_settings: QRSettings | null
   slideshow_qr_slide: boolean
+  slideshow_qr_every: number | null
+  slideshow_qr_seconds: number | null
   slideshow_auto_fullscreen: boolean
   slideshow_slow_poll: boolean
   slideshow_spotlight_new: boolean
@@ -885,6 +887,28 @@ export default function WeddingDetailPage() {
             </div>
             <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
               Mixes a "Want to share YOUR memories? Scan to get started" slide (with your QR) into the slideshow every few photos.
+            </p>
+            {(form.slideshow_qr_slide ?? true) && (
+              <div className="flex items-center gap-2 mt-3 flex-wrap text-sans text-cream/50 text-sm">
+                <span>Show it every</span>
+                <input
+                  type="number" min={1} max={50}
+                  value={form.slideshow_qr_every ?? 10}
+                  onChange={e => setField('slideshow_qr_every', Math.max(1, Math.min(50, Number(e.target.value) || 1)))}
+                  className="w-16 bg-ink-light border border-cream/10 rounded-lg px-2 py-1.5 text-cream text-sans text-sm text-center focus:outline-none focus:border-cream/25"
+                />
+                <span>photos, for</span>
+                <input
+                  type="number" min={3} max={60}
+                  value={form.slideshow_qr_seconds ?? 12}
+                  onChange={e => setField('slideshow_qr_seconds', Math.max(3, Math.min(60, Number(e.target.value) || 3)))}
+                  className="w-16 bg-ink-light border border-cream/10 rounded-lg px-2 py-1.5 text-cream text-sans text-sm text-center focus:outline-none focus:border-cream/25"
+                />
+                <span>seconds</span>
+              </div>
+            )}
+            <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
+              With only a few photos, it plays once each time the slideshow loops.
             </p>
           </FormField>
 

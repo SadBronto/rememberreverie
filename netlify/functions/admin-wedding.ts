@@ -86,6 +86,7 @@ export const handler: Handler = async (event) => {
                      'is_event', 'event_end_date', 'couple_review_enabled', 'qr_settings',
                      'slideshow_qr_slide', 'slideshow_slides', 'slideshow_auto_fullscreen',
                      'slideshow_slow_poll', 'slideshow_spotlight_new',
+                     'slideshow_qr_every', 'slideshow_qr_seconds',
                      'display_monitor', 'display_hours_start', 'display_hours_end',
                      'plan', 'capture_start', 'capture_end', 'event_timezone', 'retention_until',
                      'addon_unlimited', 'addon_geofence',
@@ -94,6 +95,14 @@ export const handler: Handler = async (event) => {
     const update: Record<string, unknown> = {}
     for (const key of allowed) {
       if (key in body) update[key] = body[key] ?? null
+    }
+
+    // Keep the scan-to-share timing in a sane range (blank/invalid falls back to default).
+    if ('slideshow_qr_every' in body) {
+      update.slideshow_qr_every = Math.max(1, Math.min(50, Math.round(Number(body.slideshow_qr_every) || 10)))
+    }
+    if ('slideshow_qr_seconds' in body) {
+      update.slideshow_qr_seconds = Math.max(3, Math.min(60, Math.round(Number(body.slideshow_qr_seconds) || 12)))
     }
 
     // If photo_cap is being changed, reset the warning flag so it can fire again

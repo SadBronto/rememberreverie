@@ -38,6 +38,8 @@ interface SlideshowData {
   slowPoll: boolean
   slideEvery?: number
   slideSeconds?: number
+  qrEvery?: number
+  qrSeconds?: number
   spotlightNew?: boolean
   serverTime?: number
   photos: SlideshowPhoto[]
@@ -77,6 +79,8 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   const [customSlides, setCustomSlides] = useState<{ id: string; url: string }[]>([])
   const [slideEvery, setSlideEvery]   = useState(CUSTOM_EVERY)
   const [slideSeconds, setSlideSeconds] = useState(12)
+  const [qrEvery, setQrEvery]         = useState(QR_EVERY)
+  const [qrSeconds, setQrSeconds]     = useState(QR_DURATION / 1000)
   const [index, setIndex]             = useState(0)
   const [incoming, setIncoming]       = useState<number | null>(null) // index crossfading in on top
   const [incomingOpacity, setIncomingOpacity] = useState(0)
@@ -159,6 +163,8 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       setCustomSlides(data.customSlides ?? [])
       setSlideEvery(data.slideEvery ?? CUSTOM_EVERY)
       setSlideSeconds(data.slideSeconds ?? 12)
+      setQrEvery(data.qrEvery ?? QR_EVERY)
+      setQrSeconds(data.qrSeconds ?? QR_DURATION / 1000)
 
       // "Show new photos right away": queue freshly taken photos to jump the line.
       // The first successful fetch just records what's already there (never
@@ -259,10 +265,13 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   const slides = useMemo<Slide[]>(() => {
     const out: Slide[] = []
     let customIdx = 0
+    let qrCount = 0
+    const qrOn = qrSlideEnabled && !!guestUrl
     photos.forEach((p, i) => {
       out.push({ id: p.id, kind: 'photo', photo: p })
-      if (qrSlideEnabled && guestUrl && (i + 1) % QR_EVERY === 0) {
+      if (qrOn && (i + 1) % Math.max(1, qrEvery) === 0) {
         out.push({ id: `qr-${i}`, kind: 'qr' })
+        qrCount++
       }
       if (customSlides.length > 0 && (i + 1) % Math.max(1, slideEvery) === 0) {
         const cs = customSlides[customIdx % customSlides.length]
@@ -274,8 +283,13 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     if (photos.length === 0 && customSlides.length > 0) {
       customSlides.forEach(cs => out.push({ id: `custom-${cs.id}`, kind: 'custom', url: cs.url }))
     }
+    // Too few photos to have reached the "every N" mark (a new or quiet venue): still
+    // show the scan-to-share slide once per loop so people always see how to join.
+    if (qrOn && qrCount === 0 && out.length > 0) {
+      out.push({ id: 'qr-end', kind: 'qr' })
+    }
     return out
-  }, [photos, qrSlideEnabled, guestUrl, customSlides, slideEvery])
+  }, [photos, qrSlideEnabled, guestUrl, customSlides, slideEvery, qrEvery])
 
   useEffect(() => { slidesRef.current = slides }, [slides])
 
@@ -339,13 +353,13 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     if (slides.length === 0) return
     if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current)
     const k = slides[index]?.kind
-    const dur = k === 'custom' ? slideSeconds * 1000 : k === 'qr' ? QR_DURATION : SLIDE_DURATION
+    const dur = k === 'custom' ? slideSeconds * 1000 : k === 'qr' ? qrSeconds * 1000 : SLIDE_DURATION
     expectedAdvanceAtRef.current = Date.now() + dur
     advanceTimerRef.current = setTimeout(() => advance(1), dur)
     return () => {
       if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current)
     }
-  }, [index, slides.length, advance, slideSeconds])
+  }, [index, slides.length, advance, slideSeconds, qrSeconds])
 
   // Freeze watchdog: on an unattended 24/7 display a hung image load, a stuck
   // transition, or a dropped timer can leave the show frozen on one slide until the

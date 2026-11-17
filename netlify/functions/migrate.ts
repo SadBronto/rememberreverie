@@ -199,8 +199,17 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
       `CREATE INDEX IF NOT EXISTS service_events_wedding_kind_idx ON service_events (wedding_id, kind, created_at DESC)`,
     ],
   },
+  {
+    id: 'v19_qr_slide_timing',
+    sql: [
+      // Per-event timing for the "scan to share" slide: show it after every N photos,
+      // and keep it on screen for N seconds. Defaults match the old fixed behavior.
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS slideshow_qr_every INTEGER NOT NULL DEFAULT 10`,
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS slideshow_qr_seconds INTEGER NOT NULL DEFAULT 12`,
+    ],
+  },
   // Future migrations go here:
-  // { id: 'v19_...', sql: [`ALTER TABLE ...`] },
+  // { id: 'v20_...', sql: [`ALTER TABLE ...`] },
 ]
 
 async function run(sql: string, token: string): Promise<unknown> {

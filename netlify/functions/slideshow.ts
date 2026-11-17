@@ -65,6 +65,21 @@ export const handler: Handler = async (event) => {
   let slowPoll = false
   let slideEvery = 7
   let slideSeconds = 12
+  let qrEvery = 10
+  let qrSeconds = 12
+  {
+    // Separate + tolerant: if these columns aren't migrated yet, defaults apply and
+    // nothing else is affected.
+    const { data: qrCols, error: qrErr } = await admin
+      .from('weddings')
+      .select('slideshow_qr_every, slideshow_qr_seconds')
+      .eq('id', weddingId)
+      .single()
+    if (!qrErr && qrCols) {
+      qrEvery = qrCols.slideshow_qr_every ?? 10
+      qrSeconds = qrCols.slideshow_qr_seconds ?? 12
+    }
+  }
   {
     const { data: extra, error: extraErr } = await admin
       .from('weddings')
@@ -144,6 +159,8 @@ export const handler: Handler = async (event) => {
       slowPoll:         slowPoll,
       slideEvery:       slideEvery,
       slideSeconds:     slideSeconds,
+      qrEvery:          qrEvery,
+      qrSeconds:        qrSeconds,
       spotlightNew:     spotlightNew,
       serverTime:       Date.now(),
       photos:           photos.filter(p => p.photoUrl),
