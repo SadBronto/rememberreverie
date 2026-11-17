@@ -43,7 +43,7 @@ export const handler: Handler = async (event) => {
   // Admins can manage any event's slides; otherwise the caller must own this event.
   const adminEmails = (process.env.ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase())
   const isAdmin = adminEmails.includes(user.email.toLowerCase())
-  if (!isAdmin && wedding.couple_email && wedding.couple_email !== user.email) {
+  if (!isAdmin && wedding.couple_email !== user.email) {
     return { statusCode: 403, body: 'Forbidden' }
   }
 

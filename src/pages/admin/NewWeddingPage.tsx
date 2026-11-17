@@ -14,7 +14,7 @@ export default function NewWeddingPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!coupleEmail.trim()) { setError('An email is required.'); return }
+    if (!coupleEmail.trim() && !coupleNames.trim()) { setError('Enter a host email, or a name if you are building this before the host is known.'); return }
     setError(null)
     setSaving(true)
 
@@ -29,7 +29,7 @@ export default function NewWeddingPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenRef.current}` },
       body: JSON.stringify({
-        coupleEmail: coupleEmail.trim().toLowerCase(),
+        coupleEmail: coupleEmail.trim().toLowerCase() || undefined,
         coupleNames: coupleNames.trim() || undefined,
         weddingDate: weddingDate || undefined,
       }),
@@ -59,27 +59,27 @@ export default function NewWeddingPage() {
         {/* Info callout */}
         <div className="bg-cream/[0.04] border border-cream/10 rounded-xl px-4 py-3.5">
           <p className="text-sans text-cream/60 text-sm leading-relaxed">
-            Enter the host's email address. They'll get a setup link to configure everything
-            themselves: name, date, camera styles, and more.
+            With a host email, they get a setup link to configure everything themselves.
+            Without one, the event goes live right away and only you can manage it. Build
+            it, demo it at the venue, then add their email later to hand over control.
           </p>
         </div>
 
-        <Section label="Required">
-          <Field label="Host email" hint="They'll use this to log in and set up their event">
+        <Section label="Host">
+          <Field label="Host email" hint="Leave blank to build it yourself first">
             <Input
               type="email"
               value={coupleEmail}
               onChange={v => setCoupleEmail(v)}
               placeholder="host@email.com"
-              required
               autoFocus
             />
           </Field>
         </Section>
 
-        <Section label="Admin reference (optional)">
+        <Section label="Name and date">
           <p className="text-mono text-cream/20 text-[10px] tracking-wide -mt-1">
-            Only visible to you. The host sets their own name and date.
+            Name is required if there is no host email. With an email, the host sets their own.
           </p>
           <Field label="Name">
             <Input
@@ -103,7 +103,7 @@ export default function NewWeddingPage() {
 
         <button
           type="submit"
-          disabled={saving || !coupleEmail.trim()}
+          disabled={saving || (!coupleEmail.trim() && !coupleNames.trim())}
           className="w-full py-4 rounded-full bg-cream text-ink text-sans text-sm font-medium tracking-widest uppercase active:scale-[0.97] transition-transform disabled:opacity-40"
         >
           {saving ? 'Creating…' : 'Create Event'}

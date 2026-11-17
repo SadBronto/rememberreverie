@@ -64,8 +64,12 @@ export const handler: Handler = async (event) => {
 
     const { coupleEmail, coupleNames, weddingDate } = body as Record<string, string>
 
-    if (!coupleEmail) {
-      return { statusCode: 400, body: 'coupleEmail is required' }
+    // Email is optional. With no email the admin is building the event first
+    // (e.g. to demo at a venue) and will attach the host's email later. Such an
+    // event goes live immediately ('active') and stays admin-only until claimed.
+    const email = coupleEmail?.trim().toLowerCase() || null
+    if (!email && !coupleNames?.trim()) {
+      return { statusCode: 400, body: 'A name is required when there is no host email' }
     }
 
     const id = crypto.randomUUID()
@@ -74,13 +78,13 @@ export const handler: Handler = async (event) => {
       id,
       couple_names:      coupleNames?.trim() || 'TBD',
       wedding_date:      weddingDate || new Date().toISOString().slice(0, 10),
-      couple_email:      coupleEmail.trim().toLowerCase(),
+      couple_email:      email,
       welcome_message:   'Leave us a memory.',
       allowed_modes:     ['disposable'],
       annotation_mode:   'signature',
       timestamp_enabled: true,
       timestamp_style:   'classic',
-      status:            'pending_setup',
+      status:            email ? 'pending_setup' : 'active',
     }).select('*').single()
 
     if (error) {

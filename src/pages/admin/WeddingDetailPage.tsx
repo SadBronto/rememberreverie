@@ -537,7 +537,7 @@ export default function WeddingDetailPage() {
             </div>
           ) : (
             <p className="text-sans text-cream/30 text-sm italic">
-              Set a couple email below to enable portal access.
+              No host yet. Add their email under Contact email below, save, then send the login email to hand over control.
             </p>
           )}
         </div>

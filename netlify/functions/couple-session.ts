@@ -39,7 +39,8 @@ export const handler: Handler = async (event) => {
     .eq('id', session.wedding_id)
     .single()
 
-  if (wedding?.couple_email && wedding.couple_email !== user.email) {
+  // Unclaimed events (no host email yet) are admin-only; never open to any signed-in user.
+  if (!wedding?.couple_email || wedding.couple_email !== user.email) {
     return { statusCode: 403, body: 'Forbidden' }
   }
 
