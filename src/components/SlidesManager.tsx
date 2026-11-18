@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+// Slide ids start with the upload time in ms, so the date added can be shown without storing anything new.
+function addedOn(id: string): string {
+  const ms = Number(id.split('-')[0])
+  if (!Number.isFinite(ms) || ms < 1e12) return ''
+  return new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
 interface SlideItem { id: string; path: string; url: string | null }
 
 // Manage the promo / logo slides shown in the Reverie Live slideshow between photos.
@@ -17,6 +24,7 @@ export default function SlidesManager({
   const [seconds, setSeconds] = useState(12)
   const [order, setOrder] = useState<'rotate' | 'together' | 'random'>('rotate')
   const [busy, setBusy] = useState(false)
+  const [viewing, setViewing] = useState<number | null>(null)   // index of the slide open in the large viewer
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -36,6 +44,18 @@ export default function SlidesManager({
   }, [weddingId, authHeader])
 
   useEffect(() => { void load() }, [load])
+
+  // Large viewer: Esc closes, arrow keys move between slides.
+  useEffect(() => {
+    if (viewing === null) return
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setViewing(null)
+      else if (e.key === 'ArrowRight') setViewing(v => (v === null ? v : Math.min(slides.length - 1, v + 1)))
+      else if (e.key === 'ArrowLeft') setViewing(v => (v === null ? v : Math.max(0, v - 1)))
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [viewing, slides.length])
 
   async function addSlide(file: File) {
     if (!file.type.startsWith('image/')) { setError('Pick an image file (JPG, PNG, or WebP).'); return }
@@ -96,9 +116,16 @@ export default function SlidesManager({
   return (
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-        {slides.map(s => (
+        {slides.map((s, i) => (
           <div key={s.id} className="relative aspect-video rounded-lg overflow-hidden bg-ink-light border border-cream/10">
-            {s.url && <img src={s.url} alt="" className="absolute inset-0 w-full h-full object-contain" />}
+            {s.url && (
+              <button type="button" onClick={() => setViewing(i)} aria-label="View slide larger" className="absolute inset-0 w-full h-full cursor-zoom-in">
+                <img src={s.url} alt="" className="absolute inset-0 w-full h-full object-contain" />
+              </button>
+            )}
+            {addedOn(s.id) && (
+              <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-ink/75 text-cream/60 text-mono text-[8px] pointer-events-none">{addedOn(s.id)}</span>
+            )}
             <button
               type="button"
               onClick={() => removeSlide(s.id)}
@@ -166,6 +193,23 @@ export default function SlidesManager({
             <option value="random">Show one at random (all shown before any repeat)</option>
           </select>
         </label>
+      )}
+
+      {viewing !== null && slides[viewing]?.url && (
+        <div className="fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-center p-4" onClick={() => setViewing(null)}>
+          <img src={slides[viewing].url!} alt="" className="max-w-full max-h-[80vh] object-contain" onClick={e => e.stopPropagation()} />
+          <p className="text-mono text-cream/50 text-xs mt-4" onClick={e => e.stopPropagation()}>
+            {viewing + 1} of {slides.length}{addedOn(slides[viewing].id) ? ` · added ${addedOn(slides[viewing].id)}` : ''}
+          </p>
+          <div className="flex items-center gap-6 mt-3" onClick={e => e.stopPropagation()}>
+            <button type="button" disabled={viewing === 0} onClick={() => setViewing(viewing - 1)}
+              className="px-4 py-2 rounded-full border border-cream/25 text-cream/70 text-sans text-xs tracking-widest uppercase disabled:opacity-25">Prev</button>
+            <button type="button" onClick={() => setViewing(null)}
+              className="px-4 py-2 rounded-full bg-cream text-ink text-sans text-xs tracking-widest uppercase">Close</button>
+            <button type="button" disabled={viewing === slides.length - 1} onClick={() => setViewing(viewing + 1)}
+              className="px-4 py-2 rounded-full border border-cream/25 text-cream/70 text-sans text-xs tracking-widest uppercase disabled:opacity-25">Next</button>
+          </div>
+        </div>
       )}
 
       {error && <p className="text-sans text-red-400/80 text-xs">{error}</p>}
