@@ -9,7 +9,8 @@ interface GalleryPhoto {
   memoryNumber: number | null
   capturedAt: string | null
   uploadedAt: string
-  status: 'active' | 'hidden' | 'flagged'
+  status: 'active' | 'hidden' | 'flagged' | 'deleted'
+  deletedAt?: string | null
   moderationLabels: string | null
   photoUrl: string | null
   annotationUrl: string | null
@@ -53,6 +54,9 @@ export default function AdminGalleryPage() {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [filterMode, setFilterMode] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [showDeleted, setShowDeleted] = useState(false)           // admin-only 48-hour review of deleted photos
+  const [deletedPhotos, setDeletedPhotos] = useState<GalleryPhoto[]>([])
+  const [deletedLoading, setDeletedLoading] = useState(false)
 
   const loadPage = useCallback(async (p: number, token: string, replace = false) => {
     if (!weddingId) return
@@ -77,6 +81,18 @@ export default function AdminGalleryPage() {
     }
     init()
   }, [weddingId, navigate, loadPage])
+
+  async function openDeleted() {
+    setShowDeleted(true)
+    if (!tokenRef.current) return
+    setDeletedLoading(true)
+    try {
+      const res = await fetch(`/api/admin/gallery?weddingId=${weddingId}&deleted=1&page=0&pageSize=100`, {
+        headers: { Authorization: `Bearer ${tokenRef.current}` },
+      })
+      if (res.ok) setDeletedPhotos((await res.json()).photos)
+    } finally { setDeletedLoading(false) }
+  }
 
   async function loadMore() {
     if (!tokenRef.current) return
@@ -117,13 +133,13 @@ export default function AdminGalleryPage() {
 
   // ── Filtering (client-side on loaded batch) ───────────────────
 
-  const filtered = photos.filter(p => {
+  const filtered = (showDeleted ? deletedPhotos : photos).filter(p => {
     if (filterMode   !== 'all' && p.mode   !== filterMode)   return false
     if (filterStatus !== 'all' && p.status !== filterStatus) return false
     return true
   })
 
-  const hasMore = photos.length < total
+  const hasMore = !showDeleted && photos.length < total
   const flaggedCount = photos.filter(p => p.status === 'flagged').length
 
   // ── Loading ───────────────────────────────────────────────────
@@ -169,12 +185,24 @@ export default function AdminGalleryPage() {
         <FilterChip active={filterStatus === 'flagged'} onClick={() => setFilterStatus('flagged')}>
           Flagged{flaggedCount > 0 ? ` (${flaggedCount})` : ''}
         </FilterChip>
+        <span className="text-cream/10">·</span>
+        <FilterChip active={showDeleted} onClick={() => (showDeleted ? setShowDeleted(false) : void openDeleted())}>
+          Recently deleted (48h)
+        </FilterChip>
       </div>
 
+      {showDeleted && (
+        <p className="px-5 pt-3 text-mono text-red-300/60 text-[10px] leading-relaxed">
+          Admin only. These were deleted by the client (or you) and are already gone from their gallery. They stay visible here for 48 hours, then the files are removed for good.
+        </p>
+      )}
+
       {/* Grid */}
-      {filtered.length === 0 ? (
+      {(showDeleted && deletedLoading) ? (
+        <div className="flex justify-center py-24"><div className="w-6 h-6 rounded-full border-2 border-cream/20 border-t-cream/60 animate-spin" /></div>
+      ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 gap-3">
-          <p className="text-serif text-cream/30 text-xl italic">No photos</p>
+          <p className="text-serif text-cream/30 text-xl italic">{showDeleted ? 'Nothing deleted in the last 48 hours' : 'No photos'}</p>
         </div>
       ) : (
         <div className="px-3 pt-3">
@@ -245,6 +273,11 @@ export default function AdminGalleryPage() {
             {lightbox.status === 'hidden' && (
               <p className="text-mono text-amber-film/50 text-xs tracking-widest uppercase">Hidden</p>
             )}
+            {lightbox.status === 'deleted' && (
+              <p className="text-mono text-red-400/70 text-xs tracking-widest uppercase">
+                Deleted{lightbox.deletedAt ? ` ${new Date(lightbox.deletedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : ''}
+              </p>
+            )}
             {lightbox.status === 'flagged' && (
               <p className="text-mono text-red-400/70 text-xs tracking-widest uppercase">
                 Flagged{moderationReason(lightbox.moderationLabels) ? ` · ${moderationReason(lightbox.moderationLabels)}` : ''}
@@ -296,16 +329,16 @@ export default function AdminGalleryPage() {
                     Hide
                   </button>
                 )}
-                <button
+                {lightbox.status !== 'deleted' && <button
                   onClick={() => setConfirmDelete(true)}
                   className="px-4 py-2 rounded-full border border-red-400/30 text-red-400/80 text-sans text-xs font-medium tracking-widest uppercase hover:bg-red-400/10 transition-colors touch-manipulation"
                 >
                   Delete
-                </button>
+                </button>}
               </>
             ) : (
               <div className="flex flex-col items-center gap-3">
-                <p className="text-sans text-cream/70 text-sm">Delete this photo permanently?</p>
+                <p className="text-sans text-cream/70 text-sm">Delete this photo? It disappears from the gallery and slideshow. You can still review it under Recently deleted for 48 hours.</p>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => deletePhoto(lightbox)}

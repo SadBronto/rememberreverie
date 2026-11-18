@@ -18,6 +18,27 @@ const admin = createClient(
 // ALL PROJECTS with a photo_cap: send a warning email at 80% capacity.
 //   - cap_warning_sent resets to false when admin changes photo_cap, so it re-fires after an increase.
 export const handler: Handler = async () => {
+  // ── Purge files of photos people deleted more than 48 hours ago ─────────────
+  // Until then an admin can still review them (abuse / legal). After that the image
+  // files are removed for good; the database row stays, with no files.
+  try {
+    const cutoff = new Date(Date.now() - 48 * 60 * 60_000).toISOString()
+    const { data: stale } = await admin
+      .from('sessions')
+      .select('id, output_path, annotation_path')
+      .eq('status', 'deleted')
+      .not('deleted_at', 'is', null)
+      .is('purged_at', null)
+      .lt('deleted_at', cutoff)
+      .limit(500)
+    if (stale && stale.length > 0) {
+      await deletePhotos(stale.flatMap(s => [s.output_path, s.annotation_path]))
+      await admin.from('sessions').update({ purged_at: new Date().toISOString() }).in('id', stale.map(s => s.id))
+    }
+  } catch (err) {
+    console.error('cleanup: purge of deleted photos failed', err)
+  }
+
   const todayMs = Date.now()
   const warnMs  = todayMs + 7 * 24 * 60 * 60 * 1000  // warn 7 days before deletion
 

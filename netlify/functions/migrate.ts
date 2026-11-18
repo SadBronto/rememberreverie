@@ -270,8 +270,17 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
       `UPDATE weddings SET addon_unlimited = FALSE WHERE addon_unlimited = TRUE AND photo_cap IS NOT NULL`,
     ],
   },
+  {
+    id: 'v25_deleted_review_window',
+    sql: [
+      // When a photo was deleted by a person (client or admin), so admins can still review
+      // it for 48 hours (abuse, harassment, legal), and when its files were finally purged.
+      `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ NULL`,
+      `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS purged_at TIMESTAMPTZ NULL`,
+    ],
+  },
   // Future migrations go here:
-  // { id: 'v25_...', sql: [`ALTER TABLE ...`] },
+  // { id: 'v26_...', sql: [`ALTER TABLE ...`] },
 ]
 
 async function run(sql: string, token: string): Promise<unknown> {

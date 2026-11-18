@@ -48,7 +48,7 @@ export const handler: Handler = async (event) => {
   if (method === 'DELETE') {
     const { error } = await admin
       .from('sessions')
-      .update({ status: 'deleted' })
+      .update({ status: 'deleted', deleted_at: new Date().toISOString() })
       .eq('id', sessionId)
     if (error) return { statusCode: 500, body: 'Failed to delete session' }
     return { statusCode: 200, body: JSON.stringify({ ok: true }) }

@@ -35,13 +35,19 @@ export const handler: Handler = async (event) => {
   const from     = page * pageSize
   const to       = from + pageSize - 1
 
-  const { data: sessions, error, count } = await admin
+  // ?deleted=1 -> photos a person deleted in the last 48 hours (admin review window).
+  const wantDeleted = event.queryStringParameters?.deleted === '1'
+  const REVIEW_MS = 48 * 60 * 60_000
+  let query = admin
     .from('sessions')
-    .select('id, mode, memory_number, captured_at, uploaded_at, status, pinned, moderation_labels, output_path, annotation_path', { count: 'exact' })
+    .select('id, mode, memory_number, captured_at, uploaded_at, status, pinned, moderation_labels, output_path, annotation_path, deleted_at', { count: 'exact' })
     .eq('wedding_id', weddingId)
-    .neq('status', 'deleted')
-    .order('uploaded_at', { ascending: false })
-    .range(from, to)
+  query = wantDeleted
+    ? query.eq('status', 'deleted').not('deleted_at', 'is', null).is('purged_at', null)
+        .gte('deleted_at', new Date(Date.now() - REVIEW_MS).toISOString())
+        .order('deleted_at', { ascending: false })
+    : query.neq('status', 'deleted').order('uploaded_at', { ascending: false })
+  const { data: sessions, error, count } = await query.range(from, to)
 
   if (error) return { statusCode: 500, body: 'Failed to fetch sessions' }
 
@@ -58,6 +64,7 @@ export const handler: Handler = async (event) => {
     capturedAt:       s.captured_at,
     uploadedAt:       s.uploaded_at,
     status:           s.status,
+    deletedAt:        (s as { deleted_at?: string | null }).deleted_at ?? null,
     pinned:           s.pinned ?? false,
     moderationLabels: s.moderation_labels ?? null,
     photoUrl:         s.output_path     ? urlMap.get(s.output_path)     ?? null : null,
