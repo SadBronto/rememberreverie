@@ -179,14 +179,14 @@ export default function AdminGalleryPage() {
         <FilterChip active={filterMode === 'flash'}      onClick={() => setFilterMode('flash')}>Flash</FilterChip>
         <FilterChip active={filterMode === 'champagne'}  onClick={() => setFilterMode('champagne')}>Champagne</FilterChip>
         <span className="text-cream/10">·</span>
-        <FilterChip active={filterStatus === 'all'}     onClick={() => setFilterStatus('all')}>All</FilterChip>
-        <FilterChip active={filterStatus === 'active'}  onClick={() => setFilterStatus('active')}>Visible</FilterChip>
-        <FilterChip active={filterStatus === 'hidden'}  onClick={() => setFilterStatus('hidden')}>Hidden</FilterChip>
-        <FilterChip active={filterStatus === 'flagged'} onClick={() => setFilterStatus('flagged')}>
+        <FilterChip active={!showDeleted && filterStatus === 'all'}     onClick={() => { setShowDeleted(false); setFilterStatus('all') }}>All</FilterChip>
+        <FilterChip active={!showDeleted && filterStatus === 'active'}  onClick={() => { setShowDeleted(false); setFilterStatus('active') }}>Visible</FilterChip>
+        <FilterChip active={!showDeleted && filterStatus === 'hidden'}  onClick={() => { setShowDeleted(false); setFilterStatus('hidden') }}>Hidden</FilterChip>
+        <FilterChip active={!showDeleted && filterStatus === 'flagged'} onClick={() => { setShowDeleted(false); setFilterStatus('flagged') }}>
           Flagged{flaggedCount > 0 ? ` (${flaggedCount})` : ''}
         </FilterChip>
         <span className="text-cream/10">·</span>
-        <FilterChip active={showDeleted} onClick={() => (showDeleted ? setShowDeleted(false) : void openDeleted())}>
+        <FilterChip active={showDeleted} onClick={() => { setFilterStatus('all'); void openDeleted() }}>
           Recently deleted (48h)
         </FilterChip>
       </div>

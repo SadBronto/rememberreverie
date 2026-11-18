@@ -279,6 +279,17 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
       `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS purged_at TIMESTAMPTZ NULL`,
     ],
   },
+  {
+    id: 'v26_backfill_deleted_at',
+    sql: [
+      // Photos deleted before v25 have no timestamp, so they never showed in the admin
+      // 48-hour review. Start their window now (live events only).
+      `UPDATE sessions SET deleted_at = NOW()
+         WHERE status = 'deleted' AND deleted_at IS NULL AND purged_at IS NULL
+           AND output_path IS NOT NULL
+           AND wedding_id IN (SELECT id FROM weddings WHERE status = 'active')`,
+    ],
+  },
   // Future migrations go here:
   // { id: 'v26_...', sql: [`ALTER TABLE ...`] },
 ]
