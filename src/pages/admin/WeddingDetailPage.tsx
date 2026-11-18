@@ -795,7 +795,7 @@ export default function WeddingDetailPage() {
           <FormField label="Add-ons">
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-3">
-                <AdminToggle value={form.addon_unlimited ?? false} onChange={v => setField('addon_unlimited', v)} />
+                <AdminToggle value={form.addon_unlimited ?? false} onChange={v => setForm(f => ({ ...f, addon_unlimited: v, photo_cap: v ? null : (f.photo_cap ?? 500) }))} />
                 <span className="text-sans text-cream/50 text-sm">
                   Unlimited photos{(form.addon_unlimited ?? false) ? '' : ` (cap ${form.photo_cap ?? 500})`}
                 </span>
@@ -977,9 +977,9 @@ export default function WeddingDetailPage() {
           </FormField>
 
           <FormField label="Gallery size limit">
-            <AdminInput type="number" value={form.photo_cap != null ? String(form.photo_cap) : ''} onChange={v => setField('photo_cap', v ? Number(v) : null)} placeholder="unlimited" min="1" />
+            <AdminInput type="number" value={form.photo_cap != null ? String(form.photo_cap) : ''} onChange={v => setForm(f => ({ ...f, photo_cap: v ? Number(v) : null, addon_unlimited: !v }))} placeholder="unlimited" min="1" />
             <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
-              Max photos kept in this gallery. When it fills up, the oldest photos roll off so new ones always save. Leave blank for unlimited.
+              Max photos kept in this gallery. When it fills up, the oldest photos roll off so new ones always save. Blank means unlimited, which is the same as turning on the Unlimited add-on above; the two always move together.
             </p>
           </FormField>
 

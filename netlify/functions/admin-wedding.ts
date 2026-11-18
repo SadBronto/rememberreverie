@@ -106,6 +106,19 @@ export const handler: Handler = async (event) => {
       update.slideshow_qr_seconds = Math.max(3, Math.min(60, Math.round(Number(body.slideshow_qr_seconds) || 12)))
     }
 
+    // One rule for the photo limit: Unlimited on means no limit; Unlimited off with no
+    // number gets the standard 500. (photo_cap is what actually drives rolling deletion.)
+    if ('addon_unlimited' in body || 'photo_cap' in body) {
+      const unlimited = 'addon_unlimited' in body ? !!body.addon_unlimited : body.photo_cap == null
+      if (unlimited) { update.addon_unlimited = true; update.photo_cap = null }
+      else {
+        update.addon_unlimited = false
+        const n = Number(body.photo_cap)
+        update.photo_cap = Number.isFinite(n) && n > 0 ? Math.round(n) : 500
+      }
+      update.cap_warning_sent = false
+    }
+
     // If photo_cap is being changed, reset the warning flag so it can fire again
     if ('photo_cap' in body) update.cap_warning_sent = false
 

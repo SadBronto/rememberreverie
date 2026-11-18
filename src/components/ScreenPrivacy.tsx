@@ -8,6 +8,7 @@ export default function ScreenPrivacy({ weddingId, getToken, label }: { weddingI
   const [priv, setPriv] = useState(false)
   const [displays, setDisplays] = useState<Display[]>([])
   const [busy, setBusy] = useState(false)
+  const [armed, setArmed] = useState(false)
   const headers = useCallback(() => ({ Authorization: `Bearer ${getToken() ?? ''}`, 'Content-Type': 'application/json' }), [getToken])
 
   const load = useCallback(async () => {
@@ -26,7 +27,40 @@ export default function ScreenPrivacy({ weddingId, getToken, label }: { weddingI
     } finally { setBusy(false) }
   }
 
-  if (!priv) return null
+  const panic = (
+    <div className="flex flex-col gap-2 pt-1">
+      {!armed ? (
+        <button onClick={() => setArmed(true)}
+          className="self-start px-4 py-2 rounded-full border border-red-400/40 text-red-300/80 text-sans text-xs tracking-widest uppercase">
+          Hide the slideshow now
+        </button>
+      ) : (
+        <div className="flex flex-col gap-2 bg-red-500/10 border border-red-400/30 rounded-xl p-3">
+          <p className="text-sans text-cream/70 text-xs leading-relaxed">
+            Every screen goes dark right away and asks for your sign-in before it plays again. Use this if something
+            inappropriate is showing. Continue?
+          </p>
+          <div className="flex gap-3">
+            <button disabled={busy} onClick={async () => { await lock({ op: 'panic' }); setArmed(false) }}
+              className="px-4 py-2 rounded-full bg-red-400/80 text-ink text-sans text-xs tracking-widest uppercase disabled:opacity-40">Hide it</button>
+            <button onClick={() => setArmed(false)} className="text-cream/40 text-sans text-xs tracking-widest uppercase">Cancel</button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  if (!priv) {
+    return (
+      <div className="flex flex-col gap-3">
+        {label && <p className="text-mono text-cream/25 text-[9px] tracking-[0.3em] uppercase">{label}</p>}
+        <p className="text-sans text-cream/50 text-xs leading-relaxed">
+          Emergency switch: instantly blanks every screen showing your slideshow until you sign in and approve it again.
+        </p>
+        {panic}
+      </div>
+    )
+  }
   return (
     <div className="flex flex-col gap-3">
       {label && <p className="text-mono text-cream/25 text-[9px] tracking-[0.3em] uppercase">{label}</p>}
@@ -49,6 +83,7 @@ export default function ScreenPrivacy({ weddingId, getToken, label }: { weddingI
           </button>
         </div>
       ))}
+      {panic}
       {displays.length > 1 && (
         <button
           onClick={() => lock({ op: 'lock-all' })} disabled={busy}

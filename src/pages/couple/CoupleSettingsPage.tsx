@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { portalBase } from '@/lib/portalNav'
@@ -9,6 +9,32 @@ import WatermarkManager from '@/components/WatermarkManager'
 import SlidesManager from '@/components/SlidesManager'
 import type { CameraModeName, WeddingConfig } from '@/types/session'
 import { useFreshToken } from '@/lib/useFreshToken'
+
+const GeofenceMap = lazy(() => import('@/components/GeofenceMap'))
+
+interface Extra {
+  staffCode: string
+  qrOn: boolean; qrEvery: number; qrSeconds: number
+  spotlight: boolean
+  addonGeofence: boolean
+  geoOn: boolean; geoLat: number | null; geoLng: number | null; geoRadius: number; geoBypass: string
+  plan: string
+  screen: { state: string; seenAt: number | null; advancedAt: number | null } | null
+}
+const EXTRA_DEFAULT: Extra = {
+  staffCode: '', qrOn: false, qrEvery: 10, qrSeconds: 12, spotlight: false,
+  addonGeofence: false, geoOn: false, geoLat: null, geoLng: null, geoRadius: 150, geoBypass: '',
+  plan: 'basic', screen: null,
+}
+
+function agoText(ms: number | null): string {
+  if (ms == null) return 'never'
+  const m = Math.round((Date.now() - ms) / 60000)
+  if (m < 1) return 'just now'
+  if (m < 60) return `${m} min ago`
+  const h = Math.round(m / 60)
+  return h < 48 ? `${h} hr ago` : `${Math.round(h / 24)} days ago`
+}
 
 interface WeddingSettings {
   couple_names:      string
@@ -43,7 +69,8 @@ export default function CoupleSettingsPage() {
   const applySetup     = useDemoStore((s) => s.applySetup)
 
   const [form, setForm]       = useState<WeddingSettings | null>(null)
-  const [staffCode, setStaffCode] = useState<string | null>(null)
+  const [extra, setExtra] = useState<Extra>(EXTRA_DEFAULT)
+  function setX<K extends keyof Extra>(k: K, v: Extra[K]) { setExtra(e => ({ ...e, [k]: v })) }
   const [noDate, setNoDate]   = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving]   = useState(false)
@@ -95,7 +122,15 @@ export default function CoupleSettingsPage() {
         slug:              data.slug               ?? null,
       })
       setNoDate(!data.wedding_date)
-      setStaffCode(data.staff_code ?? null)
+      setExtra({
+        staffCode: data.staff_code ?? '',
+        qrOn: !!data.slideshow_qr_slide, qrEvery: data.slideshow_qr_every ?? 10, qrSeconds: data.slideshow_qr_seconds ?? 12,
+        spotlight: !!data.slideshow_spotlight_new,
+        addonGeofence: !!data.addon_geofence,
+        geoOn: !!data.geofence_enabled, geoLat: data.geofence_lat ?? null, geoLng: data.geofence_lng ?? null,
+        geoRadius: data.geofence_radius_m ?? 150, geoBypass: data.geofence_bypass_code ?? '',
+        plan: data.plan ?? 'basic', screen: data.screen ?? null,
+      })
       setLoading(false)
     }
     load()
@@ -169,6 +204,14 @@ export default function CoupleSettingsPage() {
         timestampOutline: form.timestamp_outline,
         selfieEnabled:    form.selfie_enabled,
         slug:             form.slug || null,
+        staffCode:        extra.staffCode,
+        qrSlideEnabled:   extra.qrOn,
+        qrEvery:          extra.qrEvery,
+        qrSeconds:        extra.qrSeconds,
+        spotlightNew:     extra.spotlight,
+        ...(extra.addonGeofence ? { geofence: {
+          enabled: extra.geoOn, lat: extra.geoLat, lng: extra.geoLng, radiusM: extra.geoRadius, bypassCode: extra.geoBypass || null,
+        } } : {}),
       }),
     })
 
@@ -411,19 +454,123 @@ export default function CoupleSettingsPage() {
           </Field>
         </Section>
 
-        {!demo && form.slug && staffCode && (
-          <Section label="Staff page">
-            <p className="text-sans text-cream/50 text-xs leading-relaxed mb-3">
-              For your on-site staff: they sign in with the password to remove any photo from the screen.
+        {/* Screen status (Reverie Live) */}
+        {!demo && extra.plan === 'live' && extra.screen && (() => {
+          const st = extra.screen.state
+          const tone = st === 'ok' ? 'bg-green-400' : st === 'offline' || st === 'stalled' ? 'bg-red-400' : 'bg-cream/30'
+          const headline =
+            st === 'ok' ? 'Your screen is online'
+            : st === 'offline' ? 'Your screen looks offline'
+            : st === 'stalled' ? 'Your screen is on but not changing slides'
+            : st === 'closed' ? 'Outside the hours we watch your screen'
+            : 'We have not seen your screen yet'
+          return (
+            <Section label="Screen status">
+              <div className="flex items-start gap-3 bg-ink-light border border-cream/10 rounded-xl px-4 py-3">
+                <span className={`mt-1.5 w-2.5 h-2.5 rounded-full shrink-0 ${tone}`} />
+                <div>
+                  <p className="text-sans text-cream/80 text-sm">{headline}</p>
+                  <p className="text-mono text-cream/35 text-[10px] mt-1">
+                    Last check-in {agoText(extra.screen.seenAt)} &middot; last slide change {agoText(extra.screen.advancedAt)}
+                  </p>
+                  {(st === 'offline' || st === 'stalled') && (
+                    <p className="text-sans text-cream/45 text-xs mt-2 leading-relaxed">
+                      Check that the TV is on and the streaming stick is plugged in. Unplug the stick for 10 seconds and plug it back in.
+                    </p>
+                  )}
+                </div>
+              </div>
+              <p className="text-mono text-cream/25 text-[10px]">Updates when you open this page. The screen checks in every 30 seconds to 5 minutes.</p>
+            </Section>
+          )
+        })()}
+
+        {/* Slideshow options */}
+        {!demo && extra.plan === 'live' && (
+          <Section label="Slideshow options">
+            <div className="flex items-center gap-3">
+              <Toggle value={extra.qrOn} onChange={v => setX('qrOn', v)} />
+              <span className="text-sans text-cream/60 text-sm">Show a &ldquo;Scan to share&rdquo; slide</span>
+            </div>
+            {extra.qrOn && (
+              <div className="flex flex-wrap gap-x-5 gap-y-2 items-center text-sans text-cream/60 text-xs">
+                <label className="flex items-center gap-2">Every
+                  <input type="number" min={1} max={50} value={extra.qrEvery}
+                    onChange={e => setX('qrEvery', Math.max(1, Math.min(50, Number(e.target.value) || 1)))}
+                    className="w-14 bg-ink-light border border-cream/15 rounded-lg px-2 py-1 text-cream text-center focus:outline-none" />
+                  photos
+                </label>
+                <label className="flex items-center gap-2">For
+                  <input type="number" min={3} max={60} value={extra.qrSeconds}
+                    onChange={e => setX('qrSeconds', Math.max(3, Math.min(60, Number(e.target.value) || 3)))}
+                    className="w-14 bg-ink-light border border-cream/15 rounded-lg px-2 py-1 text-cream text-center focus:outline-none" />
+                  seconds
+                </label>
+              </div>
+            )}
+            <div className="flex items-center gap-3 mt-1">
+              <Toggle value={extra.spotlight} onChange={v => setX('spotlight', v)} />
+              <span className="text-sans text-cream/60 text-sm">Show new photos right away</span>
+            </div>
+            <p className="text-mono text-cream/25 text-[10px] leading-relaxed">
+              A new photo plays next on the screen (after it passes screening) instead of waiting its turn. With only a few photos, the scan slide plays once each time the show loops. Press Save Settings below to apply.
             </p>
-            <p className="text-mono text-cream/40 text-[11px] mb-1">rememberreverie.com/staff/{form.slug}</p>
-            <p className="text-mono text-cream/40 text-[11px] mb-3">Password: {staffCode}</p>
+          </Section>
+        )}
+
+        {!demo && form.slug && (
+          <Section label="Staff page">
+            <p className="text-sans text-cream/50 text-xs leading-relaxed">
+              For your on-site staff: they sign in with this password to remove any photo from the screen.
+            </p>
+            <p className="text-mono text-cream/40 text-[11px]">rememberreverie.com/staff/{form.slug}</p>
+            <Field label="Staff password (6 or more characters)">
+              <input
+                value={extra.staffCode} onChange={e => setX('staffCode', e.target.value)}
+                placeholder="Choose a password"
+                className="w-full bg-ink-light border border-cream/10 rounded-lg px-3 py-2 text-cream text-sans text-sm placeholder:text-cream/20 focus:outline-none focus:border-cream/25"
+              />
+            </Field>
             <a
               href={`/staff/${form.slug}`} target="_blank" rel="noreferrer"
-              className="inline-block px-4 py-2 rounded-full border border-cream/20 text-cream/70 text-sans text-xs tracking-widest uppercase"
+              className="self-start px-4 py-2 rounded-full border border-cream/20 text-cream/70 text-sans text-xs tracking-widest uppercase"
             >
               Open staff page
             </a>
+            <p className="text-mono text-cream/25 text-[10px]">Press Save Settings below to change the password.</p>
+          </Section>
+        )}
+
+        {/* Location fence (only if the geofence add-on is on) */}
+        {!demo && extra.addonGeofence && (
+          <Section label="Location fence">
+            <div className="flex items-center gap-3">
+              <Toggle value={extra.geoOn} onChange={v => setExtra(e => ({ ...e, geoOn: v, geoRadius: v && !e.geoRadius ? 150 : e.geoRadius }))} />
+              <span className="text-sans text-cream/60 text-sm">{extra.geoOn ? 'Guests must be at the venue to take photos' : 'Off'}</span>
+            </div>
+            {extra.geoOn && (
+              <div className="flex flex-col gap-3">
+                <Suspense fallback={<div className="w-full h-64 rounded-xl bg-ink-light border border-cream/10 flex items-center justify-center"><div className="w-6 h-6 rounded-full border-2 border-cream/20 border-t-cream/60 animate-spin" /></div>}>
+                  <GeofenceMap lat={extra.geoLat} lng={extra.geoLng} radius={extra.geoRadius}
+                    onMove={(la, lo) => setExtra(e => ({ ...e, geoLat: la, geoLng: lo }))} />
+                </Suspense>
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sans text-cream/50 text-xs">Fence size</label>
+                    <span className="text-mono text-cream/50 text-[11px]">{extra.geoRadius} m &middot; about {Math.round(extra.geoRadius * 3.28084)} ft</span>
+                  </div>
+                  <input type="range" min={25} max={1000} step={25} value={extra.geoRadius}
+                    onChange={e => setX('geoRadius', Number(e.target.value))} className="w-full accent-amber-500" />
+                  <p className="text-mono text-cream/25 text-[10px] leading-relaxed">Phone GPS indoors can drift 30 to 100 m. Keep it generous (150 m or more) so real guests are not blocked.</p>
+                </div>
+                {extra.geoLat == null && <p className="text-sans text-amber-400/80 text-xs">Tap the map to set the venue location before saving.</p>}
+                <Field label="Bypass code (optional)">
+                  <input value={extra.geoBypass} onChange={e => setX('geoBypass', e.target.value)} placeholder="For guests whose location cannot be checked"
+                    className="w-full bg-ink-light border border-cream/10 rounded-lg px-3 py-2 text-cream text-sans text-sm placeholder:text-cream/20 focus:outline-none focus:border-cream/25" />
+                </Field>
+                <p className="text-mono text-cream/25 text-[10px]">Press Save Settings below to apply.</p>
+              </div>
+            )}
           </Section>
         )}
 

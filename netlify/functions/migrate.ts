@@ -261,8 +261,17 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
       `ALTER TABLE display_requests ENABLE ROW LEVEL SECURITY`,
     ],
   },
+  {
+    id: 'v24_unlimited_matches_cap',
+    sql: [
+      // The photo limit (photo_cap) alone drives rolling deletion. Make the Unlimited
+      // add-on flag agree with what actually happens: any event that has a limit is not
+      // unlimited. No behavior changes; this only removes the contradiction.
+      `UPDATE weddings SET addon_unlimited = FALSE WHERE addon_unlimited = TRUE AND photo_cap IS NOT NULL`,
+    ],
+  },
   // Future migrations go here:
-  // { id: 'v24_...', sql: [`ALTER TABLE ...`] },
+  // { id: 'v25_...', sql: [`ALTER TABLE ...`] },
 ]
 
 async function run(sql: string, token: string): Promise<unknown> {

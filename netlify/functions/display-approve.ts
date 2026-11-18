@@ -63,6 +63,14 @@ export const handler: Handler = async (event) => {
       return json({ ok: true })
     }
 
+    // Panic button: make the slideshow private AND lock every screen right now. Screens
+    // show the locked message until the owner approves them again.
+    if (body.op === 'panic') {
+      await admin.from('weddings').update({ slideshow_private: true }).eq('id', weddingId)
+      await admin.from('display_approvals').delete().eq('wedding_id', weddingId)
+      return json({ ok: true })
+    }
+
     if (body.op === 'lock-all') {
       await admin.from('display_approvals').delete().eq('wedding_id', weddingId)
       return json({ ok: true })

@@ -22,7 +22,7 @@ export const handler: Handler = async (event) => {
   // Find their wedding
   const { data: wedding, error: wErr } = await admin
     .from('weddings')
-    .select('id, status')
+    .select('id, status, addon_geofence')
     .eq('couple_email', user.email)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -42,7 +42,8 @@ export const handler: Handler = async (event) => {
 
   const { coupleNames, weddingDate, captureStart, captureEnd, eventTimezone,
           welcomeMessage, allowedModes, annotationMode,
-          timestampEnabled, timestampStyle, timestampSize, timestampOutline, photoCap, slug, selfieEnabled } = body as Record<string, any>
+          timestampEnabled, timestampStyle, timestampSize, timestampOutline, slug, selfieEnabled,
+          staffCode, qrSlideEnabled, qrEvery, qrSeconds, spotlightNew, geofence } = body as Record<string, any>
 
   if (!coupleNames) {
     return { statusCode: 400, body: 'coupleNames is required' }
@@ -59,7 +60,6 @@ export const handler: Handler = async (event) => {
     annotation_mode:   annotationMode ?? 'signature',
     timestamp_enabled: timestampEnabled ?? true,
     timestamp_style:   timestampStyle ?? 'classic',
-    photo_cap:         photoCap ? Number(photoCap) : null,
     slug:              slug ? String(slug).toLowerCase().replace(/[^a-z0-9-]/g, '').trim() || null : null,
   }
 
@@ -77,6 +77,34 @@ export const handler: Handler = async (event) => {
   // Timestamp size + outline — only touch when sent (partial PATCH safety).
   if (timestampSize    !== undefined) update.timestamp_size    = timestampSize
   if (timestampOutline !== undefined) update.timestamp_outline = timestampOutline
+
+  // Staff password (clients choose their own). 6-40 characters; blank leaves it unchanged.
+  if (typeof staffCode === 'string' && staffCode.trim()) {
+    const code = staffCode.trim()
+    if (code.length < 6 || code.length > 40) return { statusCode: 400, body: 'The staff password needs 6 to 40 characters' }
+    update.staff_code = code
+  }
+
+  // Scan-to-share slide and timing, and "show new photos right away".
+  if (typeof qrSlideEnabled === 'boolean') update.slideshow_qr_slide = qrSlideEnabled
+  if (qrEvery !== undefined)   update.slideshow_qr_every   = Math.max(1, Math.min(50, Math.round(Number(qrEvery) || 10)))
+  if (qrSeconds !== undefined) update.slideshow_qr_seconds = Math.max(3, Math.min(60, Math.round(Number(qrSeconds) || 12)))
+  if (typeof spotlightNew === 'boolean') update.slideshow_spotlight_new = spotlightNew
+
+  // Location fence: only for events that have the geofence add-on.
+  if (geofence && wedding.addon_geofence) {
+    const g = geofence as { enabled?: boolean; lat?: number | null; lng?: number | null; radiusM?: number; bypassCode?: string | null }
+    const lat = g.lat == null ? null : Number(g.lat)
+    const lng = g.lng == null ? null : Number(g.lng)
+    if (g.enabled && (lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng))) {
+      return { statusCode: 400, body: 'Set the venue location on the map before turning the location fence on' }
+    }
+    update.geofence_enabled = !!g.enabled
+    update.geofence_lat = lat
+    update.geofence_lng = lng
+    update.geofence_radius_m = Math.max(25, Math.min(1000, Math.round(Number(g.radiusM) || 150)))
+    update.geofence_bypass_code = g.bypassCode ? String(g.bypassCode).trim().slice(0, 40) || null : null
+  }
 
   // Only POST activates the wedding
   if (method === 'POST') update.status = 'active'
