@@ -108,6 +108,31 @@ export default function WatermarkManager({ weddingId, getToken, label }: { weddi
       {error && <p className="text-sans text-red-400/80 text-xs">{error}</p>}
       <p className="text-mono text-cream/25 text-[10px] leading-relaxed">A plain white logo on a transparent background works best.</p>
 
+      {/* Live preview on a sample photo (same size and placement rules as the real thing) */}
+      <div className="flex flex-col gap-1.5">
+        <div className="relative w-full max-w-sm rounded-xl overflow-hidden border border-cream/10 bg-ink-light" style={{ aspectRatio: '3 / 2' }}>
+          <img src="/gallery/pexels-jonathan-nenemann-13434437.jpg" alt="Sample photo" className="absolute inset-0 w-full h-full object-cover" draggable={false} />
+          {url ? (
+            <img
+              src={url} alt="" draggable={false}
+              className="absolute object-contain pointer-events-none"
+              style={position === 'center'
+                ? { left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '50%', maxHeight: '60%', opacity: opacity / 100 }
+                : {
+                    width: '16%', maxHeight: '18%', opacity: opacity / 100,
+                    [position.startsWith('top') ? 'top' : 'bottom']: '4.5%',
+                    [position.endsWith('right') ? 'right' : 'left']: '3%',
+                  }}
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+              <span className="text-sans text-cream/70 text-xs">Upload a logo to see it here</span>
+            </div>
+          )}
+        </div>
+        <p className="text-mono text-cream/25 text-[10px]">Preview on a sample photo. Position and transparency update as you change them.</p>
+      </div>
+
       <div className="flex flex-col gap-2">
         <p className="text-sans text-cream/45 text-xs">Show it on</p>
         <Check on={photos} onChange={v => { setPhotos(v); void saveSettings({ photos: v }) }} text="Guest photos (new photos only)" />
