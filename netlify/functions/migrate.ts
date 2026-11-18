@@ -208,8 +208,18 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
       `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS slideshow_qr_seconds INTEGER NOT NULL DEFAULT 12`,
     ],
   },
+  {
+    id: 'v20_session_modes',
+    sql: [
+      // The original check only allowed disposable/polaroid/super8, so every Noir,
+      // Flash and Champagne photo was rejected at insert and sat in the guest's
+      // "waiting to upload" queue forever. Allow all six camera modes.
+      `ALTER TABLE sessions DROP CONSTRAINT IF EXISTS sessions_mode_check`,
+      `ALTER TABLE sessions ADD CONSTRAINT sessions_mode_check CHECK (mode IN ('disposable','polaroid','super8','noir','flash','champagne'))`,
+    ],
+  },
   // Future migrations go here:
-  // { id: 'v20_...', sql: [`ALTER TABLE ...`] },
+  // { id: 'v21_...', sql: [`ALTER TABLE ...`] },
 ]
 
 async function run(sql: string, token: string): Promise<unknown> {

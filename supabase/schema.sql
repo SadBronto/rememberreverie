@@ -29,7 +29,7 @@ create table if not exists weddings (
 create table if not exists sessions (
   id             text        primary key,
   wedding_id     text        not null references weddings(id) on delete cascade,
-  mode           text        not null check (mode in ('disposable', 'polaroid', 'super8')),
+  mode           text        not null check (mode in ('disposable', 'polaroid', 'super8', 'noir', 'flash', 'champagne')),
   output_path    text,           -- Supabase Storage path for processed photo
   annotation_path text,          -- Supabase Storage path for annotation layer
   memory_number  integer,
