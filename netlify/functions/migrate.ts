@@ -218,8 +218,16 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
       `ALTER TABLE sessions ADD CONSTRAINT sessions_mode_check CHECK (mode IN ('disposable','polaroid','super8','noir','flash','champagne'))`,
     ],
   },
+  {
+    id: 'v21_slide_order',
+    sql: [
+      // How custom slides play when it is their turn: 'rotate' (one per turn, in order),
+      // 'together' (all of them back to back), 'random' (shuffled, no repeats until all shown).
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS slideshow_slide_order TEXT NOT NULL DEFAULT 'rotate'`,
+    ],
+  },
   // Future migrations go here:
-  // { id: 'v21_...', sql: [`ALTER TABLE ...`] },
+  // { id: 'v22_...', sql: [`ALTER TABLE ...`] },
 ]
 
 async function run(sql: string, token: string): Promise<unknown> {

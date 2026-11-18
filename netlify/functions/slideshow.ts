@@ -67,6 +67,12 @@ export const handler: Handler = async (event) => {
   let slideSeconds = 12
   let qrEvery = 10
   let qrSeconds = 12
+  let slideOrder = 'rotate'
+  {
+    const { data: oc, error: oErr } = await admin
+      .from('weddings').select('slideshow_slide_order').eq('id', weddingId).single()
+    if (!oErr && oc?.slideshow_slide_order) slideOrder = oc.slideshow_slide_order
+  }
   {
     // Separate + tolerant: if these columns aren't migrated yet, defaults apply and
     // nothing else is affected.
@@ -159,6 +165,7 @@ export const handler: Handler = async (event) => {
       slowPoll:         slowPoll,
       slideEvery:       slideEvery,
       slideSeconds:     slideSeconds,
+      slideOrder:       slideOrder,
       qrEvery:          qrEvery,
       qrSeconds:        qrSeconds,
       spotlightNew:     spotlightNew,

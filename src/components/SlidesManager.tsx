@@ -15,6 +15,7 @@ export default function SlidesManager({
   const [slides, setSlides] = useState<SlideItem[]>([])
   const [every, setEvery] = useState(7)
   const [seconds, setSeconds] = useState(12)
+  const [order, setOrder] = useState<'rotate' | 'together' | 'random'>('rotate')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -29,6 +30,7 @@ export default function SlidesManager({
         setSlides(d.slides ?? [])
         setEvery(d.every ?? 7)
         setSeconds(d.seconds ?? 12)
+        setOrder(d.order ?? 'rotate')
       }
     } catch { /* leave as-is */ }
   }, [weddingId, authHeader])
@@ -66,12 +68,12 @@ export default function SlidesManager({
     }
   }
 
-  async function saveSettings(e: number, s: number) {
+  async function saveSettings(e: number, s: number, o: string = order) {
     try {
       await fetch(`/api/host/slides?weddingId=${weddingId}`, {
         method: 'POST',
         headers: { ...authHeader(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ op: 'settings', every: e, seconds: s }),
+        body: JSON.stringify({ op: 'settings', every: e, seconds: s, order: o }),
       })
     } catch { /* non-blocking */ }
   }
@@ -150,6 +152,21 @@ export default function SlidesManager({
           seconds
         </label>
       </div>
+
+      {slides.length > 1 && (
+        <label className="flex flex-wrap items-center gap-2 text-sans text-cream/60 text-xs">
+          When it is time for a slide
+          <select
+            value={order}
+            onChange={e => { const v = e.target.value as 'rotate' | 'together' | 'random'; setOrder(v); void saveSettings(every, seconds, v) }}
+            className="bg-ink-light border border-cream/15 rounded-lg px-2 py-1 text-cream focus:outline-none focus:border-cream/35"
+          >
+            <option value="rotate">Show one, then the next one next time (A, B, C...)</option>
+            <option value="together">Show all of them back to back</option>
+            <option value="random">Show one at random (all shown before any repeat)</option>
+          </select>
+        </label>
+      )}
 
       {error && <p className="text-sans text-red-400/80 text-xs">{error}</p>}
       <p className="text-mono text-cream/25 text-[10px] leading-relaxed">

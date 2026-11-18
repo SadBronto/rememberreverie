@@ -35,7 +35,7 @@ export const handler: Handler = async (event) => {
 
   const { data: wedding } = await admin
     .from('weddings')
-    .select('id, couple_email, slideshow_slides, slideshow_slide_every, slideshow_slide_seconds')
+    .select('id, couple_email, slideshow_slides, slideshow_slide_every, slideshow_slide_seconds, slideshow_slide_order')
     .eq('id', weddingId)
     .single()
   if (!wedding) return { statusCode: 404, body: 'Not found' }
@@ -57,23 +57,25 @@ export const handler: Handler = async (event) => {
       slides: slides.map(s => ({ id: s.id, path: s.path, url: urlMap.get(s.path) ?? null })),
       every: wedding.slideshow_slide_every ?? 7,
       seconds: wedding.slideshow_slide_seconds ?? 12,
+      order: wedding.slideshow_slide_order ?? 'rotate',
     })
   }
 
   // ── POST: upload-url | save | settings ──
   if (event.httpMethod === 'POST') {
-    let body: { op?: string; contentType?: string; slides?: Slide[]; every?: number; seconds?: number }
+    let body: { op?: string; contentType?: string; slides?: Slide[]; every?: number; seconds?: number; order?: string }
     try { body = JSON.parse(event.body ?? '{}') } catch { return { statusCode: 400, body: 'Invalid JSON' } }
 
     if (body.op === 'settings') {
       const every = Math.max(1, Math.min(50, Math.round(Number(body.every) || 7)))
       const seconds = Math.max(3, Math.min(60, Math.round(Number(body.seconds) || 12)))
+      const order = ['rotate', 'together', 'random'].includes(body.order ?? '') ? body.order! : (wedding.slideshow_slide_order ?? 'rotate')
       const { error } = await admin
         .from('weddings')
-        .update({ slideshow_slide_every: every, slideshow_slide_seconds: seconds })
+        .update({ slideshow_slide_every: every, slideshow_slide_seconds: seconds, slideshow_slide_order: order })
         .eq('id', weddingId)
       if (error) return { statusCode: 500, body: 'Failed to save settings' }
-      return json({ ok: true, every, seconds })
+      return json({ ok: true, every, seconds, order })
     }
 
     if (body.op === 'upload-url') {

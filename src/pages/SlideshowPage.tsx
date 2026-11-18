@@ -23,7 +23,7 @@ interface SlideshowPhoto {
 type Slide =
   | { id: string; kind: 'photo'; photo: SlideshowPhoto }
   | { id: string; kind: 'qr' }
-  | { id: string; kind: 'custom'; url: string }
+  | { id: string; kind: 'custom'; url?: string }  // no url = a slot filled at play time
 
 interface SlideshowData {
   coupleNames: string
@@ -38,6 +38,7 @@ interface SlideshowData {
   slowPoll: boolean
   slideEvery?: number
   slideSeconds?: number
+  slideOrder?: 'rotate' | 'together' | 'random'
   qrEvery?: number
   qrSeconds?: number
   spotlightNew?: boolean
@@ -75,10 +76,18 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   const [autoFullscreen, setAutoFullscreen] = useState(false)
   const [slowPoll, setSlowPoll] = useState(false)
   const [cursorHidden, setCursorHidden] = useState(false)
+  // The corner fullscreen / counter controls fade away after 30s and return on any
+  // mouse move, key press or touch, so a TV screen is not left with a permanent icon.
+  const [controlsVisible, setControlsVisible] = useState(true)
   const [photos, setPhotos]           = useState<SlideshowPhoto[]>([])
   const [customSlides, setCustomSlides] = useState<{ id: string; url: string }[]>([])
   const [slideEvery, setSlideEvery]   = useState(CUSTOM_EVERY)
   const [slideSeconds, setSlideSeconds] = useState(12)
+  const [slideOrder, setSlideOrder] = useState<'rotate' | 'together' | 'random'>('rotate')
+  // Which promo slide each slot currently shows, plus the rotation / shuffle state,
+  // kept across deck rebuilds so the same slide does not play every time.
+  const slotUrlRef = useRef(new Map<string, string>())
+  const pickerRef = useRef<{ counter: number; bag: string[]; last: string | null }>({ counter: 0, bag: [], last: null })
   const [qrEvery, setQrEvery]         = useState(QR_EVERY)
   const [qrSeconds, setQrSeconds]     = useState(QR_DURATION / 1000)
   const [index, setIndex]             = useState(0)
@@ -163,6 +172,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       setCustomSlides(data.customSlides ?? [])
       setSlideEvery(data.slideEvery ?? CUSTOM_EVERY)
       setSlideSeconds(data.slideSeconds ?? 12)
+      setSlideOrder(data.slideOrder ?? 'rotate')
       setQrEvery(data.qrEvery ?? QR_EVERY)
       setQrSeconds(data.qrSeconds ?? QR_DURATION / 1000)
 
@@ -264,9 +274,9 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
 
   const slides = useMemo<Slide[]>(() => {
     const out: Slide[] = []
-    let customIdx = 0
     let qrCount = 0
     const qrOn = qrSlideEnabled && !!guestUrl
+    const together = slideOrder === 'together' || customSlides.length === 1
     photos.forEach((p, i) => {
       out.push({ id: p.id, kind: 'photo', photo: p })
       if (qrOn && (i + 1) % Math.max(1, qrEvery) === 0) {
@@ -274,9 +284,12 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
         qrCount++
       }
       if (customSlides.length > 0 && (i + 1) % Math.max(1, slideEvery) === 0) {
-        const cs = customSlides[customIdx % customSlides.length]
-        customIdx++
-        out.push({ id: `custom-${cs.id}-${i}`, kind: 'custom', url: cs.url })
+        if (together) {
+          customSlides.forEach(cs => out.push({ id: `custom-${cs.id}-${i}`, kind: 'custom', url: cs.url }))
+        } else {
+          // One slot; which slide fills it is decided when it is about to play.
+          out.push({ id: `cslot-${i}`, kind: 'custom' })
+        }
       }
     })
     // Custom slides but no photos yet: still show them (e.g. a venue logo pre-event).
@@ -289,7 +302,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       out.push({ id: 'qr-end', kind: 'qr' })
     }
     return out
-  }, [photos, qrSlideEnabled, guestUrl, customSlides, slideEvery, qrEvery])
+  }, [photos, qrSlideEnabled, guestUrl, customSlides, slideEvery, qrEvery, slideOrder])
 
   useEffect(() => { slidesRef.current = slides }, [slides])
 
@@ -301,6 +314,36 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       indexRef.current = 0
     }
   }, [slides.length, index])
+
+  // Pick the promo slide for a slot that is about to play. 'rotate' walks A, B, C in
+  // order; 'random' deals from a shuffled bag so every slide plays before any repeats.
+  function assignSlot(slotId: string): string | null {
+    if (customSlides.length === 0) return null
+    const pk = pickerRef.current
+    let chosen: { id: string; url: string }
+    if (slideOrder === 'random') {
+      pk.bag = pk.bag.filter(id => customSlides.some(c => c.id === id))
+      if (pk.bag.length === 0) {
+        const ids = customSlides.map(c => c.id)
+        for (let k = ids.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [ids[k], ids[j]] = [ids[j], ids[k]] }
+        // Do not open a new round with the slide that just closed the last one.
+        if (ids.length > 1 && ids[ids.length - 1] === pk.last) { [ids[0], ids[ids.length - 1]] = [ids[ids.length - 1], ids[0]] }
+        pk.bag = ids
+      }
+      const id = pk.bag.pop()!
+      chosen = customSlides.find(c => c.id === id)!
+    } else {
+      chosen = customSlides[pk.counter % customSlides.length]
+      pk.counter++
+    }
+    pk.last = chosen.id
+    slotUrlRef.current.set(slotId, chosen.url)
+    return chosen.url
+  }
+  function customUrl(s: Slide): string {
+    if (s.kind !== 'custom') return ''
+    return s.url ?? slotUrlRef.current.get(s.id) ?? customSlides[0]?.url ?? ''
+  }
 
   // ── Auto-advance / crossfade ──────────────────────────────────
 
@@ -333,8 +376,9 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
 
     // Preload the next image first (only photo slides have one).
     const nextSlide = list[next]
+    if (nextSlide?.kind === 'custom' && !nextSlide.url) assignSlot(nextSlide.id)
     const url = nextSlide?.kind === 'photo' ? nextSlide.photo.photoUrl
-      : nextSlide?.kind === 'custom' ? nextSlide.url
+      : nextSlide?.kind === 'custom' ? customUrl(nextSlide)
       : null
     if (!url) { begin(); return }
     let started = false
@@ -379,6 +423,24 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     }, 5000)
     return () => clearInterval(iv)
   }, [slides.length, advance])
+
+  useEffect(() => {
+    let t = window.setTimeout(() => setControlsVisible(false), 30_000)
+    function wake() {
+      setControlsVisible(true)
+      window.clearTimeout(t)
+      t = window.setTimeout(() => setControlsVisible(false), 30_000)
+    }
+    window.addEventListener('mousemove', wake)
+    window.addEventListener('keydown', wake)
+    window.addEventListener('touchstart', wake)
+    return () => {
+      window.clearTimeout(t)
+      window.removeEventListener('mousemove', wake)
+      window.removeEventListener('keydown', wake)
+      window.removeEventListener('touchstart', wake)
+    }
+  }, [])
 
   // ── Keyboard + fullscreen ─────────────────────────────────────
 
@@ -549,7 +611,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     >
       {/* Base layer - current slide, always fully opaque */}
       {currentSlide && (
-        <SlideLayer key={currentSlide.id} slide={currentSlide} opacity={1} guestUrl={guestUrl} qrSettings={qrSettings} message={welcomeMessage} />
+        <SlideLayer key={currentSlide.id} slide={currentSlide} customUrl={customUrl(currentSlide)} opacity={1} guestUrl={guestUrl} qrSettings={qrSettings} message={welcomeMessage} />
       )}
 
       {/* Incoming layer - next slide crossfading in on top */}
@@ -557,6 +619,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
         <SlideLayer
           key={incomingSlide.id}
           slide={incomingSlide}
+          customUrl={customUrl(incomingSlide)}
           opacity={incomingOpacity}
           transitionMs={TRANSITION_MS}
           guestUrl={guestUrl}
@@ -601,7 +664,7 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       )}
 
       {/* Slide counter - top right */}
-      <div className="absolute top-5 right-16 pointer-events-none">
+      <div className="absolute top-5 right-16 pointer-events-none transition-opacity duration-1000" style={{ opacity: controlsVisible ? 1 : 0 }}>
         <p className="text-mono text-cream/20 text-[10px] tracking-[0.2em]">{index + 1} / {total}</p>
       </div>
 
@@ -619,7 +682,8 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       {/* Fullscreen toggle */}
       <button
         onClick={e => { e.stopPropagation(); toggleFullscreen() }}
-        className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-black/30 hover:bg-black/50 transition-colors touch-manipulation"
+        className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-black/30 hover:bg-black/50 transition-all duration-1000 touch-manipulation"
+        style={{ opacity: controlsVisible ? 1 : 0, pointerEvents: controlsVisible ? "auto" : "none" }}
         title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
       >
         {isFullscreen ? <ExitFullscreenIcon /> : <EnterFullscreenIcon />}
@@ -643,7 +707,9 @@ function SlideLayer({
   guestUrl,
   qrSettings,
   message,
+  customUrl,
 }: {
+  customUrl?: string
   slide: Slide
   opacity: number
   transitionMs?: number
@@ -679,7 +745,7 @@ function SlideLayer({
           )}
         </div>
       ) : slide.kind === 'custom' ? (
-        <img src={slide.url} alt="" draggable={false} className="absolute inset-0 w-full h-full object-contain" />
+        <img src={customUrl || slide.url} alt="" draggable={false} className="absolute inset-0 w-full h-full object-contain" />
       ) : (
         <div className="flex flex-col items-center justify-center gap-8 px-8 text-center">
           <p
