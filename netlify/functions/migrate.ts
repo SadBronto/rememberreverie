@@ -232,7 +232,7 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
       // Private slideshow: each display must be approved by the owner before it plays.
       `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS slideshow_private BOOLEAN NOT NULL DEFAULT FALSE`,
       `CREATE TABLE IF NOT EXISTS display_approvals (
-         wedding_id  UUID NOT NULL REFERENCES weddings(id) ON DELETE CASCADE,
+         wedding_id  TEXT NOT NULL REFERENCES weddings(id) ON DELETE CASCADE,
          display_id  TEXT NOT NULL,
          approved_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
          approved_by TEXT NULL,
