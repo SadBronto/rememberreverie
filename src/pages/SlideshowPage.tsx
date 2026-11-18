@@ -296,6 +296,12 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     if (photos.length === 0 && customSlides.length > 0) {
       customSlides.forEach(cs => out.push({ id: `custom-${cs.id}`, kind: 'custom', url: cs.url }))
     }
+    // Too few photos to have reached the "every N" mark: the promo slides would never
+    // play at all. Give them one turn per loop so a quiet venue still shows them.
+    if (photos.length > 0 && customSlides.length > 0 && !out.some(s => s.kind === 'custom')) {
+      if (together) customSlides.forEach(cs => out.push({ id: `custom-${cs.id}-end`, kind: 'custom', url: cs.url }))
+      else out.push({ id: 'cslot-end', kind: 'custom' })
+    }
     // Too few photos to have reached the "every N" mark (a new or quiet venue): still
     // show the scan-to-share slide once per loop so people always see how to join.
     if (qrOn && qrCount === 0 && out.length > 0) {

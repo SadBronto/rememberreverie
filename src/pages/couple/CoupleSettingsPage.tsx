@@ -41,6 +41,7 @@ export default function CoupleSettingsPage() {
   const applySetup     = useDemoStore((s) => s.applySetup)
 
   const [form, setForm]       = useState<WeddingSettings | null>(null)
+  const [staffCode, setStaffCode] = useState<string | null>(null)
   const [noDate, setNoDate]   = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving]   = useState(false)
@@ -92,6 +93,7 @@ export default function CoupleSettingsPage() {
         slug:              data.slug               ?? null,
       })
       setNoDate(!data.wedding_date)
+      setStaffCode(data.staff_code ?? null)
       setLoading(false)
     }
     load()
@@ -406,6 +408,22 @@ export default function CoupleSettingsPage() {
             )}
           </Field>
         </Section>
+
+        {!demo && form.slug && staffCode && (
+          <Section label="Staff page">
+            <p className="text-sans text-cream/50 text-xs leading-relaxed mb-3">
+              For your on-site staff: they sign in with the password to remove any photo from the screen.
+            </p>
+            <p className="text-mono text-cream/40 text-[11px] mb-1">rememberreverie.com/staff/{form.slug}</p>
+            <p className="text-mono text-cream/40 text-[11px] mb-3">Password: {staffCode}</p>
+            <a
+              href={`/staff/${form.slug}`} target="_blank" rel="noreferrer"
+              className="inline-block px-4 py-2 rounded-full border border-cream/20 text-cream/70 text-sans text-xs tracking-widest uppercase"
+            >
+              Open staff page
+            </a>
+          </Section>
+        )}
 
         {!demo && weddingId && (
           <Section label="Reception slides">
