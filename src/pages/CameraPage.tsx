@@ -211,6 +211,7 @@ export default function CameraPage() {
           timestampSize:    weddingConfig.timestampSize,
           timestampOutline: weddingConfig.timestampOutline,
           coupleNames:      weddingConfig.coupleNames,
+          watermarkData:    weddingConfig.watermarkData,
         }
       )
 

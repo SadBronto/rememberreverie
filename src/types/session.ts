@@ -63,6 +63,7 @@ export interface WeddingConfig {
   timestampSize?: 'small' | 'medium' | 'large'
   // Outline on the light "elegant" timestamp only (off | small | medium | large)
   timestampOutline?: 'off' | 'small' | 'medium' | 'large'
+  watermarkData?: string | null
   themeColor?: string
   heroImageUrl?: string
   // Demo mode: enables photo cap, guided prompts, seeded gallery

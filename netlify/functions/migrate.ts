@@ -226,8 +226,27 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
       `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS slideshow_slide_order TEXT NOT NULL DEFAULT 'rotate'`,
     ],
   },
+  {
+    id: 'v22_privacy_watermark',
+    sql: [
+      // Private slideshow: each display must be approved by the owner before it plays.
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS slideshow_private BOOLEAN NOT NULL DEFAULT FALSE`,
+      `CREATE TABLE IF NOT EXISTS display_approvals (
+         wedding_id  UUID NOT NULL REFERENCES weddings(id) ON DELETE CASCADE,
+         display_id  TEXT NOT NULL,
+         approved_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+         approved_by TEXT NULL,
+         PRIMARY KEY (wedding_id, display_id)
+       )`,
+      `ALTER TABLE display_approvals ENABLE ROW LEVEL SECURITY`,
+      // Logo watermark: stored path, plus where it is applied (burned into new photos, and/or over the TV).
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS watermark_path TEXT NULL`,
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS watermark_photos BOOLEAN NOT NULL DEFAULT FALSE`,
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS watermark_slideshow BOOLEAN NOT NULL DEFAULT FALSE`,
+    ],
+  },
   // Future migrations go here:
-  // { id: 'v22_...', sql: [`ALTER TABLE ...`] },
+  // { id: 'v23_...', sql: [`ALTER TABLE ...`] },
 ]
 
 async function run(sql: string, token: string): Promise<unknown> {

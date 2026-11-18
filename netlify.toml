@@ -127,6 +127,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/host/display"
+  to   = "/.netlify/functions/display-approve"
+  status = 200
+
+[[redirects]]
   from = "/api/host/wedding"
   to   = "/.netlify/functions/couple-wedding"
   status = 200

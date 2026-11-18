@@ -57,6 +57,31 @@ export const handler: Handler = async (event) => {
     } catch { /* heartbeat is best-effort */ }
   }
 
+  // Private slideshow: only displays the owner has approved may see anything. An
+  // unapproved display gets a bare "locked" answer (no photos, no names) and shows a
+  // QR code for the owner to scan and approve it.
+  {
+    const { data: priv, error: privErr } = await admin
+      .from('weddings').select('slideshow_private').eq('id', weddingId).single()
+    if (!privErr && priv?.slideshow_private) {
+      const displayId = (qs.d ?? '').slice(0, 64)
+      let approved = false
+      if (displayId) {
+        const { data: row } = await admin
+          .from('display_approvals').select('display_id')
+          .eq('wedding_id', weddingId).eq('display_id', displayId).maybeSingle()
+        approved = !!row
+      }
+      if (!approved) {
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+          body: JSON.stringify({ locked: true }),
+        }
+      }
+    }
+  }
+
   // QR-slide toggle is fetched separately and tolerantly: if the
   // slideshow_qr_slide column hasn't been migrated yet, the slideshow still loads
   // (the QR slide just stays off until the migration runs).
@@ -149,10 +174,21 @@ export const handler: Handler = async (event) => {
     .map(s => ({ id: s.id, url: slideUrlMap.get(s.path) ?? null }))
     .filter((s): s is { id: string; url: string } => !!s.url)
 
+  // Logo watermark overlay for the TV (only when the admin switched it on for this event).
+  let watermarkUrl: string | null = null
+  {
+    const { data: wm, error: wmErr } = await admin
+      .from('weddings').select('watermark_path, watermark_slideshow').eq('id', weddingId).single()
+    if (!wmErr && wm?.watermark_slideshow && wm.watermark_path) {
+      watermarkUrl = (await getPhotoUrls([wm.watermark_path], EXPIRY)).get(wm.watermark_path) ?? null
+    }
+  }
+
   return {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
     body: JSON.stringify({
+      watermarkUrl,
       coupleNames:      wedding.couple_names,
       weddingDate:      wedding.wedding_date,
       welcomeMessage:   wedding.welcome_message ?? 'Leave us a memory.',

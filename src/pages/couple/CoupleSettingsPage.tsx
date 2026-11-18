@@ -4,6 +4,8 @@ import { supabase } from '@/lib/supabase'
 import { portalBase } from '@/lib/portalNav'
 import { isDemoId } from '@/demo/demoConfig'
 import { useDemoStore } from '@/store/demoStore'
+import ScreenPrivacy from '@/components/ScreenPrivacy'
+import WatermarkManager from '@/components/WatermarkManager'
 import SlidesManager from '@/components/SlidesManager'
 import type { CameraModeName, WeddingConfig } from '@/types/session'
 import { useFreshToken } from '@/lib/useFreshToken'
@@ -424,6 +426,9 @@ export default function CoupleSettingsPage() {
             </a>
           </Section>
         )}
+
+        {!demo && weddingId && <ScreenPrivacy label="Screen privacy" weddingId={weddingId} getToken={() => tokenRef.current} />}
+        {!demo && weddingId && <WatermarkManager label="Logo watermark" weddingId={weddingId} getToken={() => tokenRef.current} />}
 
         {!demo && weddingId && (
           <Section label="Reception slides">

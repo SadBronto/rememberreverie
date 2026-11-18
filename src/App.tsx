@@ -17,6 +17,7 @@ const SlideshowPage      = lazy(() => import('@/pages/SlideshowPage'))
 const DemoGalleryPage    = lazy(() => import('@/pages/demo/DemoGalleryPage'))
 const LoginPage          = lazy(() => import('@/pages/couple/LoginPage'))
 const AuthCallbackPage   = lazy(() => import('@/pages/couple/AuthCallbackPage'))
+const ApproveDisplayPage = lazy(() => import('@/pages/couple/ApproveDisplayPage'))
 const CoupleSetupPage    = lazy(() => import('@/pages/couple/CoupleSetupPage'))
 const CoupleGalleryPage  = lazy(() => import('@/pages/couple/GalleryPage'))
 const CoupleSettingsPage = lazy(() => import('@/pages/couple/CoupleSettingsPage'))
@@ -87,6 +88,7 @@ export default function App() {
         <Route path="/w/:weddingId/slideshow" element={<SlideshowPage />} />
         {/* Client portal - /host (neutral, canonical). */}
         <Route path="/host/login" element={<LoginPage />} />
+        <Route path="/host/approve" element={<ApproveDisplayPage />} />
         <Route path="/host/setup" element={<CoupleSetupPage />} />
         <Route path="/host/no-wedding" element={<NoWeddingPage />} />
         <Route path="/host/:weddingId" element={<CoupleGalleryPage />} />

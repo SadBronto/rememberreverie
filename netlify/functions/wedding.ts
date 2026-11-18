@@ -1,5 +1,6 @@
 import type { Handler } from '@netlify/functions'
 import { createClient } from '@supabase/supabase-js'
+import { getPhotoUrls } from '../lib/storage'
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
@@ -57,6 +58,25 @@ export const handler: Handler = async (event) => {
     captureEnd:           data.capture_end ?? null,
     eventTimezone:        data.event_timezone ?? null,
   }
+
+  // Logo watermark for new photos. Sent inline as a data URL (small, resized on upload)
+  // so the guest's phone can draw it onto the canvas without any cross-origin issues.
+  let watermarkData: string | null = null
+  if (data.watermark_photos && data.watermark_path) {
+    try {
+      const u = (await getPhotoUrls([data.watermark_path], 300)).get(data.watermark_path)
+      if (u) {
+        const r = await fetch(u)
+        if (r.ok) {
+          const buf = Buffer.from(await r.arrayBuffer())
+          if (buf.length < 900_000) {
+            watermarkData = `data:${r.headers.get('content-type') || 'image/png'};base64,${buf.toString('base64')}`
+          }
+        }
+      }
+    } catch { /* no watermark rather than a failed page */ }
+  }
+  ;(config as Record<string, unknown>).watermarkData = watermarkData
 
   return {
     statusCode: 200,

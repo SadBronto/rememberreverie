@@ -60,6 +60,19 @@ const STALL_GRACE_MS   = 20000 // watchdog: ms past a slide's due time before fo
 // spotlighted once it is at least this old, which is long enough to have been screened.
 const SPOTLIGHT_FALLBACK_AGE_MS = 20000
 
+// A stable id for THIS screen (kept in the browser's storage), so a private slideshow
+// can be approved for exactly this display and no other.
+function getDisplayId(): string {
+  try {
+    let id = localStorage.getItem('reverie-display-id')
+    if (!id) {
+      id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`
+      localStorage.setItem('reverie-display-id', id)
+    }
+    return id
+  } catch { return `tmp-${Math.random().toString(36).slice(2, 14)}` }
+}
+
 export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?: string } = {}) {
   const { weddingId: weddingIdParam } = useParams<{ weddingId: string }>()
   const weddingId = weddingIdProp ?? weddingIdParam
@@ -96,6 +109,9 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   const [newCount, setNewCount]       = useState(0)     // flash indicator on new arrivals
   const [loadError, setLoadError]     = useState(false)
   const [planLocked, setPlanLocked]   = useState(false)
+  const [privateLocked, setPrivateLocked] = useState(false)   // private slideshow awaiting owner approval
+  const [watermarkUrl, setWatermarkUrl] = useState<string | null>(null)
+  const displayId = useMemo(() => getDisplayId(), [])
   const [isFullscreen, setIsFullscreen] = useState(false)
 
   const slidesRef        = useRef<Slide[]>([])
@@ -152,9 +168,14 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
         ? Math.max(0, Math.round((Date.now() - lastAdvanceAtRef.current) / 1000))
         : 0
       const hb = `&hb=1&adv=${sinceAdvance}&vis=${document.visibilityState}&b=${encodeURIComponent(__BUILD_ID__)}`
-      const res = await fetch(`/api/slideshow?weddingId=${weddingId}${hb}`)
+      const res = await fetch(`/api/slideshow?weddingId=${weddingId}${hb}&d=${encodeURIComponent(displayId)}`)
       if (!res.ok) { if (isInitial) setLoadError(true); return }
       const data: SlideshowData = await res.json()
+
+      // Private slideshow: this screen has not been approved (or was locked again).
+      if ((data as { locked?: boolean }).locked) { setPrivateLocked(true); setLoadError(false); return }
+      setPrivateLocked(false)
+      setWatermarkUrl((data as { watermarkUrl?: string | null }).watermarkUrl ?? null)
 
       // Basic-plan events don't include the live slideshow.
       if ((data as { available?: boolean }).available === false) { setPlanLocked(true); return }
@@ -224,14 +245,14 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     } catch {
       if (isInitial) setLoadError(true)
     }
-  }, [weddingId, demoConfig])
+  }, [weddingId, demoConfig, displayId])
 
   // Initial load (once)
   useEffect(() => { fetchPhotos(true) }, [fetchPhotos])
 
   // Poll for new photos at the admin-configured cadence: 30s (reception) or 5 min
   // (lobby / 24-7 - far fewer server hits). The interval swaps when the config loads.
-  const pollMs = slowPoll ? 300_000 : POLL_INTERVAL_MS
+  const pollMs = privateLocked ? 4_000 : slowPoll ? 300_000 : POLL_INTERVAL_MS
   useEffect(() => {
     const poll = setInterval(() => fetchPhotos(false), pollMs)
     return () => clearInterval(poll)
@@ -565,6 +586,22 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     )
   }
 
+  if (privateLocked) {
+    const approveUrl = `https://rememberreverie.com/host/approve?w=${weddingId}&d=${encodeURIComponent(displayId)}`
+    return (
+      <div className="min-h-dvh bg-black flex flex-col items-center justify-center gap-8 text-center px-8">
+        <p className="text-serif text-cream/85 italic" style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.6rem)', maxWidth: '24ch' }}>
+          This slideshow is private
+        </p>
+        <div className="bg-white p-6 rounded-2xl shadow-2xl">
+          <StyledQR url={approveUrl} settings={null} size={320} transparent />
+        </div>
+        <p className="text-mono text-cream/55 text-sm tracking-[0.25em] uppercase">Owner: scan and sign in to start this screen</p>
+        <p className="text-mono text-cream/25 text-xs tracking-[0.3em] uppercase">Screen {displayId.slice(0, 4)}</p>
+      </div>
+    )
+  }
+
   if (loadError) {
     return (
       <div className="min-h-dvh bg-black flex flex-col items-center justify-center gap-4 text-center px-8">
@@ -694,6 +731,15 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       >
         {isFullscreen ? <ExitFullscreenIcon /> : <EnterFullscreenIcon />}
       </button>
+
+      {/* Logo watermark (admin option): corner of the screen, over guest photos only */}
+      {watermarkUrl && currentSlide?.kind === 'photo' && (
+        <img
+          src={watermarkUrl} alt="" draggable={false}
+          className="absolute pointer-events-none object-contain"
+          style={{ left: '3%', bottom: '4%', width: '14%', maxHeight: '16%', opacity: 0.85 }}
+        />
+      )}
 
       {/* Live pulse dot */}
       <div className="absolute bottom-5 right-5 flex items-center gap-1.5 pointer-events-none">

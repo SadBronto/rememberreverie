@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 
 type Phase = 'form' | 'sent' | 'not-found' | 'error'
 
 export default function LoginPage() {
+  const [searchParams] = useSearchParams()
+  const next = searchParams.get('next')
   const [email, setEmail] = useState('')
   const [phase, setPhase] = useState<Phase>('form')
   const [loading, setLoading] = useState(false)
@@ -33,7 +35,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email: addr,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: `${window.location.origin}/auth/callback${next && next.startsWith('/') ? `?next=${encodeURIComponent(next)}` : ''}`,
       },
     })
     setLoading(false)
