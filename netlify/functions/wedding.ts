@@ -77,6 +77,8 @@ export const handler: Handler = async (event) => {
     } catch { /* no watermark rather than a failed page */ }
   }
   ;(config as Record<string, unknown>).watermarkData = watermarkData
+  ;(config as Record<string, unknown>).watermarkPosition = data.watermark_position ?? 'bottom-left'
+  ;(config as Record<string, unknown>).watermarkOpacity = data.watermark_opacity ?? 85
 
   return {
     statusCode: 200,

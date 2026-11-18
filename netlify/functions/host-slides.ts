@@ -54,20 +54,24 @@ export const handler: Handler = async (event) => {
   if (event.httpMethod === 'GET') {
     const urlMap = await getPhotoUrls(slides.map(s => s.path), 3600)
     // Watermark logo, fetched separately so an un-migrated column never breaks slides.
-    let watermark: { url: string | null; photos: boolean; slideshow: boolean } | null = null
-    let watermarkEnabled = false
+    let watermark: { url: string | null; photos: boolean; slideshow: boolean; position: string; opacity: number } = {
+      url: null, photos: false, slideshow: false, position: 'bottom-left', opacity: 85,
+    }
     {
       const { data: wm, error: wmErr } = await admin
-        .from('weddings').select('watermark_path, watermark_photos, watermark_slideshow').eq('id', weddingId).single()
-      watermarkEnabled = !wmErr && !!(wm?.watermark_photos || wm?.watermark_slideshow)
-      if (!wmErr && wm?.watermark_path) {
-        const u = await getPhotoUrls([wm.watermark_path], 3600)
-        watermark = { url: u.get(wm.watermark_path) ?? null, photos: !!wm.watermark_photos, slideshow: !!wm.watermark_slideshow }
+        .from('weddings')
+        .select('watermark_path, watermark_photos, watermark_slideshow, watermark_position, watermark_opacity')
+        .eq('id', weddingId).single()
+      if (!wmErr && wm) {
+        const u = wm.watermark_path ? (await getPhotoUrls([wm.watermark_path], 3600)).get(wm.watermark_path) ?? null : null
+        watermark = {
+          url: u, photos: !!wm.watermark_photos, slideshow: !!wm.watermark_slideshow,
+          position: wm.watermark_position ?? 'bottom-left', opacity: wm.watermark_opacity ?? 85,
+        }
       }
     }
     return json({
       watermark,
-      watermarkEnabled,
       slides: slides.map(s => ({ id: s.id, path: s.path, url: urlMap.get(s.path) ?? null })),
       every: wedding.slideshow_slide_every ?? 7,
       seconds: wedding.slideshow_slide_seconds ?? 12,
@@ -108,6 +112,18 @@ export const handler: Handler = async (event) => {
       const { error } = await admin.from('weddings').update({ watermark_path: path }).eq('id', weddingId)
       if (error) return { statusCode: 500, body: 'Failed to save watermark' }
       if (prev?.watermark_path && prev.watermark_path !== path) await deletePhotos([prev.watermark_path])
+      return json({ ok: true })
+    }
+    if (body.op === 'watermark-settings') {
+      const b = body as { photos?: boolean; slideshow?: boolean; position?: string; opacity?: number }
+      const positions = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'center']
+      const update: Record<string, unknown> = {}
+      if (typeof b.photos === 'boolean') update.watermark_photos = b.photos
+      if (typeof b.slideshow === 'boolean') update.watermark_slideshow = b.slideshow
+      if (b.position && positions.includes(b.position)) update.watermark_position = b.position
+      if (b.opacity !== undefined) update.watermark_opacity = Math.max(10, Math.min(100, Math.round(Number(b.opacity) || 85)))
+      const { error } = await admin.from('weddings').update(update).eq('id', weddingId)
+      if (error) return { statusCode: 500, body: 'Failed to save watermark settings' }
       return json({ ok: true })
     }
     if (body.op === 'watermark-remove') {

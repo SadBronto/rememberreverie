@@ -176,9 +176,12 @@ export const handler: Handler = async (event) => {
 
   // Logo watermark overlay for the TV (only when the admin switched it on for this event).
   let watermarkUrl: string | null = null
+  let watermarkPosition = 'bottom-left'
+  let watermarkOpacity = 85
   {
     const { data: wm, error: wmErr } = await admin
-      .from('weddings').select('watermark_path, watermark_slideshow').eq('id', weddingId).single()
+      .from('weddings').select('watermark_path, watermark_slideshow, watermark_position, watermark_opacity').eq('id', weddingId).single()
+    if (!wmErr && wm) { watermarkPosition = wm.watermark_position ?? 'bottom-left'; watermarkOpacity = wm.watermark_opacity ?? 85 }
     if (!wmErr && wm?.watermark_slideshow && wm.watermark_path) {
       watermarkUrl = (await getPhotoUrls([wm.watermark_path], EXPIRY)).get(wm.watermark_path) ?? null
     }
@@ -189,6 +192,8 @@ export const handler: Handler = async (event) => {
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
     body: JSON.stringify({
       watermarkUrl,
+      watermarkPosition,
+      watermarkOpacity,
       coupleNames:      wedding.couple_names,
       weddingDate:      wedding.wedding_date,
       welcomeMessage:   wedding.welcome_message ?? 'Leave us a memory.',

@@ -212,6 +212,8 @@ export default function CameraPage() {
           timestampOutline: weddingConfig.timestampOutline,
           coupleNames:      weddingConfig.coupleNames,
           watermarkData:    weddingConfig.watermarkData,
+          watermarkPosition: weddingConfig.watermarkPosition,
+          watermarkOpacity: weddingConfig.watermarkOpacity,
         }
       )
 

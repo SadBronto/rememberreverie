@@ -245,8 +245,24 @@ const MIGRATIONS: Array<{ id: string; sql: string[] }> = [
       `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS watermark_slideshow BOOLEAN NOT NULL DEFAULT FALSE`,
     ],
   },
+  {
+    id: 'v23_watermark_controls',
+    sql: [
+      // Client-chosen watermark placement and strength.
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS watermark_position TEXT NOT NULL DEFAULT 'bottom-left'`,
+      `ALTER TABLE weddings ADD COLUMN IF NOT EXISTS watermark_opacity INTEGER NOT NULL DEFAULT 85`,
+      // Throttle for "email the owner to approve this screen" requests.
+      `CREATE TABLE IF NOT EXISTS display_requests (
+         wedding_id   TEXT NOT NULL REFERENCES weddings(id) ON DELETE CASCADE,
+         display_id   TEXT NOT NULL,
+         requested_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+         PRIMARY KEY (wedding_id, display_id)
+       )`,
+      `ALTER TABLE display_requests ENABLE ROW LEVEL SECURITY`,
+    ],
+  },
   // Future migrations go here:
-  // { id: 'v23_...', sql: [`ALTER TABLE ...`] },
+  // { id: 'v24_...', sql: [`ALTER TABLE ...`] },
 ]
 
 async function run(sql: string, token: string): Promise<unknown> {

@@ -27,6 +27,10 @@ export interface ProcessOptions {
   timestampOutline?: 'off' | 'small' | 'medium' | 'large'
   /** Logo watermark (data URL), drawn small in the bottom-left corner of the finished photo. */
   watermarkData?: string | null
+  /** 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center' (large). Default bottom-left. */
+  watermarkPosition?: string
+  /** 10-100 (percent). Default 85. */
+  watermarkOpacity?: number
 }
 
 // Main entry point: takes raw captured images + mode config, returns processed Blob.
@@ -40,15 +44,15 @@ export async function processSession(
   const composited = await compositeImages(sourceImages, config, outputWidth, options.sourceAlign ?? 'center')
   const filtered = await applyFilters(composited, config.filter)
   const framed = await applyFrame(filtered, config.frame, options)
-  if (options.watermarkData) await drawWatermark(framed, options.watermarkData)
+  if (options.watermarkData) await drawWatermark(framed, options.watermarkData, options.watermarkPosition ?? 'bottom-left', options.watermarkOpacity ?? 85)
   // Asset-framed modes (real Polaroid frame) keep a transparent margin for the
   // frame's soft drop shadow, so they must emit PNG, not JPEG.
   return canvasToBlob(framed, config.frame.frameSrc ? 'image/png' : 'image/jpeg')
 }
 
-// Transparent logo in the bottom-left corner: ~16% of the photo width, slightly soft so
-// it brands the photo without fighting the subject. A bad/missing logo never blocks a photo.
-async function drawWatermark(canvas: HTMLCanvasElement, dataUrl: string): Promise<void> {
+// Transparent logo in a corner (~16% of the width) or large in the centre (~50%), at the
+// strength the owner chose. A bad/missing logo never blocks a photo.
+async function drawWatermark(canvas: HTMLCanvasElement, dataUrl: string, position: string, opacityPct: number): Promise<void> {
   try {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const el = new Image()
@@ -58,15 +62,18 @@ async function drawWatermark(canvas: HTMLCanvasElement, dataUrl: string): Promis
     })
     const ctx = canvas.getContext('2d')
     if (!ctx || !img.width || !img.height) return
-    const w = Math.round(canvas.width * 0.16)
+    const center = position === 'center'
+    const w = Math.round(canvas.width * (center ? 0.5 : 0.16))
     const h = Math.round(w * (img.height / img.width))
-    const maxH = Math.round(canvas.height * 0.18)
+    const maxH = Math.round(canvas.height * (center ? 0.6 : 0.18))
     const scale = h > maxH ? maxH / h : 1
     const dw = Math.round(w * scale), dh = Math.round(h * scale)
     const margin = Math.round(canvas.width * 0.03)
+    const x = center ? Math.round((canvas.width - dw) / 2) : position.endsWith('right') ? canvas.width - dw - margin : margin
+    const y = center ? Math.round((canvas.height - dh) / 2) : position.startsWith('top') ? margin : canvas.height - dh - margin
     ctx.save()
-    ctx.globalAlpha = 0.85
-    ctx.drawImage(img, margin, canvas.height - dh - margin, dw, dh)
+    ctx.globalAlpha = Math.max(0.1, Math.min(1, opacityPct / 100))
+    ctx.drawImage(img, x, y, dw, dh)
     ctx.restore()
   } catch { /* skip the watermark */ }
 }

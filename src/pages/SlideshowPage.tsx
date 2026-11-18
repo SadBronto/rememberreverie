@@ -111,6 +111,8 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
   const [planLocked, setPlanLocked]   = useState(false)
   const [privateLocked, setPrivateLocked] = useState(false)   // private slideshow awaiting owner approval
   const [watermarkUrl, setWatermarkUrl] = useState<string | null>(null)
+  const [watermarkPos, setWatermarkPos] = useState('bottom-left')
+  const [watermarkOpacity, setWatermarkOpacity] = useState(85)
   const displayId = useMemo(() => getDisplayId(), [])
   const [isFullscreen, setIsFullscreen] = useState(false)
 
@@ -176,6 +178,8 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
       if ((data as { locked?: boolean }).locked) { setPrivateLocked(true); setLoadError(false); return }
       setPrivateLocked(false)
       setWatermarkUrl((data as { watermarkUrl?: string | null }).watermarkUrl ?? null)
+      setWatermarkPos((data as { watermarkPosition?: string }).watermarkPosition ?? 'bottom-left')
+      setWatermarkOpacity((data as { watermarkOpacity?: number }).watermarkOpacity ?? 85)
 
       // Basic-plan events don't include the live slideshow.
       if ((data as { available?: boolean }).available === false) { setPlanLocked(true); return }
@@ -591,13 +595,16 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
     return (
       <div className="min-h-dvh bg-black flex flex-col items-center justify-center gap-8 text-center px-8">
         <p className="text-serif text-cream/85 italic" style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.6rem)', maxWidth: '24ch' }}>
-          This slideshow is private
+          This screen is locked
         </p>
         <div className="bg-white p-6 rounded-2xl shadow-2xl">
           <StyledQR url={approveUrl} settings={null} size={320} transparent />
         </div>
-        <p className="text-mono text-cream/55 text-sm tracking-[0.25em] uppercase">Owner: scan and sign in to start this screen</p>
-        <p className="text-mono text-cream/25 text-xs tracking-[0.3em] uppercase">Screen {displayId.slice(0, 4)}</p>
+        <div className="flex flex-col gap-2">
+          <p className="text-sans text-cream/70 text-lg">Scan to sign in and unlock it</p>
+          <p className="text-sans text-cream/35 text-sm">Event owner only</p>
+        </div>
+        <p className="text-mono text-cream/20 text-xs tracking-[0.3em] uppercase">Screen {displayId.slice(0, 4)}</p>
       </div>
     )
   }
@@ -732,12 +739,21 @@ export default function SlideshowPage({ weddingId: weddingIdProp }: { weddingId?
         {isFullscreen ? <ExitFullscreenIcon /> : <EnterFullscreenIcon />}
       </button>
 
-      {/* Logo watermark (admin option): corner of the screen, over guest photos only */}
+      {/* Logo watermark (owner's choice): corner or large centre, over guest photos only */}
       {watermarkUrl && currentSlide?.kind === 'photo' && (
         <img
           src={watermarkUrl} alt="" draggable={false}
           className="absolute pointer-events-none object-contain"
-          style={{ left: '3%', bottom: '4%', width: '14%', maxHeight: '16%', opacity: 0.85 }}
+          style={{
+            ...(watermarkPos === 'center'
+              ? { left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: '40%', maxHeight: '50%' }
+              : {
+                  width: '14%', maxHeight: '16%',
+                  [watermarkPos.startsWith('top') ? 'top' : 'bottom']: '4%',
+                  [watermarkPos.endsWith('right') ? 'right' : 'left']: '3%',
+                }),
+            opacity: watermarkOpacity / 100,
+          }}
         />
       )}
 

@@ -39,8 +39,6 @@ interface WeddingDetail {
   slideshow_auto_fullscreen: boolean
   slideshow_slow_poll: boolean
   slideshow_private: boolean
-  watermark_photos: boolean
-  watermark_slideshow: boolean
   slideshow_spotlight_new: boolean
   display_monitor: boolean
   display_hours_start: string | null
@@ -1093,16 +1091,8 @@ export default function WeddingDetailPage() {
 
           <FormField label="Logo watermark">
             <WatermarkManager weddingId={id!} getToken={() => tokenRef.current} />
-            <div className="flex items-center gap-3 mt-3">
-              <AdminToggle value={form.watermark_photos ?? false} onChange={v => setField('watermark_photos', v)} />
-              <span className="text-sans text-cream/50 text-sm">Put it on new photos (saved into the picture)</span>
-            </div>
-            <div className="flex items-center gap-3 mt-2">
-              <AdminToggle value={form.watermark_slideshow ?? false} onChange={v => setField('watermark_slideshow', v)} />
-              <span className="text-sans text-cream/50 text-sm">Show it over photos on the TV only</span>
-            </div>
-            <p className="text-mono text-cream/25 text-[10px] mt-1 leading-relaxed">
-              Pick one or both. Turning on both puts the logo on new photos and on the TV, so it would show twice on new photos. Photos already taken are not changed by the first option.
+            <p className="text-mono text-cream/25 text-[10px] mt-2 leading-relaxed">
+              The client controls where it shows, placement and transparency from their own settings. You can set it here too; changes save immediately.
             </p>
           </FormField>
 

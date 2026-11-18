@@ -1,13 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-// Upload / replace / remove the event's logo watermark. The image is shrunk in the
-// browser (max 600px wide, transparency kept) so it stays small on guests' phones.
-// Where the watermark is applied (new photos / the TV) is an admin setting.
+type Position = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center'
+
+const POSITIONS: { id: Position; label: string }[] = [
+  { id: 'top-left', label: 'Top left' },
+  { id: 'top-right', label: 'Top right' },
+  { id: 'bottom-left', label: 'Bottom left' },
+  { id: 'bottom-right', label: 'Bottom right' },
+  { id: 'center', label: 'Large, centered' },
+]
+
+// Logo watermark controls, used by the client Settings page and the admin event page:
+// upload / replace / remove the logo (shrunk in the browser, transparency kept), where it
+// sits, how strong it is, and whether it goes on guest photos, the TV slideshow, both
+// or neither. Every change saves immediately.
 export default function WatermarkManager({ weddingId, getToken, label }: { weddingId: string; getToken: () => string | null; label?: string }) {
-  // With a `label` (client Settings) the whole block, heading included, only appears
-  // when the admin has switched the watermark on for this event.
-  const [enabled, setEnabled] = useState(!label)
   const [url, setUrl] = useState<string | null>(null)
+  const [photos, setPhotos] = useState(false)
+  const [slideshow, setSlideshow] = useState(false)
+  const [position, setPosition] = useState<Position>('bottom-left')
+  const [opacity, setOpacity] = useState(85)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -17,10 +29,22 @@ export default function WatermarkManager({ weddingId, getToken, label }: { weddi
   const load = useCallback(async () => {
     try {
       const res = await fetch(endpoint, { headers: headers() })
-      if (res.ok) { const d = await res.json(); setUrl(d.watermark?.url ?? null); if (label) setEnabled(!!d.watermarkEnabled) }
+      if (res.ok) {
+        const w = (await res.json()).watermark
+        if (w) {
+          setUrl(w.url ?? null); setPhotos(!!w.photos); setSlideshow(!!w.slideshow)
+          setPosition((w.position ?? 'bottom-left') as Position); setOpacity(w.opacity ?? 85)
+        }
+      }
     } catch { /* leave */ }
-  }, [endpoint, headers, label])
+  }, [endpoint, headers])
   useEffect(() => { void load() }, [load])
+
+  async function saveSettings(patch: Record<string, unknown>) {
+    try {
+      await fetch(endpoint, { method: 'POST', headers: headers(), body: JSON.stringify({ op: 'watermark-settings', ...patch }) })
+    } catch { /* non-blocking */ }
+  }
 
   async function shrink(file: File): Promise<Blob> {
     const bmp = await createImageBitmap(file)
@@ -55,10 +79,17 @@ export default function WatermarkManager({ weddingId, getToken, label }: { weddi
     } finally { setBusy(false) }
   }
 
-  if (!enabled) return null
+  const Check = ({ on, onChange, text }: { on: boolean; onChange: (v: boolean) => void; text: string }) => (
+    <label className="flex items-center gap-3 text-sans text-cream/65 text-sm">
+      <input type="checkbox" checked={on} onChange={e => onChange(e.target.checked)} className="w-4 h-4 accent-amber-500" />
+      {text}
+    </label>
+  )
+
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       {label && <p className="text-mono text-cream/25 text-[9px] tracking-[0.3em] uppercase">{label}</p>}
+
       <div className="flex items-center gap-4">
         <div className="w-32 h-20 rounded-lg border border-cream/10 flex items-center justify-center"
              style={{ background: 'repeating-conic-gradient(#2a2a2a 0% 25%, #3a3a3a 0% 50%) 50% / 16px 16px' }}>
@@ -75,7 +106,35 @@ export default function WatermarkManager({ weddingId, getToken, label }: { weddi
       <input ref={fileRef} type="file" accept="image/png,image/webp" className="hidden"
         onChange={e => { const f = e.target.files?.[0]; if (f) void upload(f) }} />
       {error && <p className="text-sans text-red-400/80 text-xs">{error}</p>}
-      <p className="text-mono text-cream/25 text-[10px] leading-relaxed">A transparent PNG works best. Shown small in the bottom-left corner.</p>
+      <p className="text-mono text-cream/25 text-[10px] leading-relaxed">A plain white logo on a transparent background works best.</p>
+
+      <div className="flex flex-col gap-2">
+        <p className="text-sans text-cream/45 text-xs">Show it on</p>
+        <Check on={photos} onChange={v => { setPhotos(v); void saveSettings({ photos: v }) }} text="Guest photos (new photos only)" />
+        <Check on={slideshow} onChange={v => { setSlideshow(v); void saveSettings({ slideshow: v }) }} text="The slideshow screen" />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <p className="text-sans text-cream/45 text-xs">Where</p>
+        <div className="flex flex-wrap gap-2">
+          {POSITIONS.map(p => (
+            <button key={p.id} type="button"
+              onClick={() => { setPosition(p.id); void saveSettings({ position: p.id }) }}
+              className={`px-3 py-1.5 rounded-full border text-sans text-xs transition-colors ${position === p.id ? 'border-cream/60 text-cream bg-cream/10' : 'border-cream/15 text-cream/45'}`}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <label className="flex flex-col gap-2 text-sans text-cream/45 text-xs">
+        <span>Transparency: logo is {opacity}% visible</span>
+        <input type="range" min={10} max={100} step={5} value={opacity}
+          onChange={e => setOpacity(Number(e.target.value))}
+          onPointerUp={() => void saveSettings({ opacity })}
+          onKeyUp={() => void saveSettings({ opacity })}
+          className="w-full accent-amber-500" />
+      </label>
     </div>
   )
 }

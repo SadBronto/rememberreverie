@@ -79,6 +79,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/display-request"
+  to   = "/.netlify/functions/display-request"
+  status = 200
+
+[[redirects]]
   from = "/api/slideshow"
   to   = "/.netlify/functions/slideshow"
   status = 200
